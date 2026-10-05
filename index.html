@@ -441,7 +441,16 @@
                 saveStorageMessages(messages);
             }
 
-            window.location.href = './';
+            // Hide admin screen and load chat UI directly
+            document.getElementById('adminPageScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('userSubtitle').innerText = `Přihlášen: admin (Admin)`;
+            document.getElementById('adminHeaderBtn').classList.remove('hidden');
+            document.getElementById('adminSidebar').classList.remove('hidden');
+            document.getElementById('adminSidebar').classList.add('flex');
+            updateSidebarLog();
+            loadMessages();
+            scrollToBottom(false);
         }
 
         function kickUserDirect(username) {
