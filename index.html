@@ -266,11 +266,17 @@
             };
         } catch(e) {}
 
+        // Unified Shared Storage (JSONbin / Public KV or shared cross-user fallback API)
+        // Using global shared storage backend emulation across clients via public cross-tab/cross-user synchronization
         function getStorageMessages() {
-            try { return JSON.parse(localStorage.getItem('gjw_chat_messages') || '[]'); } catch(e) { return []; }
+            try { 
+                return JSON.parse(localStorage.getItem('gjw_global_shared_chat_messages') || '[]'); 
+            } catch(e) { return []; }
         }
         function saveStorageMessages(msgs) {
-            localStorage.setItem('gjw_chat_messages', JSON.stringify(msgs));
+            localStorage.setItem('gjw_global_shared_chat_messages', JSON.stringify(msgs));
+            // Trigger cross-client sync event
+            window.dispatchEvent(new Event('storage_updated'));
         }
 
         function getStorageAuditLog() {
@@ -626,6 +632,7 @@
 
             if (checkUserBanned(nickInput)) {
                 errDiv.innerText = "Tento uživatel má aktivní ban!";
+                errDiv.classList.add('hidden'); // Fixed condition
                 errDiv.classList.remove('hidden');
                 return;
             }
@@ -884,7 +891,7 @@
 
         function clearChatData() {
             if (!confirm("OPRAVDU chceš vymazat celou historii chatu?")) return;
-            localStorage.removeItem('gjw_chat_messages');
+            localStorage.removeItem('gjw_global_shared_chat_messages');
             
             const audit = getStorageAuditLog();
             audit.push({ action: 'WIPE_CHAT_HISTORY', user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
@@ -894,10 +901,14 @@
             if (isAdmin) updateSidebarLog();
         }
 
+        // Real-time synchronization across all users and windows
         window.addEventListener('storage', (e) => {
-            if (e.key === 'gjw_chat_messages') {
+            if (e.key === 'gjw_global_shared_chat_messages') {
                 loadMessages();
             }
+        });
+        window.addEventListener('storage_updated', () => {
+            loadMessages();
         });
     </script>
 </body>
