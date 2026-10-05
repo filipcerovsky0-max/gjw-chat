@@ -38,17 +38,17 @@
 
     <!-- Regular User Login Screen -->
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate relative">
-            <div class="text-center space-y-3">
-                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center p-4 rounded-2xl bg-slate-950/60 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform mx-auto hover:border-slate-700" title="GJW Logo">
-                    <svg viewBox="0 0 160 80" class="h-14 w-auto text-slate-100 fill-current">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate relative flex flex-col items-center">
+            <div class="text-center space-y-3 w-full flex flex-col items-center">
+                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center p-4 rounded-2xl bg-slate-950/60 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-700" title="GJW Logo">
+                    <svg viewBox="0 0 160 80" class="h-14 w-auto text-slate-100 fill-current block mx-auto">
                         <text x="10" y="65" font-family="Georgia, serif" font-size="75" font-weight="bold" letter-spacing="-3">GJW</text>
                     </svg>
                 </div>
                 <h1 class="text-2xl font-bold tracking-tight">GJW Komunitní Chat</h1>
                 <p class="text-sm text-slate-400">Vstup do studentské konverzace</p>
             </div>
-            <div class="space-y-4">
+            <div class="space-y-4 w-full">
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Přezdívka</label>
                     <input type="text" id="loginNickname" value="" placeholder="Sem zadejte svou přezdívku" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors" maxlength="20" autocomplete="off">
@@ -90,23 +90,17 @@
     <!-- Giant Control Room / Admin Page Screen (/admin) -->
     <div id="adminPageScreen" class="fixed inset-0 bg-slate-950 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col message-animate">
+            
+            <!-- Admin Password Form (Hidden until correct auth) -->
             <div id="adminAuthBox" class="space-y-6">
                 <div class="text-center space-y-2">
                     <h1 class="text-2xl font-bold tracking-tight">Giganticka administratorska control room</h1>
-                    <p class="text-sm text-slate-400">Pro vstup je nutne se vzdy bezpecne prihlasit heslem</p>
+                    <p class="text-sm text-slate-400">Pro vstup do control room je nutne zadat administratorske heslo</p>
                 </div>
                 <div class="space-y-4 max-w-md mx-auto">
                     <input type="password" id="adminPasswordInput" placeholder="Zadejte administratorske heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
                     
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Rezim vstupu do chatu</label>
-                        <select id="adminModeSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
-                            <option value="observed">Pozorovaně (s duhovým nickem a oznámením v chatu)</option>
-                            <option value="hidden">Nepozorovaně / Ghost mode (zcela skrytý v roomce)</option>
-                        </select>
-                    </div>
-
-                    <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit a vstoupit do Control Room</button>
+                    <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit heslo a otevřít panel</button>
                     <div id="adminLoginError" class="text-rose-500 text-sm text-center hidden">Nesprávné heslo!</div>
                     <div class="text-center pt-2">
                         <a href="./" class="text-xs text-slate-400 hover:text-white underline">Zpět na hlavní stránku</a>
@@ -114,15 +108,28 @@
                 </div>
             </div>
 
+            <!-- Admin Dashboard (Unlocked after password) -->
             <div id="adminDashboardBox" class="hidden flex-1 overflow-hidden flex flex-col space-y-4">
                 <div class="flex justify-between items-center pb-4 border-b border-slate-800">
                     <h2 class="text-xl font-bold">Control Room - Bezpečnostní Logy & Správa</h2>
                     <div class="flex items-center gap-3">
                         <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors">Vymazat historii</button>
-                        <button onclick="openChatFromAdmin()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-1.5 rounded-lg transition-colors">Přejít do chatu s bočním panelem</button>
                         <a href="./" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3.5 py-1.5 rounded-lg transition-colors">Odhlásit</a>
                     </div>
                 </div>
+
+                <!-- Admin Connection Mode Selector & Join Button -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="w-full sm:w-auto flex-1">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Režim připojení admina do chatu</label>
+                        <select id="adminModeSelect" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-amber-500">
+                            <option value="observed">Pozorovaně (s duhovým nickem a oznámením v chatu)</option>
+                            <option value="hidden">Nepozorovaně / Ghost mode (zcela skrytý v roomce)</option>
+                        </select>
+                    </div>
+                    <button onclick="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0">Vstoupit do chatu s bočním panelem</button>
+                </div>
+
                 <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů (Veřejná IP, Lokální IP, Wi-Fi hinty, Zařízení, Kick/Ban)</div>
                 <div id="adminLogContainer" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-y-auto space-y-3 text-xs font-mono"></div>
             </div>
@@ -132,8 +139,8 @@
     <!-- Main App Header -->
     <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center z-10 shrink-0">
         <div class="flex items-center space-x-3">
-            <div id="headerLogoTrigger" onclick="handleLogoClick()" class="p-1 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-700" title="GJW Logo">
-                <svg viewBox="0 0 160 80" class="h-6 w-auto text-slate-100 fill-current">
+            <div id="headerLogoTrigger" onclick="handleLogoClick()" class="p-1 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-700 flex items-center justify-center" title="GJW Logo">
+                <svg viewBox="0 0 160 80" class="h-6 w-auto text-slate-100 fill-current block">
                     <text x="10" y="65" font-family="Georgia, serif" font-size="75" font-weight="bold" letter-spacing="-3">GJW</text>
                 </svg>
             </div>
@@ -296,12 +303,14 @@
                 document.getElementById('adminPageScreen').classList.remove('hidden');
                 document.getElementById('adminPageScreen').classList.add('flex');
                 if (sessionStorage.getItem('gjw_admin_logged') === 'true') {
+                    document.getElementById('adminAuthBox').classList.add('hidden');
+                    document.getElementById('adminDashboardBox').classList.remove('hidden');
                     showAdminDashboard();
                 }
                 return;
             }
 
-            // Forced fresh login on every session/reload for security
+            // Forced fresh login on every session/reload
             sessionStorage.removeItem('gjw_active_session');
             document.getElementById('loginScreen').classList.remove('hidden');
         });
@@ -323,18 +332,15 @@
 
         function verifyAdminPassword() {
             const pass = document.getElementById('adminPasswordInput').value;
-            const mode = document.getElementById('adminModeSelect').value;
             const err = document.getElementById('adminLoginError');
 
             if (pass === '69_atillo_69') {
                 sessionStorage.setItem('gjw_admin_logged', 'true');
-                sessionStorage.setItem('gjw_admin_mode', mode);
-                isAdmin = true;
                 err.classList.add('hidden');
 
                 const audit = getStorageAuditLog();
                 audit.push({
-                    action: 'ADMIN_LOGIN_' + mode.toUpperCase(),
+                    action: 'ADMIN_PANEL_ACCESS',
                     user: 'admin',
                     publicIp: clientPublicIp,
                     privateIp: clientPrivateIp,
@@ -343,6 +349,8 @@
                 });
                 saveStorageAuditLog(audit);
 
+                document.getElementById('adminAuthBox').classList.add('hidden');
+                document.getElementById('adminDashboardBox').classList.remove('hidden');
                 showAdminDashboard();
             } else {
                 err.classList.remove('hidden');
@@ -350,9 +358,6 @@
         }
 
         function showAdminDashboard() {
-            document.getElementById('adminAuthBox').classList.add('hidden');
-            document.getElementById('adminDashboardBox').classList.remove('hidden');
-
             const logContainer = document.getElementById('adminLogContainer');
             const audit = getStorageAuditLog();
             logContainer.innerHTML = '';
@@ -401,11 +406,23 @@
         }
 
         function openChatFromAdmin() {
-            const mode = sessionStorage.getItem('gjw_admin_mode') || 'observed';
+            const mode = document.getElementById('adminModeSelect').value;
             currentUser = 'admin';
             isAdmin = true;
 
             sessionStorage.setItem('gjw_active_session', 'true');
+            sessionStorage.setItem('gjw_admin_mode', mode);
+
+            const audit = getStorageAuditLog();
+            audit.push({
+                action: 'ADMIN_LOGIN_' + mode.toUpperCase(),
+                user: 'admin',
+                publicIp: clientPublicIp,
+                privateIp: clientPrivateIp,
+                device: clientDevice,
+                time: new Date().toLocaleString()
+            });
+            saveStorageAuditLog(audit);
 
             if (mode === 'observed') {
                 const messages = getStorageMessages();
@@ -424,14 +441,7 @@
                 saveStorageMessages(messages);
             }
 
-            document.getElementById('adminPageScreen').classList.add('hidden');
-            document.getElementById('userSubtitle').innerText = `Přihlášen: admin (Admin)`;
-            document.getElementById('adminHeaderBtn').classList.remove('hidden');
-            document.getElementById('adminSidebar').classList.remove('hidden');
-            document.getElementById('adminSidebar').classList.add('flex');
-            updateSidebarLog();
-            loadMessages();
-            scrollToBottom(false);
+            window.location.href = './';
         }
 
         function kickUserDirect(username) {
@@ -441,7 +451,6 @@
             saveStorageAuditLog(audit);
             alert(`Uživatel ${username} byl vyhozen.`);
             showAdminDashboard();
-            updateSidebarLog();
         }
 
         function promptBanUser(username) {
@@ -477,7 +486,6 @@
 
             alert(`Uživatel ${username} dostal ban.`);
             showAdminDashboard();
-            updateSidebarLog();
         }
 
         function handleLogin() {
