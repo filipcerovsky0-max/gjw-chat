@@ -40,7 +40,8 @@
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate relative">
             <div class="text-center space-y-3">
-                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center p-3 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform mx-auto hover:border-slate-700" title="GJW Logo">
+                <!-- Transparent GJW Logo (3 clicks to open admin) -->
+                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center p-3 rounded-2xl bg-slate-950/40 border border-slate-800/80 shadow-lg cursor-pointer select-none active:scale-95 transition-transform mx-auto hover:border-slate-700" title="GJW Logo">
                     <svg viewBox="0 0 220 90" class="h-16 w-auto text-slate-100 fill-current">
                         <path d="M45 15 C20 15 5 35 5 60 C5 80 20 88 40 88 C60 88 75 75 75 60 L75 50 L45 50 L45 58 L62 58 C60 70 50 78 38 78 C25 78 18 68 18 55 C18 40 28 25 45 25 C58 25 66 33 68 45 L82 45 C80 25 65 15 45 15 Z" />
                         <path d="M25 35 L20 45 L32 50 L22 62 L38 52 L30 42 Z" opacity="0.9"/>
@@ -83,7 +84,7 @@
         </div>
     </div>
 
-    <!-- Admin Page Screen (Direct URL /admin or 3 logo clicks) -->
+    <!-- Admin Page Screen (/admin) -->
     <div id="adminPageScreen" class="fixed inset-0 bg-slate-950 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col message-animate">
             <div id="adminAuthBox" class="space-y-6">
@@ -97,12 +98,12 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Režim vstupu do chatu</label>
                         <select id="adminModeSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
-                            <option value="observed">Pozorovaně (s oznámením v chatu)</option>
-                            <option value="hidden">Nepozorovaně / Ghost mode (bez oznámení)</option>
+                            <option value="observed">Pozorovaně (s duhovým nickem a oznámením v chatu)</option>
+                            <option value="hidden">Nepozorovaně / Ghost mode (zcela skrytý v roomce)</option>
                         </select>
                     </div>
 
-                    <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit a vstoupit do chatu / panelu</button>
+                    <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit a otevřít admin panel</button>
                     <div id="adminLoginError" class="text-rose-500 text-sm text-center hidden">Nesprávné heslo!</div>
                     <div class="text-center pt-2">
                         <a href="./" class="text-xs text-slate-400 hover:text-white underline">Zpět na hlavní stránku</a>
@@ -115,7 +116,8 @@
                     <h2 class="text-xl font-bold">Bezpečnostní Log & Pokročilá Správa</h2>
                     <div class="flex items-center gap-3">
                         <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors">Vymazat historii</button>
-                        <a href="./" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3.5 py-1.5 rounded-lg transition-colors">Zpět na chat</a>
+                        <button onclick="openChatFromAdmin()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-1.5 rounded-lg transition-colors">Vstoupit do chatu</button>
+                        <a href="./" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3.5 py-1.5 rounded-lg transition-colors">Odhlásit / Domů</a>
                     </div>
                 </div>
                 <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Záznamy IP adres, Wi-Fi, zařízení a správa banů</div>
@@ -127,7 +129,7 @@
     <!-- Main App Header -->
     <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center z-10 shrink-0">
         <div class="flex items-center space-x-3">
-            <div id="headerLogoTrigger" onclick="handleLogoClick()" class="p-1 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-700" title="GJW Logo">
+            <div id="headerLogoTrigger" onclick="handleLogoClick()" class="p-1 rounded-xl bg-slate-950/40 border border-slate-800/80 cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-700" title="GJW Logo">
                 <svg viewBox="0 0 220 90" class="h-8 w-auto text-slate-100 fill-current">
                     <path d="M45 15 C20 15 5 35 5 60 C5 80 20 88 40 88 C60 88 75 75 75 60 L75 50 L45 50 L45 58 L62 58 C60 70 50 78 38 78 C25 78 18 68 18 55 C18 40 28 25 45 25 C58 25 66 33 68 45 L82 45 C80 25 65 15 45 15 Z" />
                     <path d="M25 35 L20 45 L32 50 L22 62 L38 52 L30 42 Z" opacity="0.9"/>
@@ -141,6 +143,7 @@
             </div>
         </div>
         <div class="flex items-center space-x-3">
+            <button onclick="openAdminModalFromChat()" class="bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 text-xs font-semibold px-3 py-2 rounded-xl transition-all">Admin Panel</button>
             <button onclick="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">Odhlásit</button>
         </div>
     </header>
@@ -320,6 +323,10 @@
             }
         }
 
+        function openAdminModalFromChat() {
+            window.location.href = './admin';
+        }
+
         function verifyAdminPassword() {
             const pass = document.getElementById('adminPasswordInput').value;
             const mode = document.getElementById('adminModeSelect').value;
@@ -327,9 +334,8 @@
 
             if (pass === '69_atillo_69') {
                 sessionStorage.setItem('gjw_admin_logged', 'true');
+                sessionStorage.setItem('gjw_admin_mode', mode);
                 isAdmin = true;
-                localStorage.setItem('gjw_is_admin', 'true');
-                currentUser = 'admin';
                 err.classList.add('hidden');
 
                 const audit = getStorageAuditLog();
@@ -342,23 +348,6 @@
                     time: new Date().toLocaleString()
                 });
                 saveStorageAuditLog(audit);
-
-                if (mode === 'observed') {
-                    const messages = getStorageMessages();
-                    messages.push({
-                        id: 'msg_' + Date.now(),
-                        user: 'Systém',
-                        isAdmin: false,
-                        class: '',
-                        text: `admin (Admin) se pridal do Gjw chatuuuuuuu!!!`,
-                        image: null,
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        timestamp: Date.now(),
-                        edited: false,
-                        isSystem: true
-                    });
-                    saveStorageMessages(messages);
-                }
 
                 showAdminDashboard();
             } else {
@@ -398,6 +387,34 @@
                 `;
                 logContainer.appendChild(row);
             });
+        }
+
+        function openChatFromAdmin() {
+            const mode = sessionStorage.getItem('gjw_admin_mode') || 'observed';
+            currentUser = 'admin';
+            isAdmin = true;
+
+            localStorage.setItem('gjw_current_user', 'admin');
+            localStorage.setItem('gjw_is_admin', 'true');
+
+            if (mode === 'observed') {
+                const messages = getStorageMessages();
+                messages.push({
+                    id: 'msg_' + Date.now(),
+                    user: 'Systém',
+                    isAdmin: false,
+                    class: '',
+                    text: `admin (Admin) se pridal do Gjw chatuuuuuuu!!!`,
+                    image: null,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: Date.now(),
+                    edited: false,
+                    isSystem: true
+                });
+                saveStorageMessages(messages);
+            }
+
+            window.location.href = './';
         }
 
         function kickUserDirect(username) {
@@ -522,7 +539,8 @@
             localStorage.removeItem('gjw_current_user');
             localStorage.removeItem('gjw_current_class');
             localStorage.removeItem('gjw_is_admin');
-            location.reload();
+            sessionStorage.removeItem('gjw_admin_logged');
+            location.href = './';
         }
 
         function handleKeydown(e) {
@@ -724,7 +742,7 @@
             saveStorageMessages(messages);
 
             const audit = getStorageAuditLog();
-            audit.audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             loadMessages();
