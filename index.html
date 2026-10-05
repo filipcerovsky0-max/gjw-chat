@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -10,10 +11,6 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes spinSlow {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
         .message-animate {
             animation: fadeIn 0.3s ease-out forwards;
         }
@@ -23,7 +20,6 @@
             -webkit-text-fill-color: transparent;
             font-weight: bold;
         }
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -41,18 +37,18 @@
 </head>
 <body class="bg-slate-950 text-slate-100 h-screen flex flex-col font-sans overflow-hidden">
 
-    <!-- Login Screen -->
+    <!-- Regular User Login Screen -->
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate">
             <div class="text-center space-y-2">
                 <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-bold shadow-lg shadow-indigo-500/30 mb-2">GJW</div>
                 <h1 class="text-2xl font-bold tracking-tight">GJW Komunitní Chat</h1>
-                <p class="text-sm text-slate-400">Zadej svou přezdívku a vyber třídu pro vstup</p>
+                <p class="text-sm text-slate-400">Vstup do studentské konverzace</p>
             </div>
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Přezdívka</label>
-                    <input type="text" id="loginNickname" placeholder="např. Pepa..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors" maxlength="20">
+                    <input type="text" id="loginNickname" value="" placeholder="Sem zadejte svou přezdívku" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors" maxlength="20" autocomplete="off">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Třída (volitelně)</label>
@@ -78,24 +74,34 @@
         </div>
     </div>
 
-    <!-- Admin Login / Panel Overlay -->
-    <div id="adminModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl message-animate">
-            <div class="flex justify-between items-center pb-4 border-b border-slate-800">
-                <h2 class="text-xl font-bold flex items-center gap-2">🛡️ Admin Panel & Trvalý Log</h2>
-                <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white text-xl px-2">&times;</button>
-            </div>
-            <div id="adminAuthSection" class="py-8 space-y-4">
-                <p class="text-sm text-slate-400 text-center">Zadej administrátorské heslo pro přístup k historii a správě:</p>
-                <input type="password" id="adminPasswordInput" placeholder="Zadej heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500">
-                <button onclick="verifyAdmin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition-all">Přihlásit jako Admin</button>
-                <div id="adminLoginError" class="text-rose-500 text-sm text-center hidden">Nesprávné heslo!</div>
-            </div>
-            <div id="adminPanelContent" class="hidden flex-1 overflow-hidden flex flex-col py-4 space-y-4">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Kompletní auditní log konverzace (nemodifikovatelné)</span>
-                    <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors">Vymazat celou historii</button>
+    <!-- Standalone Discreet Admin Login / Dashboard Screen (Activated via /admin URL) -->
+    <div id="adminScreen" class="fixed inset-0 bg-slate-950 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col message-animate">
+            <div id="adminAuthBox" class="space-y-6">
+                <div class="text-center space-y-2">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-600 text-white text-2xl font-bold shadow-lg shadow-amber-500/30 mb-2">🔒</div>
+                    <h1 class="text-2xl font-bold tracking-tight">Administrace systému</h1>
+                    <p class="text-sm text-slate-400">Zabezpečený přístup k logům chatu</p>
                 </div>
+                <div class="space-y-4">
+                    <input type="password" id="adminPasswordInput" placeholder="Zadejte administrátorské heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
+                    <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit a vstoupit</button>
+                    <div id="adminLoginError" class="text-rose-500 text-sm text-center hidden">Nesprávné heslo!</div>
+                    <div class="text-center">
+                        <a href="./" class="text-xs text-slate-500 hover:text-slate-300 underline">← Zpět na hlavní chat</a>
+                    </div>
+                </div>
+            </div>
+
+            <div id="adminDashboardBox" class="hidden flex-1 overflow-hidden flex flex-col space-y-4">
+                <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                    <h2 class="text-xl font-bold flex items-center gap-2">🛡️ Admin Panel & Trvalý Log</h2>
+                    <div class="flex items-center gap-3">
+                        <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors">Vymazat historii</button>
+                        <a href="./" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors">Zpět na chat</a>
+                    </div>
+                </div>
+                <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Kompletní auditní záznam konverzace (nemodifikovatelné)</div>
                 <div id="adminLogContainer" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-y-auto space-y-2 text-xs font-mono"></div>
             </div>
         </div>
@@ -111,20 +117,14 @@
             </div>
         </div>
         <div class="flex items-center space-x-3">
-            <button id="adminNavBtn" onclick="openAdminModal()" class="hidden bg-amber-600/20 border border-amber-500/30 hover:bg-amber-600/30 text-amber-400 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">ADMIN REŽIM</button>
             <button onclick="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">Odhlásit</button>
         </div>
     </header>
 
     <!-- Chat Messages Area -->
     <div id="chatContainer" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative">
-        <!-- Loading initial state -->
-        <div id="chatLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-sm z-25 transition-opacity">
-            <div class="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-            <p class="text-xs text-slate-400 font-medium">Načítám zprávy...</p>
-        </div>
         <div id="emptyState" class="hidden h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
-            <svg class="w-12 h-12 stroke-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round5" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <svg class="w-12 h-12 stroke-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
             <p class="text-sm">Zatím žádné zprávy. Napiš první!</p>
         </div>
         <div id="messagesList" class="space-y-3 max-w-3xl mx-auto pb-4"></div>
@@ -153,9 +153,9 @@
                 <svg class="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
             </button>
         </div>
-        <!-- Student Project Disclaimer -->
-        <div class="text-center text-[10px] text-slate-500 mt-2">
-            tato stránka nemá nic společného s administrativou gymnázia jiřího wolkera je to pouze studentský projekt
+        <!-- Student Project Disclaimer in Grey -->
+        <div class="flex justify-end max-w-3xl mx-auto mt-2 px-1">
+            <span class="text-[11px] text-slate-500 font-normal">tato stránka nemá nic společného s administrativou gymnázia jiřího wolkera je to pouze studentský projekt</span>
         </div>
     </footer>
 
@@ -168,38 +168,29 @@
         const chatContainer = document.getElementById('chatContainer');
         const messagesList = document.getElementById('messagesList');
         const emptyState = document.getElementById('emptyState');
-        const chatLoading = document.getElementById('chatLoading');
         const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
 
-        // Init Storage check
         function getStorageMessages() {
-            try {
-                return JSON.parse(localStorage.getItem('gjw_chat_messages') || '[]');
-            } catch(e) { return []; }
+            try { return JSON.parse(localStorage.getItem('gjw_chat_messages') || '[]'); } catch(e) { return []; }
         }
         function saveStorageMessages(msgs) {
             localStorage.setItem('gjw_chat_messages', JSON.stringify(msgs));
         }
 
         function getStorageAuditLog() {
-            try {
-                return JSON.parse(localStorage.getItem('gjw_chat_audit') || '[]');
-            } catch(e) { return []; }
+            try { return JSON.parse(localStorage.getItem('gjw_chat_audit') || '[]'); } catch(e) { return []; }
         }
         function saveStorageAuditLog(logs) {
             localStorage.setItem('gjw_chat_audit', JSON.stringify(logs));
         }
 
         function getStorageUsers() {
-            try {
-                return JSON.parse(localStorage.getItem('gjw_chat_users') || '[]');
-            } catch(e) { return []; }
+            try { return JSON.parse(localStorage.getItem('gjw_chat_users') || '[]'); } catch(e) { return []; }
         }
         function saveStorageUsers(users) {
             localStorage.setItem('gjw_chat_users', JSON.stringify(users));
         }
 
-        // Scroll listener
         chatContainer.addEventListener('scroll', () => {
             const threshold = 50;
             const position = chatContainer.scrollTop + chatContainer.clientHeight;
@@ -216,18 +207,21 @@
         });
 
         function scrollToBottom(smooth = false) {
-            chatContainer.scrollTo({
-                top: chatContainer.scrollHeight,
-                behavior: smooth ? 'smooth' : 'auto'
-            });
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
         }
 
-        // Check active session
         window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                chatLoading.classList.add('opacity-0');
-                setTimeout(() => chatLoading.style.display = 'none', 300);
-            }, 400);
+            const path = window.location.pathname;
+            if (path.includes('admin')) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('adminScreen').classList.remove('hidden');
+                document.getElementById('adminScreen').classList.add('flex');
+                
+                if (sessionStorage.getItem('gjw_admin_logged') === 'true') {
+                    showAdminDashboard();
+                }
+                return;
+            }
 
             const savedUser = localStorage.getItem('gjw_current_user');
             const savedClass = localStorage.getItem('gjw_current_class');
@@ -235,16 +229,58 @@
 
             if (savedUser) {
                 currentUser = savedUser;
-                if (savedAdmin === 'true') {
-                    isAdmin = true;
-                    document.getElementById('adminNavBtn').classList.remove('hidden');
-                }
-                document.getElementById('loginScreen.style.display') = 'none';
+                isAdmin = (savedAdmin === 'true');
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser} ${savedClass ? '('+savedClass+')' : ''}`;
                 loadMessages();
+                scrollToBottom(false);
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
             }
         });
+
+        function verifyAdminPassword() {
+            const pass = document.getElementById('adminPasswordInput').value;
+            const err = document.getElementById('adminLoginError');
+
+            if (pass === '69_atillo_69') {
+                sessionStorage.setItem('gjw_admin_logged', 'true');
+                isAdmin = true;
+                localStorage.setItem('gjw_is_admin', 'true');
+                currentUser = 'admin';
+                err.classList.add('hidden');
+                showAdminDashboard();
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        function showAdminDashboard() {
+            document.getElementById('adminAuthBox').classList.add('hidden');
+            document.getElementById('adminDashboardBox').classList.remove('hidden');
+
+            const logContainer = document.getElementById('adminLogContainer');
+            const audit = getStorageAuditLog();
+            logContainer.innerHTML = '';
+
+            if (audit.length === 0) {
+                logContainer.innerHTML = '<p class="text-slate-500 text-center py-4">Zatím žádné záznamy v logu.</p>';
+                return;
+            }
+
+            audit.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = "border-b border-slate-900 pb-2 mb-2 space-y-0.5";
+                row.innerHTML = `
+                    <div class="flex justify-between text-amber-400">
+                        <span>#${index+1} [${item.action}] od: <strong>${item.user}</strong></span>
+                        <span class="text-slate-500">${item.time}</span>
+                    </div>
+                    <div class="text-slate-300">Obsah/ID: ${item.text || item.msgId || 'N/A'}</div>
+                `;
+                logContainer.appendChild(row);
+            });
+        }
 
         function handleLogin() {
             const nickInput = document.getElementById('loginNickname').value.trim();
@@ -283,6 +319,7 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser} ${classSelect ? '('+classSelect+')' : ''}`;
             loadMessages();
+            scrollToBottom(false);
         }
 
         function handleLogout() {
@@ -324,8 +361,7 @@
 
             const messages = getStorageMessages();
             const audit = getStorageAuditLog();
-
-            const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36.substring(2, 7));
+            const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
             const userClass = localStorage.getItem('gjw_current_class') || '';
             
             const newMsg = {
@@ -343,7 +379,6 @@
             messages.push(newMsg);
             saveStorageMessages(messages);
 
-            // Add to audit log permanently
             audit.push({
                 action: 'SENT',
                 msgId: msgId,
@@ -413,7 +448,6 @@
 
                 div.appendChild(contentBox);
 
-                // Edit/Delete buttons for user messages
                 if (msg.user === currentUser && !isAdmin) {
                     const actionBox = document.createElement('div');
                     actionBox.className = "flex items-center space-x-2 text-[10px] text-slate-500 px-1";
@@ -454,13 +488,7 @@
             saveStorageMessages(messages);
 
             const audit = getStorageAuditLog();
-            audit.push({
-                action: 'EDITED',
-                msgId: id,
-                user: currentUser,
-                newText: msg.text,
-                time: new Date().toLocaleString()
-            });
+            audit.push({ action: 'EDITED', msgId: id, user: currentUser, newText: msg.text, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             loadMessages();
@@ -473,96 +501,23 @@
             saveStorageMessages(messages);
 
             const audit = getStorageAuditLog();
-            audit.push({
-                action: 'DELETED',
-                msgId: id,
-                user: currentUser,
-                time: new Date().toLocaleString()
-            });
+            audit.push({ action: 'DELETED', msgId: id, user: currentUser, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             loadMessages();
-        }
-
-        // Admin functions
-        function openAdminModal() {
-            document.getElementById('adminModal').classList.remove('hidden');
-            document.getElementById('adminModal').classList.add('flex');
-            
-            const savedAdminAuth = sessionStorage.getItem('gjw_admin_logged');
-            if (savedAdminAuth === 'true') {
-                showAdminDashboard();
-            } else {
-                document.getElementById('adminAuthSection').classList.remove('hidden');
-                document.getElementById('adminPanelContent').classList.add('hidden');
-            }
-        }
-
-        function closeAdminModal() {
-            document.getElementById('adminModal').classList.add('hidden');
-            document.getElementById('adminModal').classList.remove('flex');
-        }
-
-        function verifyAdmin() {
-            const pass = document.getElementById('adminPasswordInput').value;
-            const err = document.getElementById('adminLoginError');
-
-            if (pass === '69_atillo_69') {
-                sessionStorage.setItem('gjw_admin_logged', 'true');
-                isAdmin = true;
-                localStorage.setItem('gjw_is_admin', 'true');
-                document.getElementById('adminNavBtn').classList.remove('hidden');
-                err.classList.add('hidden');
-                showAdminDashboard();
-            } else {
-                err.classList.remove('hidden');
-            }
-        }
-
-        function showAdminDashboard() {
-            document.getElementById('adminAuthSection').classList.add('hidden');
-            document.getElementById('adminPanelContent').classList.remove('hidden');
-
-            const logContainer = document.getElementById('adminLogContainer');
-            const audit = getStorageAuditLog();
-            logContainer.innerHTML = '';
-
-            if (audit.length === 0) {
-                logContainer.innerHTML = '<p class="text-slate-500 text-center py-4">Zatím žádné záznamy v logu.</p>';
-                return;
-            }
-
-            audit.forEach((item, index) => {
-                const row = document.createElement('div');
-                row.className = "border-b border-slate-900 pb-2 mb-2 space-y-0.5";
-                row.innerHTML = `
-                    <div class="flex justify-between text-indigo-400">
-                        <span>#${index+1} [${item.action}] od: <strong>${item.user}</strong></span>
-                        <span class="text-slate-500">${item.time}</span>
-                    </div>
-                    <div class="text-slate-300">Obsah/ID: ${item.text || item.msgId || 'N/A'}</div>
-                `;
-                logContainer.appendChild(row);
-            });
         }
 
         function clearChatData() {
-            if (!confirm("OPRAVDU chceš vymazat celou historii chatu? Tato akce je nevratná!")) return;
+            if (!confirm("OPRAVDU chceš vymazat celou historii chatu?")) return;
             localStorage.removeItem('gjw_chat_messages');
             
             const audit = getStorageAuditLog();
-            audit.push({
-                action: 'WIPE_CHAT',
-                user: currentUser,
-                time: new Date().toLocaleString()
-            });
+            audit.push({ action: 'WIPE_CHAT', user: currentUser, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
-            loadMessages();
-            closeAdminModal();
+            showAdminDashboard();
         }
 
-        // Periodic sync across tabs/users using storage event
         window.addEventListener('storage', (e) => {
             if (e.key === 'gjw_chat_messages') {
                 loadMessages();
