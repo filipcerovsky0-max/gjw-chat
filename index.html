@@ -39,8 +39,17 @@
     <!-- Regular User Login Screen -->
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate relative">
-            <div class="text-center space-y-2">
-                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-bold shadow-lg shadow-indigo-500/30 mb-2 cursor-pointer select-none active:scale-95 transition-transform">GJW</div>
+            <div class="text-center space-y-3">
+                <!-- Official GJW Logo (3 clicks to open admin) -->
+                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center p-3 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform mx-auto hover:border-slate-700" title="GJW Logo">
+                    <svg viewBox="0 0 220 90" class="h-16 w-auto text-slate-100 fill-current">
+                        <!-- Stylized GJW Crest Representation matching the uploaded falcon logo -->
+                        <path d="M45 15 C20 15 5 35 5 60 C5 80 20 88 40 88 C60 88 75 75 75 60 L75 50 L45 50 L45 58 L62 58 C60 70 50 78 38 78 C25 78 18 68 18 55 C18 40 28 25 45 25 C58 25 66 33 68 45 L82 45 C80 25 65 15 45 15 Z" />
+                        <path d="M25 35 L20 45 L32 50 L22 62 L38 52 L30 42 Z" opacity="0.9"/>
+                        <text x="95" y="72" font-family="Georgia, serif" font-size="68" font-weight="bold" letter-spacing="-2">GJ</text>
+                        <text x="175" y="72" font-family="Georgia, serif" font-size="68" font-weight="bold" letter-spacing="-2">W</text>
+                    </svg>
+                </div>
                 <h1 class="text-2xl font-bold tracking-tight">GJW Komunitní Chat</h1>
                 <p class="text-sm text-slate-400">Vstup do studentské konverzace</p>
             </div>
@@ -116,9 +125,16 @@
     </div>
 
     <!-- Main App Header -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center z-10 shrink-0">
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center z-10 shrink-0">
         <div class="flex items-center space-x-3">
-            <div id="headerLogoTrigger" onclick="handleLogoClick()" class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white shadow-md shadow-indigo-600/20 cursor-pointer select-none active:scale-95 transition-transform" title="GJW">GJW</div>
+            <div id="headerLogoTrigger" onclick="handleLogoClick()" class="p-1 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-700" title="GJW Logo">
+                <svg viewBox="0 0 220 90" class="h-8 w-auto text-slate-100 fill-current">
+                    <path d="M45 15 C20 15 5 35 5 60 C5 80 20 88 40 88 C60 88 75 75 75 60 L75 50 L45 50 L45 58 L62 58 C60 70 50 78 38 78 C25 78 18 68 18 55 C18 40 28 25 45 25 C58 25 66 33 68 45 L82 45 C80 25 65 15 45 15 Z" />
+                    <path d="M25 35 L20 45 L32 50 L22 62 L38 52 L30 42 Z" opacity="0.9"/>
+                    <text x="95" y="72" font-family="Georgia, serif" font-size="68" font-weight="bold" letter-spacing="-2">GJ</text>
+                    <text x="175" y="72" font-family="Georgia, serif" font-size="68" font-weight="bold" letter-spacing="-2">W</text>
+                </svg>
+            </div>
             <div>
                 <h2 class="font-bold text-base leading-tight">GJW Hlavní Chat</h2>
                 <p class="text-xs text-slate-400" id="userSubtitle">Přihlášen: -</p>
