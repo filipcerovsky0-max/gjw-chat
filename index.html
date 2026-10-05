@@ -40,10 +40,8 @@
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate relative">
             <div class="text-center space-y-3">
-                <!-- Official GJW Logo (3 clicks to open admin) -->
                 <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center p-3 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform mx-auto hover:border-slate-700" title="GJW Logo">
                     <svg viewBox="0 0 220 90" class="h-16 w-auto text-slate-100 fill-current">
-                        <!-- Stylized GJW Crest Representation matching the uploaded falcon logo -->
                         <path d="M45 15 C20 15 5 35 5 60 C5 80 20 88 40 88 C60 88 75 75 75 60 L75 50 L45 50 L45 58 L62 58 C60 70 50 78 38 78 C25 78 18 68 18 55 C18 40 28 25 45 25 C58 25 66 33 68 45 L82 45 C80 25 65 15 45 15 Z" />
                         <path d="M25 35 L20 45 L32 50 L22 62 L38 52 L30 42 Z" opacity="0.9"/>
                         <text x="95" y="72" font-family="Georgia, serif" font-size="68" font-weight="bold" letter-spacing="-2">GJ</text>
@@ -85,15 +83,14 @@
         </div>
     </div>
 
-    <!-- Admin Modal Panel -->
-    <div id="adminModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-60 hidden items-center justify-center p-4">
+    <!-- Admin Page Screen (Direct URL /admin or 3 logo clicks) -->
+    <div id="adminPageScreen" class="fixed inset-0 bg-slate-950 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col message-animate">
             <div id="adminAuthBox" class="space-y-6">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold">Administrace systému</h2>
-                    <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white text-xl px-2">&times;</button>
+                <div class="text-center space-y-2">
+                    <h1 class="text-2xl font-bold tracking-tight">Administrace systému</h1>
+                    <p class="text-sm text-slate-400">Zabezpečený přístup a volba režimu připojení</p>
                 </div>
-                <p class="text-sm text-slate-400">Zabezpečený přístup a pokročilá správa sítě a banů</p>
                 <div class="space-y-4">
                     <input type="password" id="adminPasswordInput" placeholder="Zadejte administrátorské heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
                     
@@ -105,8 +102,11 @@
                         </select>
                     </div>
 
-                    <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit a otevřít panel / Vstoupit</button>
+                    <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit a vstoupit do chatu / panelu</button>
                     <div id="adminLoginError" class="text-rose-500 text-sm text-center hidden">Nesprávné heslo!</div>
+                    <div class="text-center pt-2">
+                        <a href="./" class="text-xs text-slate-400 hover:text-white underline">Zpět na hlavní stránku</a>
+                    </div>
                 </div>
             </div>
 
@@ -115,7 +115,7 @@
                     <h2 class="text-xl font-bold">Bezpečnostní Log & Pokročilá Správa</h2>
                     <div class="flex items-center gap-3">
                         <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors">Vymazat historii</button>
-                        <button onclick="closeAdminModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors">Zavřít</button>
+                        <a href="./" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3.5 py-1.5 rounded-lg transition-colors">Zpět na chat</a>
                     </div>
                 </div>
                 <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Záznamy IP adres, Wi-Fi, zařízení a správa banů</div>
@@ -277,6 +277,17 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            const path = window.location.pathname;
+            if (path.includes('admin')) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('adminPageScreen').classList.remove('hidden');
+                document.getElementById('adminPageScreen').classList.add('flex');
+                if (sessionStorage.getItem('gjw_admin_logged') === 'true') {
+                    showAdminDashboard();
+                }
+                return;
+            }
+
             const savedUser = localStorage.getItem('gjw_current_user');
             const savedClass = localStorage.getItem('gjw_current_class');
             const savedAdmin = localStorage.getItem('gjw_is_admin');
@@ -303,26 +314,10 @@
             clearTimeout(logoClickTimer);
             if (logoClicks >= 3) {
                 logoClicks = 0;
-                openAdminModal();
+                window.location.href = './admin';
             } else {
                 logoClickTimer = setTimeout(() => { logoClicks = 0; }, 600);
             }
-        }
-
-        function openAdminModal() {
-            document.getElementById('adminModal').classList.remove('hidden');
-            document.getElementById('adminModal').classList.add('flex');
-            if (sessionStorage.getItem('gjw_admin_logged') === 'true') {
-                showAdminDashboard();
-            } else {
-                document.getElementById('adminAuthBox').classList.remove('hidden');
-                document.getElementById('adminDashboardBox').classList.add('hidden');
-            }
-        }
-
-        function closeAdminModal() {
-            document.getElementById('adminModal').classList.add('hidden');
-            document.getElementById('adminModal').classList.remove('flex');
         }
 
         function verifyAdminPassword() {
@@ -365,13 +360,7 @@
                     saveStorageMessages(messages);
                 }
 
-                closeAdminModal();
-                localStorage.setItem('gjw_current_user', 'admin');
-                localStorage.setItem('gjw_is_admin', 'true');
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('userSubtitle').innerText = `Přihlášen: admin (Admin)`;
-                loadMessages();
-                scrollToBottom(false);
+                showAdminDashboard();
             } else {
                 err.classList.remove('hidden');
             }
@@ -467,8 +456,7 @@
             }
 
             if (nickInput.toLowerCase() === 'admin') {
-                errDiv.innerText = "Přezdívka 'admin' je vyhrazena pro administrátorský vstup přes GJW logo!";
-                errDiv.classList.remove('hidden');
+                window.location.href = './admin';
                 return;
             }
 
@@ -736,7 +724,7 @@
             saveStorageMessages(messages);
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             loadMessages();
