@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GJW Chat - Gymnázium Jiřího Wolkera</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -51,11 +51,11 @@
             <div class="space-y-4 w-full">
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Přezdívka</label>
-                    <input type="text" id="loginNickname" value="" placeholder="Sem zadejte svou přezdívku" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors" maxlength="20" autocomplete="off">
+                    <input type="text" id="loginNickname" value="" placeholder="Sem zadejte svou přezdívku" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors text-base" maxlength="20" autocomplete="off">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Třída (volitelně)</label>
-                    <select id="loginClass" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors">
+                    <select id="loginClass" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors text-base">
                         <option value="">Bez třídy / Učitel</option>
                         <option value="01.A">01.A</option><option value="01.B">01.B</option>
                         <option value="02.A">02.A</option><option value="02.B">02.B</option>
@@ -71,7 +71,7 @@
                         <option value="4.A">4.A</option><option value="4.B">4.B</option>
                     </select>
                 </div>
-                <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.99]">Vstoupit do chatu</button>
+                <button onclick="handleLogin()" ontouchend="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.99]">Vstoupit do chatu</button>
                 <div id="loginError" class="text-rose-500 text-sm text-center hidden"></div>
             </div>
         </div>
@@ -130,6 +130,17 @@
                     <button onclick="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0">Vstoupit do chatu s bočním panelem</button>
                 </div>
 
+                <!-- Admin PNG Emoticon Uploader Section -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Správa PNG emotikonů (Memů) pro chat</h3>
+                    <div class="flex items-center gap-3">
+                        <input type="file" id="adminEmojiUploadInput" accept="image/png, image/jpeg" class="hidden" onchange="handleAdminUploadEmoji(event)">
+                        <button onclick="document.getElementById('adminEmojiUploadInput').click()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-4 py-2 rounded-lg transition-colors">Nahrát nový PNG emotikon</button>
+                        <span class="text-xs text-slate-400">Nahrané emotikony se automaticky zpřístupní všem uživatelům v chatu.</span>
+                    </div>
+                    <div id="adminEmojiList" class="flex flex-wrap gap-2 pt-2"></div>
+                </div>
+
                 <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů (Veřejná IP, Lokální IP, Wi-Fi hinty, Zařízení, Kick/Ban)</div>
                 <div id="adminLogContainer" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-y-auto space-y-3 text-xs font-mono"></div>
             </div>
@@ -166,26 +177,43 @@
                 <div id="messagesList" class="space-y-3 max-w-3xl mx-auto pb-4"></div>
             </div>
 
-            <!-- Floating Scroll-to-Bottom Arrow -->
-            <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" class="fixed bottom-24 right-6 sm:right-96 bg-indigo-600 hover:bg-indigo-500 text-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300 z-30 scale-90">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+            <!-- Instagram-Style Floating Scroll-to-Bottom Button -->
+            <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" class="fixed bottom-24 right-6 sm:right-12 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-30 text-xs font-semibold">
+                <span>Nové zprávy</span>
+                <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
             </button>
 
             <!-- Message Input Footer -->
             <footer class="bg-slate-900 border-t border-slate-800 p-4 shrink-0 relative">
                 <div class="max-w-3xl mx-auto flex items-end space-x-2">
+                    <!-- Image Upload -->
                     <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
                     <button onclick="document.getElementById('imageInput').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center" title="Nahrát obrázek">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     </button>
+
+                    <!-- Emoji / Meme Picker Toggle Button -->
+                    <div class="relative">
+                        <button onclick="toggleEmojiPicker()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center text-xs font-bold" title="Meme emotikony">
+                            [MEME]
+                        </button>
+                        <!-- Popup Emoji Picker Menu -->
+                        <div id="emojiPickerPopup" class="hidden absolute bottom-14 left-0 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-40">
+                            <div class="text-xs text-slate-400 font-semibold mb-2">Vyber meme emotikon:</div>
+                            <div id="emojiPickerContent" class="flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Input Box -->
                     <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl focus-within:border-indigo-500 transition-colors flex flex-col">
                         <div id="imagePreviewContainer" class="hidden p-2 pb-0 flex items-center gap-2">
                             <img id="imagePreview" src="" class="h-14 rounded-lg object-cover border border-slate-800">
                             <button onclick="clearImagePreview()" class="text-slate-400 hover:text-rose-400 text-xs font-semibold">&times; Zrušit obrázek</button>
                         </div>
-                        <textarea id="messageInput" placeholder="Napiš zprávu..." rows="1" class="w-full bg-transparent px-4 py-3 text-slate-100 focus:outline-none resize-none max-h-32 text-sm" onkeydown="handleKeydown(event)"></textarea>
+                        <textarea id="messageInput" placeholder="Napiš zprávu..." rows="1" class="w-full bg-transparent px-4 py-3 text-slate-100 focus:outline-none resize-none max-h-32 text-base" onkeydown="handleKeydown(event)"></textarea>
                     </div>
-                    <button onclick="sendMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl transition-all shrink-0 flex items-center justify-center shadow-md shadow-indigo-600/20 active:scale-95">
+                    
+                    <button onclick="sendMessage()" ontouchend="sendMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl transition-all shrink-0 flex items-center justify-center shadow-md shadow-indigo-600/20 active:scale-95">
                         <svg class="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                     </button>
                 </div>
@@ -252,11 +280,11 @@
             localStorage.setItem('gjw_chat_audit', JSON.stringify(logs));
         }
 
-        function getStorageUsers() {
-            try { return JSON.parse(localStorage.getItem('gjw_chat_users') || '[]'); } catch(e) { return []; }
+        function getStorageEmojis() {
+            try { return JSON.parse(localStorage.getItem('gjw_chat_emojis') || '[]'); } catch(e) { return []; }
         }
-        function saveStorageUsers(users) {
-            localStorage.setItem('gjw_chat_users', JSON.stringify(users));
+        function saveStorageEmojis(emojis) {
+            localStorage.setItem('gjw_chat_emojis', JSON.stringify(emojis));
         }
 
         function getStorageBans() {
@@ -277,8 +305,9 @@
             return false;
         }
 
+        // Instagram-style scroll detection
         chatContainer.addEventListener('scroll', () => {
-            const threshold = 50;
+            const threshold = 80;
             const position = chatContainer.scrollTop + chatContainer.clientHeight;
             const height = chatContainer.scrollHeight;
             isUserAtBottom = height - position <= threshold;
@@ -294,6 +323,8 @@
 
         function scrollToBottom(smooth = false) {
             chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+            scrollToBottomBtn.classList.remove('opacity-100');
+            scrollToBottomBtn.classList.add('opacity-0', 'pointer-events-none');
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -310,7 +341,6 @@
                 return;
             }
 
-            // Forced fresh login on every session/reload
             sessionStorage.removeItem('gjw_active_session');
             document.getElementById('loginScreen').classList.remove('hidden');
         });
@@ -364,28 +394,110 @@
 
             if (audit.length === 0) {
                 logContainer.innerHTML = '<p class="text-slate-500 text-center py-4">Zatím žádné záznamy v bezpečnostním logu.</p>';
+            } else {
+                audit.forEach((item, index) => {
+                    const row = document.createElement('div');
+                    row.className = "border-b border-slate-900 pb-3 mb-3 space-y-1 bg-slate-950/50 p-3 rounded-lg border border-slate-800/60";
+                    row.innerHTML = `
+                        <div class="flex justify-between text-amber-400 font-semibold">
+                            <span>#${index+1} [${item.action}] uživatel: ${item.user || 'N/A'}</span>
+                            <span class="text-slate-500 font-normal">${item.time}</span>
+                        </div>
+                        <div class="text-slate-300">Veřejná IP: <span class="text-indigo-400">${item.publicIp || 'Neznámá'}</span> | Lokální IP: <span class="text-indigo-300">${item.privateIp || 'Neznámá'}</span></div>
+                        <div class="text-slate-400 text-[11px] truncate">Zařízení/Wi-Fi: ${item.device || 'Neznámé zařízení'}</div>
+                        ${item.user && item.user !== 'admin' && !item.user.startsWith('admin') ? `
+                            <div class="mt-2 flex gap-2">
+                                <button onclick="kickUserDirect('${item.user.split(' ')[0]}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2 py-1 rounded text-[10px]">Vyhodit (Kick)</button>
+                                <button onclick="promptBanUser('${item.user.split(' ')[0]}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2 py-1 rounded text-[10px]">Dát Ban</button>
+                            </div>
+                        ` : ''}
+                    `;
+                    logContainer.appendChild(row);
+                });
+            }
+
+            renderAdminEmojis();
+        }
+
+        function handleAdminUploadEmoji(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(uploadEvent) {
+                const base64 = uploadEvent.target.result;
+                const emojis = getStorageEmojis();
+                emojis.push(base64);
+                saveStorageEmojis(emojis);
+                renderAdminEmojis();
+                alert("Emotikon byl úspěšně nahrán!");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderAdminEmojis() {
+            const listContainer = document.getElementById('adminEmojiList');
+            const emojis = getStorageEmojis();
+            listContainer.innerHTML = '';
+
+            if (emojis.length === 0) {
+                listContainer.innerHTML = '<span class="text-xs text-slate-500">Žádné nahrané emotikony.</span>';
                 return;
             }
 
-            audit.forEach((item, index) => {
-                const row = document.createElement('div');
-                row.className = "border-b border-slate-900 pb-3 mb-3 space-y-1 bg-slate-950/50 p-3 rounded-lg border border-slate-800/60";
-                row.innerHTML = `
-                    <div class="flex justify-between text-amber-400 font-semibold">
-                        <span>#${index+1} [${item.action}] uživatel: ${item.user || 'N/A'}</span>
-                        <span class="text-slate-500 font-normal">${item.time}</span>
-                    </div>
-                    <div class="text-slate-300">Veřejná IP: <span class="text-indigo-400">${item.publicIp || 'Neznámá'}</span> | Lokální IP: <span class="text-indigo-300">${item.privateIp || 'Neznámá'}</span></div>
-                    <div class="text-slate-400 text-[11px] truncate">Zařízení/Wi-Fi: ${item.device || 'Neznámé zařízení'}</div>
-                    ${item.user && item.user !== 'admin' && !item.user.startsWith('admin') ? `
-                        <div class="mt-2 flex gap-2">
-                            <button onclick="kickUserDirect('${item.user.split(' ')[0]}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2 py-1 rounded text-[10px]">Vyhodit (Kick)</button>
-                            <button onclick="promptBanUser('${item.user.split(' ')[0]}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2 py-1 rounded text-[10px]">Dát Ban</button>
-                        </div>
-                    ` : ''}
+            emojis.forEach((imgSrc, idx) => {
+                const wrap = document.createElement('div');
+                wrap.className = "relative group bg-slate-900 p-1 rounded-lg border border-slate-800";
+                wrap.innerHTML = `
+                    <img src="${imgSrc}" class="w-10 h-10 object-contain">
+                    <button onclick="deleteAdminEmoji(${idx})" class="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">&times;</button>
                 `;
-                logContainer.appendChild(row);
+                listContainer.appendChild(wrap);
             });
+        }
+
+        function deleteAdminEmoji(index) {
+            const emojis = getStorageEmojis();
+            emojis.splice(index, 1);
+            saveStorageEmojis(emojis);
+            renderAdminEmojis();
+        }
+
+        function toggleEmojiPicker() {
+            const popup = document.getElementById('emojiPickerPopup');
+            const content = document.getElementById('emojiPickerContent');
+            popup.classList.toggle('hidden');
+
+            if (!popup.classList.contains('hidden')) {
+                const emojis = getStorageEmojis();
+                content.innerHTML = '';
+
+                if (emojis.length === 0) {
+                    content.innerHTML = '<span class="text-xs text-slate-400 p-1">sorryyyy na emotikonech jeste makam</span>';
+                    return;
+                }
+
+                emojis.forEach(imgSrc => {
+                    const img = document.createElement('img');
+                    img.src = imgSrc;
+                    img.className = "w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform bg-slate-950 p-1 rounded border border-slate-800";
+                    img.onclick = () => {
+                        insertEmojiIntoMessage(imgSrc);
+                        popup.classList.add('hidden');
+                    };
+                    content.appendChild(img);
+                });
+            }
+        }
+
+        function insertEmojiIntoMessage(imgSrc) {
+            const input = document.getElementById('messageInput');
+            input.value += ` [meme:${imgSrc}] `;
+            input.focus();
+        }
+
+        function parseMessageText(text) {
+            if (!text) return '';
+            return text.replace(/\[meme:(data:image\/[^\]]+)\]/g, '<img src="$1" class="inline-block w-6 h-6 object-contain mx-0.5 align-middle">');
         }
 
         function updateSidebarLog() {
@@ -441,7 +553,6 @@
                 saveStorageMessages(messages);
             }
 
-            // Hide admin screen and load chat UI directly
             document.getElementById('adminPageScreen').classList.add('hidden');
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('userSubtitle').innerText = `Přihlášen: admin (Admin)`;
@@ -687,9 +798,9 @@
                 contentBox.className = `max-w-md rounded-2xl px-4 py-3 text-sm shadow-sm ${msg.user === currentUser ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-slate-900 border border-slate-800 text-slate-100 rounded-bl-sm'}`;
 
                 if (msg.text) {
-                    const textP = document.createElement('p');
-                    textP.className = "whitespace-pre-wrap break-words";
-                    textP.innerText = msg.text;
+                    const textP = document.createElement('div');
+                    textP.className = "whitespace-pre-wrap break-words leading-relaxed";
+                    textP.innerHTML = parseMessageText(msg.text);
                     contentBox.appendChild(textP);
                 }
 
@@ -732,6 +843,7 @@
                 messagesList.appendChild(div);
             });
 
+            // Instagram-style auto scroll only if user is at the bottom already
             if (isUserAtBottom) {
                 scrollToBottom(false);
             }
