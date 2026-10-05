@@ -40,12 +40,9 @@
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate relative">
             <div class="text-center space-y-3">
-                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center p-3 rounded-2xl bg-slate-950/60 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform mx-auto hover:border-slate-700" title="GJW Logo">
-                    <svg viewBox="0 0 240 100" class="h-16 w-auto text-slate-100 fill-current">
-                        <path d="M50 15 C20 15 5 35 5 60 C5 82 22 92 45 92 C68 92 82 78 82 60 L82 50 L50 50 L50 58 L70 58 C68 72 55 82 42 82 C28 82 18 68 18 53 C18 36 30 22 50 22 C64 22 74 31 76 46 L94 46 C92 23 75 15 50 15 Z" />
-                        <path d="M28 35 L22 47 L36 52 L24 65 L42 54 L33 43 Z"/>
-                        <text x="105" y="74" font-family="Georgia, serif" font-size="70" font-weight="bold" letter-spacing="-2">GJ</text>
-                        <text x="190" y="74" font-family="Georgia, serif" font-size="70" font-weight="bold" letter-spacing="-2">W</text>
+                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center p-4 rounded-2xl bg-slate-950/60 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform mx-auto hover:border-slate-700" title="GJW Logo">
+                    <svg viewBox="0 0 160 80" class="h-14 w-auto text-slate-100 fill-current">
+                        <text x="10" y="65" font-family="Georgia, serif" font-size="75" font-weight="bold" letter-spacing="-3">GJW</text>
                     </svg>
                 </div>
                 <h1 class="text-2xl font-bold tracking-tight">GJW Komunitní Chat</h1>
@@ -78,8 +75,15 @@
                 <div id="loginError" class="text-rose-500 text-sm text-center hidden"></div>
             </div>
         </div>
+        
+        <!-- Bottom Left: Ideas / Complaints Email Link -->
+        <div class="fixed bottom-3 left-4 z-50">
+            <a href="mailto:anonym.gjw@proton.me" class="text-[11px] text-slate-400 hover:text-slate-200 underline transition-colors">Napady / Stiznosti</a>
+        </div>
+
+        <!-- Bottom Right: Student Project Disclaimer -->
         <div class="fixed bottom-3 right-4 z-50">
-            <span class="text-[11px] text-slate-500 font-normal">tato stránka nemá nic společného s administrativou gymnázia jiřího wolkera je to pouze studentský projekt</span>
+            <span class="text-[11px] text-slate-500 font-normal">tato stranka nikoho nezastupuje je to pouze studentsky projekt</span>
         </div>
     </div>
 
@@ -88,14 +92,14 @@
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col message-animate">
             <div id="adminAuthBox" class="space-y-6">
                 <div class="text-center space-y-2">
-                    <h1 class="text-2xl font-bold tracking-tight">Gigantická administrátorská control room</h1>
-                    <p class="text-sm text-slate-400">Zabezpečený přístup pro správu sítě, banů a připojení</p>
+                    <h1 class="text-2xl font-bold tracking-tight">Giganticka administratorska control room</h1>
+                    <p class="text-sm text-slate-400">Pro vstup je nutne se vzdy bezpecne prihlasit heslem</p>
                 </div>
                 <div class="space-y-4 max-w-md mx-auto">
-                    <input type="password" id="adminPasswordInput" placeholder="Zadejte administrátorské heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
+                    <input type="password" id="adminPasswordInput" placeholder="Zadejte administratorske heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
                     
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Režim vstupu do chatu</label>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Rezim vstupu do chatu</label>
                         <select id="adminModeSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
                             <option value="observed">Pozorovaně (s duhovým nickem a oznámením v chatu)</option>
                             <option value="hidden">Nepozorovaně / Ghost mode (zcela skrytý v roomce)</option>
@@ -116,7 +120,7 @@
                     <div class="flex items-center gap-3">
                         <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors">Vymazat historii</button>
                         <button onclick="openChatFromAdmin()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3.5 py-1.5 rounded-lg transition-colors">Přejít do chatu s bočním panelem</button>
-                        <a href="./" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3.5 py-1.5 rounded-lg transition-colors">Domů</a>
+                        <a href="./" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3.5 py-1.5 rounded-lg transition-colors">Odhlásit</a>
                     </div>
                 </div>
                 <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů (Veřejná IP, Lokální IP, Wi-Fi hinty, Zařízení, Kick/Ban)</div>
@@ -128,12 +132,9 @@
     <!-- Main App Header -->
     <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center z-10 shrink-0">
         <div class="flex items-center space-x-3">
-            <div id="headerLogoTrigger" onclick="handleLogoClick()" class="p-1.5 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-700" title="GJW Logo">
-                <svg viewBox="0 0 240 100" class="h-7 w-auto text-slate-100 fill-current">
-                    <path d="M50 15 C20 15 5 35 5 60 C5 82 22 92 45 92 C68 92 82 78 82 60 L82 50 L50 50 L50 58 L70 58 C68 72 55 82 42 82 C28 82 18 68 18 53 C18 36 30 22 50 22 C64 22 74 31 76 46 L94 46 C92 23 75 15 50 15 Z" />
-                    <path d="M28 35 L22 47 L36 52 L24 65 L42 54 L33 43 Z"/>
-                    <text x="105" y="74" font-family="Georgia, serif" font-size="70" font-weight="bold" letter-spacing="-2">GJ</text>
-                    <text x="190" y="74" font-family="Georgia, serif" font-size="70" font-weight="bold" letter-spacing="-2">W</text>
+            <div id="headerLogoTrigger" onclick="handleLogoClick()" class="p-1 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-700" title="GJW Logo">
+                <svg viewBox="0 0 160 80" class="h-6 w-auto text-slate-100 fill-current">
+                    <text x="10" y="65" font-family="Georgia, serif" font-size="75" font-weight="bold" letter-spacing="-3">GJW</text>
                 </svg>
             </div>
             <div>
@@ -181,10 +182,6 @@
                         <svg class="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                     </button>
                 </div>
-                <!-- Student Project Disclaimer in Grey -->
-                <div class="flex justify-end max-w-3xl mx-auto mt-2 px-1">
-                    <span class="text-[11px] text-slate-500 font-normal">tato stránka nemá nic společného s administrativou gymnázia jiřího wolkera je to pouze studentský projekt</span>
-                </div>
             </footer>
         </div>
 
@@ -192,7 +189,7 @@
         <div id="adminSidebar" class="hidden w-80 bg-slate-900 border-l border-slate-800 p-4 overflow-y-auto flex-col space-y-4 shrink-0">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                 <h3 class="font-bold text-sm text-amber-400">Admin Control Sidebar</h3>
-                <button onclick="openAdminModalFromChat()" class="text-xs bg-amber-600/20 text-amber-400 px-2 py-1 rounded hover:bg-amber-600/30">Otevřít Control Room</button>
+                <button onclick="openAdminModalFromChat()" class="text-xs bg-amber-600/20 text-amber-400 px-2 py-1 rounded hover:bg-amber-600/30">Control Room</button>
             </div>
             <div class="text-[11px] text-slate-400">Živý přehled připojení, IP, Wi-Fi a správa banů:</div>
             <div id="sidebarLogContainer" class="space-y-2 text-xs font-mono flex-1"></div>
@@ -304,33 +301,9 @@
                 return;
             }
 
-            const savedUser = localStorage.getItem('gjw_current_user');
-            const savedClass = localStorage.getItem('gjw_current_class');
-            const savedAdmin = localStorage.getItem('gjw_is_admin');
-
-            if (savedUser) {
-                if (savedUser !== 'admin' && checkUserBanned(savedUser)) {
-                    alert("Tento účet má aktivní ban!");
-                    handleLogout();
-                    return;
-                }
-                currentUser = savedUser;
-                isAdmin = (savedAdmin === 'true');
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser} ${savedClass ? '('+savedClass+')' : ''}`;
-                
-                if (isAdmin) {
-                    document.getElementById('adminHeaderBtn').classList.remove('hidden');
-                    document.getElementById('adminSidebar').classList.remove('hidden');
-                    document.getElementById('adminSidebar').classList.add('flex');
-                    updateSidebarLog();
-                }
-
-                loadMessages();
-                scrollToBottom(false);
-            } else {
-                document.getElementById('loginScreen').classList.remove('hidden');
-            }
+            // Forced fresh login on every session/reload for security
+            sessionStorage.removeItem('gjw_active_session');
+            document.getElementById('loginScreen').classList.remove('hidden');
         });
 
         function handleLogoClick() {
@@ -432,8 +405,7 @@
             currentUser = 'admin';
             isAdmin = true;
 
-            localStorage.setItem('gjw_current_user', 'admin');
-            localStorage.setItem('gjw_is_admin', 'true');
+            sessionStorage.setItem('gjw_active_session', 'true');
 
             if (mode === 'observed') {
                 const messages = getStorageMessages();
@@ -452,7 +424,14 @@
                 saveStorageMessages(messages);
             }
 
-            window.location.href = './';
+            document.getElementById('adminPageScreen').classList.add('hidden');
+            document.getElementById('userSubtitle').innerText = `Přihlášen: admin (Admin)`;
+            document.getElementById('adminHeaderBtn').classList.remove('hidden');
+            document.getElementById('adminSidebar').classList.remove('hidden');
+            document.getElementById('adminSidebar').classList.add('flex');
+            updateSidebarLog();
+            loadMessages();
+            scrollToBottom(false);
         }
 
         function kickUserDirect(username) {
@@ -523,22 +502,9 @@
                 return;
             }
 
-            const users = getStorageUsers();
-            if (users.includes(nickInput.toLowerCase())) {
-                errDiv.innerText = "Tato přezdívka je již obsazená!";
-                errDiv.classList.remove('hidden');
-                return;
-            }
-
-            users.push(nickInput.toLowerCase());
-            saveStorageUsers(users);
-
             currentUser = nickInput;
             isAdmin = false;
-
-            localStorage.setItem('gjw_current_user', currentUser);
-            localStorage.setItem('gjw_current_class', classSelect);
-            localStorage.setItem('gjw_is_admin', 'false');
+            sessionStorage.setItem('gjw_active_session', 'true');
 
             const audit = getStorageAuditLog();
             audit.push({
@@ -576,9 +542,7 @@
         }
 
         function handleLogout() {
-            localStorage.removeItem('gjw_current_user');
-            localStorage.removeItem('gjw_current_class');
-            localStorage.removeItem('gjw_is_admin');
+            sessionStorage.removeItem('gjw_active_session');
             sessionStorage.removeItem('gjw_admin_logged');
             location.href = './';
         }
@@ -622,13 +586,12 @@
             const messages = getStorageMessages();
             const audit = getStorageAuditLog();
             const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-            const userClass = localStorage.getItem('gjw_current_class') || '';
             
             const newMsg = {
                 id: msgId,
                 user: currentUser,
                 isAdmin: isAdmin,
-                class: userClass,
+                class: '',
                 text: text,
                 image: selectedImageBase64,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -642,7 +605,7 @@
             audit.push({
                 action: 'SENT_MESSAGE',
                 msgId: msgId,
-                user: currentUser + (userClass ? ' ('+userClass+')' : ''),
+                user: currentUser,
                 isAdmin: isAdmin,
                 text: text,
                 publicIp: clientPublicIp,
