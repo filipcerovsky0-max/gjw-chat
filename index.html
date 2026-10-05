@@ -38,9 +38,10 @@
 
     <!-- Regular User Login Screen -->
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate relative">
             <div class="text-center space-y-2">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-bold shadow-lg shadow-indigo-500/30 mb-2">GJW</div>
+                <!-- Discreet Admin Trigger: 3 clicks on GJW logo -->
+                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-bold shadow-lg shadow-indigo-500/30 mb-2 cursor-pointer select-none active:scale-95 transition-transform" title="GJW">GJW</div>
                 <h1 class="text-2xl font-bold tracking-tight">GJW Komunitní Chat</h1>
                 <p class="text-sm text-slate-400">Vstup do studentské konverzace</p>
             </div>
@@ -71,24 +72,25 @@
                 <div id="loginError" class="text-rose-500 text-sm text-center hidden"></div>
             </div>
         </div>
+        <!-- Grey disclaimer on homepage bottom right -->
+        <div class="fixed bottom-3 right-4 z-50">
+            <span class="text-[11px] text-slate-500 font-normal">tato stránka nemá nic společného s administrativou gymnázia jiřího wolkera je to pouze studentský projekt</span>
+        </div>
     </div>
 
-    <!-- Standalone Discreet Admin Login / Dashboard Screen (Activated via /admin URL) -->
-    <div id="adminScreen" class="fixed inset-0 bg-slate-950 z-50 hidden flex items-center justify-center p-4">
+    <!-- Hidden Admin Password Modal (Triggered by clicking GJW logo 3 times) -->
+    <div id="adminModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-60 hidden items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col message-animate">
             <div id="adminAuthBox" class="space-y-6">
-                <div class="text-center space-y-2">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-600 text-white text-2xl font-bold shadow-lg shadow-amber-500/30 mb-2">🔒</div>
-                    <h1 class="text-2xl font-bold tracking-tight">Administrace systému</h1>
-                    <p class="text-sm text-slate-400">Zabezpečený přístup k logům chatu</p>
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center gap-2">🔒 Administrace systému</h2>
+                    <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white text-xl px-2">&times;</button>
                 </div>
+                <p class="text-sm text-slate-400">Zabezpečený přístup k logům chatu</p>
                 <div class="space-y-4">
                     <input type="password" id="adminPasswordInput" placeholder="Zadejte administrátorské heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
                     <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit a vstoupit</button>
                     <div id="adminLoginError" class="text-rose-500 text-sm text-center hidden">Nesprávné heslo!</div>
-                    <div class="text-center">
-                        <a href="./" class="text-xs text-slate-500 hover:text-slate-300 underline">← Zpět na hlavní chat</a>
-                    </div>
                 </div>
             </div>
 
@@ -97,7 +99,7 @@
                     <h2 class="text-xl font-bold flex items-center gap-2">🛡️ Admin Panel & Trvalý Log</h2>
                     <div class="flex items-center gap-3">
                         <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors">Vymazat historii</button>
-                        <a href="./" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors">Zpět na chat</a>
+                        <button onclick="closeAdminModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors">Zavřít</button>
                     </div>
                 </div>
                 <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Kompletní auditní záznam konverzace (nemodifikovatelné)</div>
@@ -163,6 +165,8 @@
         let isAdmin = false;
         let selectedImageBase64 = null;
         let isUserAtBottom = true;
+        let logoClicks = 0;
+        let logoClickTimer = null;
 
         const chatContainer = document.getElementById('chatContainer');
         const messagesList = document.getElementById('messagesList');
@@ -210,18 +214,6 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            const path = window.location.pathname;
-            if (path.includes('admin')) {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('adminScreen').classList.remove('hidden');
-                document.getElementById('adminScreen').classList.add('flex');
-                
-                if (sessionStorage.getItem('gjw_admin_logged') === 'true') {
-                    showAdminDashboard();
-                }
-                return;
-            }
-
             const savedUser = localStorage.getItem('gjw_current_user');
             const savedClass = localStorage.getItem('gjw_current_class');
             const savedAdmin = localStorage.getItem('gjw_is_admin');
@@ -237,6 +229,33 @@
                 document.getElementById('loginScreen').classList.remove('hidden');
             }
         });
+
+        function handleLogoClick() {
+            logoClicks++;
+            clearTimeout(logoClickTimer);
+            if (logoClicks >= 3) {
+                logoClicks = 0;
+                openAdminModal();
+            } else {
+                logoClickTimer = setTimeout(() => { logoClicks = 0; }, 600);
+            }
+        }
+
+        function openAdminModal() {
+            document.getElementById('adminModal').classList.remove('hidden');
+            document.getElementById('adminModal').classList.add('flex');
+            if (sessionStorage.getItem('gjw_admin_logged') === 'true') {
+                showAdminDashboard();
+            } else {
+                document.getElementById('adminAuthBox').classList.remove('hidden');
+                document.getElementById('adminDashboardBox').classList.add('hidden');
+            }
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.add('hidden');
+            document.getElementById('adminModal').classList.remove('flex');
+        }
 
         function verifyAdminPassword() {
             const pass = document.getElementById('adminPasswordInput').value;
