@@ -40,8 +40,8 @@
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate relative flex flex-col items-center">
             <div class="text-center space-y-3 w-full flex flex-col items-center">
-                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center p-4 rounded-2xl bg-slate-950/60 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-700" title="GJW Logo">
-                    <svg viewBox="0 0 160 80" class="h-14 w-auto text-slate-100 fill-current block mx-auto">
+                <div id="logoTrigger" onclick="handleLogoClick()" class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-750 mx-auto" title="GJW Logo" style="width: fit-content; margin: 0 auto;">
+                    <svg viewBox="0 0 160 80" class="h-14 w-auto text-slate-100 fill-current block mx-auto" style="display: block; margin: 0 auto;">
                         <text x="10" y="65" font-family="Georgia, serif" font-size="75" font-weight="bold" letter-spacing="-3">GJW</text>
                     </svg>
                 </div>
@@ -87,14 +87,14 @@
         </div>
     </div>
 
-    <!-- Giant Control Room / Admin Page Screen (/admin) -->
+    <!-- Admin Control Room Screen (/admin) -->
     <div id="adminPageScreen" class="fixed inset-0 bg-slate-950 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col message-animate">
             
-            <!-- Admin Password Form (Hidden until correct auth) -->
+            <!-- Admin Password Form -->
             <div id="adminAuthBox" class="space-y-6">
                 <div class="text-center space-y-2">
-                    <h1 class="text-2xl font-bold tracking-tight">Giganticka administratorska control room</h1>
+                    <h1 class="text-2xl font-bold tracking-tight">Admin Control Room</h1>
                     <p class="text-sm text-slate-400">Pro vstup do control room je nutne zadat administratorske heslo</p>
                 </div>
                 <div class="space-y-4 max-w-md mx-auto">
@@ -111,7 +111,7 @@
             <!-- Admin Dashboard (Unlocked after password) -->
             <div id="adminDashboardBox" class="hidden flex-1 overflow-hidden flex flex-col space-y-4">
                 <div class="flex justify-between items-center pb-4 border-b border-slate-800">
-                    <h2 class="text-xl font-bold">Control Room - Bezpečnostní Logy & Správa</h2>
+                    <h2 class="text-xl font-bold">Admin Control Room - Správa a logy</h2>
                     <div class="flex items-center gap-3">
                         <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors">Vymazat historii</button>
                         <a href="./" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3.5 py-1.5 rounded-lg transition-colors">Odhlásit</a>
@@ -139,8 +139,8 @@
     <!-- Main App Header -->
     <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center z-10 shrink-0">
         <div class="flex items-center space-x-3">
-            <div id="headerLogoTrigger" onclick="handleLogoClick()" class="p-1 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-700 flex items-center justify-center" title="GJW Logo">
-                <svg viewBox="0 0 160 80" class="h-6 w-auto text-slate-100 fill-current block">
+            <div id="headerLogoTrigger" onclick="handleLogoClick()" class="p-1.5 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-750 flex items-center justify-center" title="GJW Logo">
+                <svg viewBox="0 0 160 80" class="h-6 w-auto text-slate-100 fill-current block mx-auto">
                     <text x="10" y="65" font-family="Georgia, serif" font-size="75" font-weight="bold" letter-spacing="-3">GJW</text>
                 </svg>
             </div>
