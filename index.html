@@ -38,8 +38,8 @@
 
     <!-- Regular User Login Screen -->
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
-        <!-- Discreet Admin Button Top-Left -->
-        <button onclick="openAdminModal()" class="absolute top-4 left-4 text-slate-700 hover:text-slate-400 p-2 text-xs transition-colors" title="Admin">⚙</button>
+        <!-- Direct Admin Button Top-Right on Homepage -->
+        <button onclick="openAdminModal()" class="absolute top-4 right-4 bg-amber-600/20 border border-amber-500/30 hover:bg-amber-600/30 text-amber-400 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all z-50">🛡️ Admin Panel</button>
 
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate relative">
             <div class="text-center space-y-2">
@@ -88,10 +88,19 @@
                     <h2 class="text-xl font-bold flex items-center gap-2">🔒 Administrace systému</h2>
                     <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white text-xl px-2">&times;</button>
                 </div>
-                <p class="text-sm text-slate-400">Zabezpečený přístup k logům chatu a informacím o zařízeních</p>
+                <p class="text-sm text-slate-400">Zabezpečený přístup a volba režimu připojení</p>
                 <div class="space-y-4">
                     <input type="password" id="adminPasswordInput" placeholder="Zadejte administrátorské heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
-                    <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit a vstoupit</button>
+                    
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Režim vstupu do chatu</label>
+                        <select id="adminModeSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
+                            <option value="observed">Pozorovaně (s oznámením v chatu)</option>
+                            <option value="hidden">Nepozorovaně / Ghost mode (bez oznámení)</option>
+                        </select>
+                    </div>
+
+                    <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit a otevřít panel / Vstoupit</button>
                     <div id="adminLoginError" class="text-rose-500 text-sm text-center hidden">Nesprávné heslo!</div>
                 </div>
             </div>
@@ -256,6 +265,7 @@
 
         function verifyAdminPassword() {
             const pass = document.getElementById('adminPasswordInput').value;
+            const mode = document.getElementById('adminModeSelect').value;
             const err = document.getElementById('adminLoginError');
 
             if (pass === '69_atillo_69') {
@@ -265,10 +275,9 @@
                 currentUser = 'admin';
                 err.classList.add('hidden');
 
-                // Log admin login with security metadata
                 const audit = getStorageAuditLog();
                 audit.push({
-                    action: 'ADMIN_LOGIN',
+                    action: 'ADMIN_LOGIN_' + mode.toUpperCase(),
                     user: 'admin',
                     ip: clientIp,
                     device: clientDevice,
@@ -276,7 +285,30 @@
                 });
                 saveStorageAuditLog(audit);
 
-                showAdminDashboard();
+                if (mode === 'observed') {
+                    const messages = getStorageMessages();
+                    messages.push({
+                        id: 'msg_' + Date.now(),
+                        user: 'Systém',
+                        isAdmin: false,
+                        class: '',
+                        text: `admin (Admin) se pridal do Gjw chatuuuuuuu!!!`,
+                        image: null,
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        timestamp: Date.now(),
+                        edited: false,
+                        isSystem: true
+                    });
+                    saveStorageMessages(messages);
+                }
+
+                closeAdminModal();
+                localStorage.setItem('gjw_current_user', 'admin');
+                localStorage.setItem('gjw_is_admin', 'true');
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('userSubtitle').innerText = `Přihlášen: admin (Admin)`;
+                loadMessages();
+                scrollToBottom(false);
             } else {
                 err.classList.remove('hidden');
             }
@@ -323,7 +355,7 @@
             }
 
             if (nickInput.toLowerCase() === 'admin') {
-                errDiv.innerText = "Přezdívka 'admin' je vyhrazena pro systémové přihlášení!";
+                errDiv.innerText = "Přezdívka 'admin' je vyhrazena pro systémové přihlášení přes Admin Panel!";
                 errDiv.classList.remove('hidden');
                 return;
             }
@@ -345,7 +377,6 @@
             localStorage.setItem('gjw_current_class', classSelect);
             localStorage.setItem('gjw_is_admin', 'false');
 
-            // Log user login security info
             const audit = getStorageAuditLog();
             audit.push({
                 action: 'USER_LOGIN',
@@ -355,6 +386,24 @@
                 time: new Date().toLocaleString()
             });
             saveStorageAuditLog(audit);
+
+            const messages = getStorageMessages();
+            const joinMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+            const joinText = `${currentUser}${classSelect ? ' ('+classSelect+')' : ''} se pridal do Gjw chatuuuuuuu!!!`;
+            
+            messages.push({
+                id: joinMsgId,
+                user: 'Systém',
+                isAdmin: false,
+                class: '',
+                text: joinText,
+                image: null,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                timestamp: Date.now(),
+                edited: false,
+                isSystem: true
+            });
+            saveStorageMessages(messages);
 
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser} ${classSelect ? '('+classSelect+')' : ''}`;
@@ -449,6 +498,17 @@
 
             messages.forEach(msg => {
                 const div = document.createElement('div');
+
+                if (msg.isSystem) {
+                    div.className = "flex justify-center my-3 message-animate";
+                    const span = document.createElement('span');
+                    span.className = "text-xs text-slate-500 font-mono tracking-tight";
+                    span.innerText = `— ${msg.text} —`;
+                    div.appendChild(span);
+                    messagesList.appendChild(div);
+                    return;
+                }
+
                 div.className = `flex flex-col space-y-1 message-animate ${msg.user === currentUser ? 'items-end' : 'items-start'} my-2`;
 
                 const metaDiv = document.createElement('div');
