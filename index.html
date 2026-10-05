@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="cs" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GJW Chat - Gymnázium Jiřího Wolkera</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @keyframes rainbow {
+            0% { color: #f87171; }
+            20% { color: #fbbf24; }
+            40% { color: #34d399; }
+            60% { color: #60a5fa; }
+            80% { color: #a78bfa; }
+            100% { color: #f87171; }
+        }
+        .rainbow-text {
+            animation: rainbow 4s infinite linear;
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-900 text-slate-100 flex flex-col antialiased">
+
+    <div id="app" class="flex-1 flex flex-col h-full overflow-hidden">
+        <!-- Dynamic content will be injected here -->
+    </div>
+
+    <!-- Custom Modal Component (No native alerts/confirms) -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
+            <h3 id="modal-title" class="text-lg font-bold text-white mb-2">Upozornění</h3>
+            <p id="modal-message" class="text-slate-300 text-sm mb-6"></p>
+            <button onclick="closeModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-xl transition-all">Rozumím</button>
+        </div>
+    </div>
+
+    <!-- Edit Message Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-3">Upravit zprávu</h3>
+            <textarea id="edit-message-input" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-indigo-500 mb-4"></textarea>
+            <div class="flex space-x-2">
+                <button onclick="closeEditModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium py-2.5 rounded-xl transition-all text-sm">Zrušit</button>
+                <button onclick="saveEditedMessage()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-xl transition-all text-sm">Uložit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'gjw-chat-pro-app';
+        let firebaseConfig = {};
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+                apiKey: "AIzaSyDummyKeyForVercelDemo-ReplaceIfLive",
+                authDomain: "gjw-chat.firebaseapp.com",
+                projectId: "gjw-chat",
+                storageBucket: "gjw-chat.appspot.com",
+                messagingSenderId: "123456789",
+                appId: "1:123456789:web:abcdef"
+            };
+        } catch(e) {
+            firebaseConfig = {};
+        }
+
+        let db = null;
+        let auth = null;
+        let messagesUnsubscribe = null;
+        let auditUnsubscribe = null;
+
+        // Global Application State
+        window.appState = {
+            view: window.location.hash === '#/admin' ? 'admin' : (localStorage.getItem('gjw_user') ? 'chat' : 'login'),
+            user: JSON.parse(localStorage.getItem('gjw_user') || 'null'),
+            isAdminLoggedIn: sessionStorage.getItem('gjw_admin') === 'true',
+            messages: [],
+            auditLogs: [],
+            selectedImageBase64: null,
+            editingMessageId: null
+        };
+
+        // Initialize Firebase safely
+        async function initFirebase() {
+            try {
+                if (Object.keys(firebaseConfig).length > 0 && firebaseConfig.apiKey) {
+                    const app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    startLiveChatSync();
+                    startAuditLogSync();
+                } else {
+                    console.warn("Firebase config not found. Running in local mock mode.");
+                    window.appState.messages = [
+                        { id: '1', nickname: 'Administrator', userClass: '08.A', text: 'Vítejte v oficiálním GJW chatu!', imageUrl: '', timestamp: new Date(), isAdmin: false }
+                    ];
+                    renderApp();
+                }
+            } catch(err) {
+                console.error("Firebase init error:", err);
+            }
+        }
+
+        function startLiveChatSync() {
+            if (!db) return;
+            const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+            const q = query(messagesRef);
+
+            messagesUnsubscribe = onSnapshot(q, (snapshot) => {
+                const msgs = [];
+                snapshot.forEach((docSnap) => {
+                    msgs.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                msgs.sort((a, b) => {
+                    const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp || 0);
+                    const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp || 0);
+                    return timeA - timeB;
+                });
+                window.appState.messages = msgs;
+                renderApp();
+            }, (error) => {
+                console.error("Firestore sync error:", error);
+            });
+        }
+
+        function startAuditLogSync() {
+            if (!db) return;
+            const auditRef = collection(db, 'artifacts', appId, 'public', 'data', 'audit_logs');
+            const q = query(auditRef);
+
+            auditUnsubscribe = onSnapshot(q, (snapshot) => {
+                const logs = [];
+                snapshot.forEach((docSnap) => {
+                    logs.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                logs.sort((a, b) => {
+                    const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp || 0);
+                    const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp || 0);
+                    return timeB - timeA; // Newest first for admin logs
+                });
+                window.appState.auditLogs = logs;
+                if (window.appState.view === 'admin') renderApp();
+            }, (error) => {
+                console.error("Firestore audit log error:", error);
+            });
+        }
+
+        async function logActionToAudit(actionType, messageDetails) {
+            if (!db) return;
+            try {
+                const auditRef = collection(db, 'artifacts', appId, 'public', 'data', 'audit_logs');
+                await addDoc(auditRef, {
+                    action: actionType, // 'CREATE', 'UPDATE', 'DELETE'
+                    details: messageDetails,
+                    timestamp: serverTimestamp()
+                });
+            } catch(e) {
+                console.error("Failed to log audit action:", e);
+            }
+        }
+
+        window.renderApp = function() {
+            const appEl = document.getElementById('app');
+            const state = window.appState;
+
+            if (window.location.hash === '#/admin' || state.view === 'admin') {
+                appEl.innerHTML = renderAdminView();
+                return;
+            }
+
+            if (!state.user || state.view === 'login') {
+                appEl.innerHTML = renderLoginView();
+                return;
+            }
+
+            appEl.innerHTML = renderChatView();
+            scrollToBottom();
+        };
+
+        function renderLoginView() {
+            return `
+                <div class="flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
+                    <div class="bg-slate-800/80 backdrop-blur-md border border-slate-700/80 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+                        <div class="text-center mb-8">
+                            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-black mb-4 shadow-lg shadow-indigo-500/30">
+                                GJW
+                            </div>
+                            <h1 class="text-2xl font-bold text-white tracking-tight">GJW Komunitní Chat</h1>
+                            <p class="text-slate-400 text-sm mt-1">Gymnázium Jiřího Wolkera, Prostějov</p>
+                        </div>
+                        <form onsubmit="handleLogin(event)" class="space-y-5">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Tvá přezdívka</label>
+                                <input type="text" id="login-nickname" required placeholder="např. PepaNovak" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Třída</label>
+                                <select id="login-class" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-all font-medium">
+                                    <option value="" disabled selected>Vyber svou třídu...</option>
+                                    <option value="01.A">01.A</option><option value="01.B">01.B</option>
+                                    <option value="02.A">02.A</option><option value="02.B">02.B</option>
+                                    <option value="03.A">03.A</option><option value="03.B">03.B</option>
+                                    <option value="04.A">04.A</option><option value="04.B">04.B</option>
+                                    <option value="05.A">05.A</option><option value="05.B">05.B</option>
+                                    <option value="06.A">06.A</option><option value="06.B">06.B</option>
+                                    <option value="07.A">07.A</option><option value="07.B">07.B</option>
+                                    <option value="08.A">08.A</option><option value="08.B">08.B</option>
+                                    <option value="1.A">1.A</option><option value="1.B">1.B</option>
+                                    <option value="2.A">2.A</option><option value="2.B">2.B</option>
+                                    <option value="3.A">3.A</option><option value="3.B">3.B</option>
+                                    <option value="4.A">4.A</option><option value="4.B">4.B</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
+                                <span>Vstoupit do chatu</span>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </button>
+                        </form>
+                        <div class="mt-6 text-center">
+                            <a href="#/admin" onclick="goToAdminRoute()" class="text-xs text-slate-500 hover:text-indigo-400 transition-colors">Administrace (/admin)</a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderChatView() {
+            const user = window.appState.user;
+            const messages = window.appState.messages;
+
+            return `
+                <div class="flex-1 flex flex-col h-full bg-slate-900 overflow-hidden">
+                    <!-- Top Header -->
+                    <header class="bg-slate-800/90 backdrop-blur-md border-b border-slate-700 px-4 py-3 flex items-center justify-between shrink-0">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white shadow-md">
+                                GJW
+                            </div>
+                            <div>
+                                <h1 class="font-bold text-white leading-tight">GJW Hlavní Chat</h1>
+                                <p class="text-xs text-indigo-400 font-medium">Přihlášen: <span class="${user.isAdmin ? 'rainbow-text' : 'text-white'}">${escapeHtml(user.nickname)}</span> (${user.userClass})</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            ${user.isAdmin ? '<span class="text-[10px] bg-red-500/20 text-red-400 px-2 py-1 rounded-lg font-bold">ADMIN REŽIM</span>' : ''}
+                            <button onclick="logout()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-xl font-medium transition-colors">Odhlásit</button>
+                        </div>
+                    </header>
+
+                    <!-- Messages Feed Container -->
+                    <div id="chat-feed" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        ${messages.length === 0 ? `
+                            <div class="h-full flex flex-col items-center justify-center text-slate-500">
+                                <svg class="w-12 h-12 mb-2 stroke-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                                <p class="text-sm font-medium">Zatím žádné zprávy. Napiš první!</p>
+                            </div>
+                        ` : messages.map(msg => {
+                            const isMe = user && msg.nickname === user.nickname;
+                            return `
+                                <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                                    <div class="flex items-center space-x-2 mb-1 px-1">
+                                        <span class="text-xs font-semibold ${msg.isAdmin ? 'rainbow-text' : 'text-slate-300'}">${escapeHtml(msg.nickname)}</span>
+                                        <span class="text-[10px] bg-slate-800 border border-slate-700 text-indigo-300 px-1.5 py-0.5 rounded-md font-mono">${escapeHtml(msg.userClass || 'GJW')}</span>
+                                    </div>
+                                    <div class="max-w-[85%] md:max-w-[65%] rounded-2xl px-4 py-3 ${isMe ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-slate-800 text-slate-200 border border-slate-700/80 rounded-tl-none'} shadow-md relative group">
+                                        ${msg.text ? `<p class="text-sm leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(msg.text)}</p>` : ''}
+                                        ${msg.imageUrl ? `<div class="mt-2"><img src="${msg.imageUrl}" class="rounded-xl max-h-60 object-cover w-full cursor-pointer hover:opacity-95 transition-opacity" onclick="openFullImage('${msg.imageUrl}')" /></div>` : ''}
+                                        ${msg.edited ? `<span class="text-[9px] opacity-70 block text-right mt-1 italic">(upraveno)</span>` : ''}
+                                    </div>
+                                    ${isMe && !user.isAdmin ? `
+                                        <div class="flex space-x-2 mt-1 px-1 text-[11px]">
+                                            <button onclick="openEditModal('${msg.id}', \`${escapeHtml(msg.text || '')}\`)" class="text-slate-400 hover:text-indigo-400 transition-colors">Upravit</button>
+                                            <span class="text-slate-600">•</span>
+                                            <button onclick="deleteMyMessage('${msg.id}')" class="text-slate-400 hover:text-red-400 transition-colors">Smazat</button>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <!-- Image Preview Area -->
+                    <div id="image-preview-container" class="hidden px-4 py-2 bg-slate-800/80 border-t border-slate-700 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <img id="preview-thumb" src="" class="w-12 h-12 object-cover rounded-lg border border-slate-600">
+                            <span class="text-xs text-slate-300 font-medium">Obrázek připraven k odeslání</span>
+                        </div>
+                        <button onclick="clearImagePreview()" class="text-slate-400 hover:text-red-400 p-1 text-xs font-bold">Zrušit</button>
+                    </div>
+
+                    <!-- Input Bar -->
+                    <form onsubmit="handleSendMessage(event)" class="bg-slate-800 border-t border-slate-700 p-3 flex items-center space-x-2 shrink-0">
+                        <label class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-300 p-3 rounded-xl transition-colors flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <input type="file" accept="image/*" onchange="handleImageSelected(event)" class="hidden">
+                        </label>
+                        <input type="text" id="chat-input" placeholder="Napiš zprávu..." autocomplete="off" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all text-sm font-medium">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white p-3 rounded-xl transition-all shadow-md shadow-indigo-600/30 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        </button>
+                    </form>
+                </div>
+            `;
+        }
+
+        function renderAdminView() {
+            const state = window.appState;
+            if (!state.isAdminLoggedIn) {
+                return `
+                    <div class="flex-1 flex items-center justify-center p-4 bg-slate-900">
+                        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+                            <div class="text-center mb-6">
+                                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-red-600/20 text-red-400 text-xl font-bold mb-3">
+                                    🔒
+                                </div>
+                                <h1 class="text-xl font-bold text-white">GJW Admin Login</h1>
+                                <p class="text-xs text-slate-400 mt-1">Zabezpečená administrace chatu</p>
+                            </div>
+                            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Uživatelské jméno</label>
+                                    <input type="text" id="admin-user" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-all font-medium text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Heslo</label>
+                                    <input type="password" id="admin-pass" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-all font-medium text-sm">
+                                </div>
+                                <button type="submit" class="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-3 rounded-xl transition-all shadow-lg shadow-red-600/30 text-sm">Přihlásit se</button>
+                            </form>
+                            <div class="mt-6 text-center">
+                                <a href="#" onclick="goToChatRoute()" class="text-xs text-slate-400 hover:text-white transition-colors">← Zpět na chat</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const auditLogs = window.appState.auditLogs;
+            return `
+                <div class="flex-1 flex flex-col h-full bg-slate-900 overflow-hidden">
+                    <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex items-center justify-between shrink-0">
+                        <div>
+                            <h1 class="font-bold text-white text-lg">GJW Trvalý Admin Log</h1>
+                            <p class="text-xs text-red-400">Kompletní auditní historie chatu (nikdy se nemaže)</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="adminLoginAsChatAdmin()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-xs font-medium transition-colors">Vstoupit jako Admin do chatu</button>
+                            <button onclick="adminLogout()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-xl text-xs font-medium transition-colors">Odhlásit admina</button>
+                            <a href="#" onclick="goToChatRoute()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-xs font-medium transition-colors">Chat</a>
+                        </div>
+                    </header>
+                    <div class="flex-1 overflow-y-auto p-6 space-y-3">
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Záznamy aktivit (${auditLogs.length})</h2>
+                        ${auditLogs.length === 0 ? '<p class="text-sm text-slate-500">Zatím žádné záznamy v logu.</p>': ''}
+                        ${auditLogs.map(log => `
+                            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex items-start justify-between">
+                                <div class="space-y-1 pr-4">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xs font-mono uppercase px-2 py-0.5 rounded font-bold ${log.action === 'CREATE' ? 'bg-green-500/20 text-green-400' : log.action === 'UPDATE' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}">${log.action}</span>
+                                        <span class="font-semibold text-white text-sm">${escapeHtml(log.details?.nickname || 'Neznámý')}</span>
+                                        <span class="text-xs text-indigo-300 font-mono">(${escapeHtml(log.details?.userClass || 'GJW')})</span>
+                                    </div>
+                                    <p class="text-sm text-slate-300 mt-1">${escapeHtml(log.details?.text || '[Obrázek]')}</p>
+                                    <p class="text-[10px] text-slate-500 font-mono mt-1">ID zprávy: ${log.details?.messageId || 'N/A'}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.handleLogin = function(e) {
+            e.preventDefault();
+            const nickname = document.getElementById('login-nickname').value.trim();
+            const userClass = document.getElementById('login-class').value;
+
+            if (!nickname || !userClass) {
+                showModal('Chyba', 'Vyplň přezdívku a vyber třídu.');
+                return;
+            }
+
+            if (nickname.toLowerCase() === 'admin') {
+                showModal('Zakázané jméno', 'Přezdívka "admin" je vyhrazena pro administrátora. Použij přihlášení v administraci.');
+                return;
+            }
+
+            // Check if nickname is already taken in current messages
+            const nicknameTaken = window.appState.messages.some(m => m.nickname.toLowerCase() === nickname.toLowerCase());
+            if (nicknameTaken) {
+                showModal('Obsazená přezdívka', 'Tato přezdívka je již v chatu používána jiným uživatelem. Zvol prosím jinou.');
+                return;
+            }
+
+            const user = { nickname, userClass, isAdmin: false };
+            localStorage.setItem('gjw_user', JSON.stringify(user));
+            window.appState.user = user;
+            window.appState.view = 'chat';
+            renderApp();
+        };
+
+        window.adminLoginAsChatAdmin = function() {
+            const adminUser = { nickname: 'admin', userClass: 'GJW', isAdmin: true };
+            localStorage.setItem('gjw_user', JSON.stringify(adminUser));
+            window.appState.user = adminUser;
+            window.appState.view = 'chat';
+            renderApp();
+        };
+
+        window.logout = function() {
+            localStorage.removeItem('gjw_user');
+            window.appState.user = null;
+            window.appState.view = 'login';
+            renderApp();
+        };
+
+        window.handleAdminLogin = function(e) {
+            e.preventDefault();
+            const u = document.getElementById('admin-user').value.trim();
+            const p = document.getElementById('admin-pass').value.trim();
+
+            if (u === 'admin' && p === '69_atillo_69') {
+                sessionStorage.setItem('gjw_admin', 'true');
+                window.appState.isAdminLoggedIn = true;
+                renderApp();
+            } else {
+                showModal('Chyba', 'Neplatné administrátorské jméno nebo heslo!');
+            }
+        };
+
+        window.adminLogout = function() {
+            sessionStorage.removeItem('gjw_admin');
+            window.appState.isAdminLoggedIn = false;
+            renderApp();
+        };
+
+        window.goToAdminRoute = function() {
+            window.location.hash = '#/admin';
+            window.appState.view = 'admin';
+            renderApp();
+        };
+
+        window.goToChatRoute = function() {
+            window.location.hash = '#/';
+            window.appState.view = window.appState.user ? 'chat' : 'login';
+            renderApp();
+        };
+
+        window.handleImageSelected = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 800000) {
+                showModal('Příliš velký soubor', 'Zvol prosím obrázek menší než 800 KB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(uploadEvent) {
+                window.appState.selectedImageBase64 = uploadEvent.target.result;
+                document.getElementById('preview-thumb').src = uploadEvent.target.result;
+                document.getElementById('image-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.clearImagePreview = function() {
+            window.appState.selectedImageBase64 = null;
+            document.getElementById('image-preview-container').classList.add('hidden');
+        };
+
+        window.handleSendMessage = async function(e) {
+            e.preventDefault();
+            const inputEl = document.getElementById('chat-input');
+            const text = inputEl.value.trim();
+            const imageUrl = window.appState.selectedImageBase64;
+
+            if (!text && !imageUrl) return;
+
+            const user = window.appState.user;
+            const messageData = {
+                nickname: user.nickname,
+                userClass: user.userClass,
+                text: text,
+                imageUrl: imageUrl || '',
+                timestamp: serverTimestamp(),
+                edited: false,
+                isAdmin: user.isAdmin || false
+            };
+
+            inputEl.value = '';
+            window.appState.selectedImageBase64 = null;
+            const previewContainer = document.getElementById('image-preview-container');
+            if (previewContainer) previewContainer.classList.add('hidden');
+
+            if (db) {
+                try {
+                    const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+                    const docRef = await addDoc(messagesRef, messageData);
+                    await logActionToAudit('CREATE', { messageId: docRef.id, nickname: user.nickname, userClass: user.userClass, text: text });
+                } catch(err) {
+                    console.error("Error sending message:", err);
+                    showModal('Chyba', 'Zprávu se nepodařilo odeslat.');
+                }
+            } else {
+                const newId = Date.now().toString();
+                window.appState.messages.push({ id: newId, ...messageData, timestamp: new Date() });
+                renderApp();
+            }
+        };
+
+        window.openEditModal = function(msgId, currentText) {
+            window.appState.editingMessageId = msgId;
+            document.getElementById('edit-message-input').value = currentText;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        };
+
+        window.closeEditModal = function() {
+            window.appState.editingMessageId = null;
+            document.getElementById('edit-modal').classList.add('hidden');
+        };
+
+        window.saveEditedMessage = async function() {
+            const msgId = window.appState.editingMessageId;
+            const newText = document.getElementById('edit-message-input').value.trim();
+            if (!msgId) return;
+
+            closeEditModal();
+            const user = window.appState.user;
+
+            if (db) {
+                try {
+                    const msgDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'messages', msgId);
+                    await updateDoc(msgDocRef, { text: newText, edited: true });
+                    await logActionToAudit('UPDATE', { messageId: msgId, nickname: user.nickname, userClass: user.userClass, text: newText });
+                } catch(err) {
+                    console.error("Error updating message:", err);
+                    showModal('Chyba', 'Zprávu se nepodařilo upravit.');
+                }
+            } else {
+                const m = window.appState.messages.find(item => item.id === msgId);
+                if (m) { m.text = newText; m.edited = true; }
+                renderApp();
+            }
+        };
+
+        window.deleteMyMessage = async function(msgId) {
+            const user = window.appState.user;
+            if (!db) {
+                window.appState.messages = window.appState.messages.filter(m => m.id !== msgId);
+                renderApp();
+                return;
+            }
+            try {
+                const targetMsg = window.appState.messages.find(m => m.id === msgId);
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', msgId));
+                await logActionToAudit('DELETE', { messageId: msgId, nickname: user.nickname, userClass: user.userClass, text: targetMsg?.text || '[Smazaná zpráva]' });
+            } catch(err) {
+                console.error("Error deleting message:", err);
+                showModal('Chyba', 'Zprávu se nepodařilo smazat.');
+            }
+        };
+
+        window.openFullImage = function(url) {
+            const win = window.open();
+            win.document.write(`<iframe src="${url}" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+        };
+
+        window.showModal = function(title, msg) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = msg;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        };
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                const feed = document.getElementById('chat-feed');
+                if (feed) feed.scrollTop = feed.scrollHeight;
+            }, 50);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        window.addEventListener('hashchange', () => {
+            renderApp();
+        });
+
+        window.onload = function() {
+            initFirebase();
+            renderApp();
+        };
+    </script>
+</body>
+</html>
+```
