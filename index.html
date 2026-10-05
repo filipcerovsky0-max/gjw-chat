@@ -38,10 +38,12 @@
 
     <!-- Regular User Login Screen -->
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
+        <!-- Discreet Admin Button Top-Left -->
+        <button onclick="openAdminModal()" class="absolute top-4 left-4 text-slate-700 hover:text-slate-400 p-2 text-xs transition-colors" title="Admin">⚙</button>
+
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate relative">
             <div class="text-center space-y-2">
-                <!-- Discreet Admin Trigger: 3 clicks on GJW logo -->
-                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-bold shadow-lg shadow-indigo-500/30 mb-2 cursor-pointer select-none active:scale-95 transition-transform" title="GJW">GJW</div>
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-bold shadow-lg shadow-indigo-500/30 mb-2">GJW</div>
                 <h1 class="text-2xl font-bold tracking-tight">GJW Komunitní Chat</h1>
                 <p class="text-sm text-slate-400">Vstup do studentské konverzace</p>
             </div>
@@ -78,15 +80,15 @@
         </div>
     </div>
 
-    <!-- Hidden Admin Password Modal (Triggered by clicking GJW logo 3 times) -->
+    <!-- Admin Modal Panel -->
     <div id="adminModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-60 hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col message-animate">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col message-animate">
             <div id="adminAuthBox" class="space-y-6">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-bold flex items-center gap-2">🔒 Administrace systému</h2>
                     <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white text-xl px-2">&times;</button>
                 </div>
-                <p class="text-sm text-slate-400">Zabezpečený přístup k logům chatu</p>
+                <p class="text-sm text-slate-400">Zabezpečený přístup k logům chatu a informacím o zařízeních</p>
                 <div class="space-y-4">
                     <input type="password" id="adminPasswordInput" placeholder="Zadejte administrátorské heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
                     <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit a vstoupit</button>
@@ -96,13 +98,13 @@
 
             <div id="adminDashboardBox" class="hidden flex-1 overflow-hidden flex flex-col space-y-4">
                 <div class="flex justify-between items-center pb-4 border-b border-slate-800">
-                    <h2 class="text-xl font-bold flex items-center gap-2">🛡️ Admin Panel & Trvalý Log</h2>
+                    <h2 class="text-xl font-bold flex items-center gap-2">🛡️ Bezpečnostní Log & Audit (IP, Wi-Fi, Zařízení)</h2>
                     <div class="flex items-center gap-3">
                         <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors">Vymazat historii</button>
                         <button onclick="closeAdminModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors">Zavřít</button>
                     </div>
                 </div>
-                <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Kompletní auditní záznam konverzace (nemodifikovatelné)</div>
+                <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Záznamy připojení a aktivit uživatelů</div>
                 <div id="adminLogContainer" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-y-auto space-y-2 text-xs font-mono"></div>
             </div>
         </div>
@@ -165,13 +167,19 @@
         let isAdmin = false;
         let selectedImageBase64 = null;
         let isUserAtBottom = true;
-        let logoClicks = 0;
-        let logoClickTimer = null;
+        let clientIp = 'Neznámá IP';
+        let clientDevice = navigator.userAgent;
 
         const chatContainer = document.getElementById('chatContainer');
         const messagesList = document.getElementById('messagesList');
         const emptyState = document.getElementById('emptyState');
         const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+
+        // Fetch client public IP for security logging
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => { clientIp = data.ip; })
+            .catch(() => { clientIp = 'Lokální / Skrytá IP'; });
 
         function getStorageMessages() {
             try { return JSON.parse(localStorage.getItem('gjw_chat_messages') || '[]'); } catch(e) { return []; }
@@ -230,17 +238,6 @@
             }
         });
 
-        function handleLogoClick() {
-            logoClicks++;
-            clearTimeout(logoClickTimer);
-            if (logoClicks >= 3) {
-                logoClicks = 0;
-                openAdminModal();
-            } else {
-                logoClickTimer = setTimeout(() => { logoClicks = 0; }, 600);
-            }
-        }
-
         function openAdminModal() {
             document.getElementById('adminModal').classList.remove('hidden');
             document.getElementById('adminModal').classList.add('flex');
@@ -267,6 +264,18 @@
                 localStorage.setItem('gjw_is_admin', 'true');
                 currentUser = 'admin';
                 err.classList.add('hidden');
+
+                // Log admin login with security metadata
+                const audit = getStorageAuditLog();
+                audit.push({
+                    action: 'ADMIN_LOGIN',
+                    user: 'admin',
+                    ip: clientIp,
+                    device: clientDevice,
+                    time: new Date().toLocaleString()
+                });
+                saveStorageAuditLog(audit);
+
                 showAdminDashboard();
             } else {
                 err.classList.remove('hidden');
@@ -282,19 +291,21 @@
             logContainer.innerHTML = '';
 
             if (audit.length === 0) {
-                logContainer.innerHTML = '<p class="text-slate-500 text-center py-4">Zatím žádné záznamy v logu.</p>';
+                logContainer.innerHTML = '<p class="text-slate-500 text-center py-4">Zatím žádné záznamy v bezpečnostním logu.</p>';
                 return;
             }
 
             audit.forEach((item, index) => {
                 const row = document.createElement('div');
-                row.className = "border-b border-slate-900 pb-2 mb-2 space-y-0.5";
+                row.className = "border-b border-slate-900 pb-3 mb-3 space-y-1 bg-slate-950/50 p-3 rounded-lg border border-slate-800/60";
                 row.innerHTML = `
-                    <div class="flex justify-between text-amber-400">
-                        <span>#${index+1} [${item.action}] od: <strong>${item.user}</strong></span>
-                        <span class="text-slate-500">${item.time}</span>
+                    <div class="flex justify-between text-amber-400 font-semibold">
+                        <span>#${index+1} [${item.action}] uživatel: ${item.user || 'N/A'}</span>
+                        <span class="text-slate-500 font-normal">${item.time}</span>
                     </div>
-                    <div class="text-slate-300">Obsah/ID: ${item.text || item.msgId || 'N/A'}</div>
+                    <div class="text-slate-300">🌐 IP adresa: <span class="text-indigo-400">${item.ip || 'Neznámá'}</span></div>
+                    <div class="text-slate-400 text-[11px] truncate">💻 Zařízení/Síť: ${item.device || 'Neznámé zařízení'}</div>
+                    ${item.text ? `<div class="text-slate-200 mt-1">💬 Zpráva: "${item.text}"</div>` : ''}
                 `;
                 logContainer.appendChild(row);
             });
@@ -333,6 +344,17 @@
             localStorage.setItem('gjw_current_user', currentUser);
             localStorage.setItem('gjw_current_class', classSelect);
             localStorage.setItem('gjw_is_admin', 'false');
+
+            // Log user login security info
+            const audit = getStorageAuditLog();
+            audit.push({
+                action: 'USER_LOGIN',
+                user: currentUser + (classSelect ? ' ('+classSelect+')' : ''),
+                ip: clientIp,
+                device: clientDevice,
+                time: new Date().toLocaleString()
+            });
+            saveStorageAuditLog(audit);
 
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser} ${classSelect ? '('+classSelect+')' : ''}`;
@@ -398,11 +420,13 @@
             saveStorageMessages(messages);
 
             audit.push({
-                action: 'SENT',
+                action: 'SENT_MESSAGE',
                 msgId: msgId,
-                user: currentUser,
+                user: currentUser + (userClass ? ' ('+userClass+')' : ''),
                 isAdmin: isAdmin,
                 text: text,
+                ip: clientIp,
+                device: clientDevice,
                 time: new Date().toLocaleString()
             });
             saveStorageAuditLog(audit);
@@ -506,7 +530,7 @@
             saveStorageMessages(messages);
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'EDITED', msgId: id, user: currentUser, newText: msg.text, time: new Date().toLocaleString() });
+            audit.push({ action: 'EDITED_MESSAGE', msgId: id, user: currentUser, text: msg.text, ip: clientIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             loadMessages();
@@ -519,7 +543,7 @@
             saveStorageMessages(messages);
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'DELETED', msgId: id, user: currentUser, time: new Date().toLocaleString() });
+            audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, ip: clientIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             loadMessages();
@@ -530,7 +554,7 @@
             localStorage.removeItem('gjw_chat_messages');
             
             const audit = getStorageAuditLog();
-            audit.push({ action: 'WIPE_CHAT', user: currentUser, time: new Date().toLocaleString() });
+            audit.push({ action: 'WIPE_CHAT_HISTORY', user: currentUser, ip: clientIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             showAdminDashboard();
