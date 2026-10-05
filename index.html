@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GJW Chat - Gymnázium Jiřího Wolkera</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK (Realtime Cloud Database) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -232,6 +235,13 @@
     </div>
 
     <script>
+        // --- FIREBASE CLOUD CONFIGURATION ---
+        const firebaseConfig = {
+            databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let currentUser = null;
         let isAdmin = false;
         let selectedImageBase64 = null;
@@ -241,7 +251,8 @@
         let clientDevice = navigator.userAgent;
         let logoClicks = 0;
         let logoClickTimer = null;
-        let lastLoadedMessagesHash = '';
+        let cloudMessages = [];
+        let cloudEmojis = [];
 
         const chatContainer = document.getElementById('chatContainer');
         const messagesList = document.getElementById('messagesList');
@@ -267,30 +278,23 @@
             };
         } catch(e) {}
 
-        // Global Shared Storage Functions (Ultra reliable persistent storage across devices & windows)
-        function getStorageMessages() {
-            try { 
-                return JSON.parse(localStorage.getItem('gjw_global_shared_chat_messages') || '[]'); 
-            } catch(e) { return []; }
-        }
-        function saveStorageMessages(msgs) {
-            localStorage.setItem('gjw_global_shared_chat_messages', JSON.stringify(msgs));
-            window.dispatchEvent(new Event('storage_updated'));
-        }
+        // --- REAL-TIME CLOUD LISTENERS ---
+        db.ref('messages').on('value', (snapshot) => {
+            const data = snapshot.val();
+            cloudMessages = data ? Object.values(data) : [];
+            renderMessages();
+        });
+
+        db.ref('emojis').on('value', (snapshot) => {
+            const data = snapshot.val();
+            cloudEmojis = data ? Object.values(data) : [];
+        });
 
         function getStorageAuditLog() {
             try { return JSON.parse(localStorage.getItem('gjw_chat_audit') || '[]'); } catch(e) { return []; }
         }
         function saveStorageAuditLog(logs) {
             localStorage.setItem('gjw_chat_audit', JSON.stringify(logs));
-        }
-
-        function getStorageEmojis() {
-            try { return JSON.parse(localStorage.getItem('gjw_chat_emojis') || '[]'); } catch(e) { return []; }
-        }
-        function saveStorageEmojis(emojis) {
-            localStorage.setItem('gjw_chat_emojis', JSON.stringify(emojis));
-            window.dispatchEvent(new Event('storage_updated'));
         }
 
         function getStorageBans() {
@@ -431,26 +435,22 @@
             const reader = new FileReader();
             reader.onload = function(uploadEvent) {
                 const base64 = uploadEvent.target.result;
-                const emojis = getStorageEmojis();
-                emojis.push(base64);
-                saveStorageEmojis(emojis);
-                renderAdminEmojis();
-                alert("Emotikon byl úspěšně nahrán!");
+                db.ref('emojis').push(base64);
+                alert("Emotikon byl úspěšně nahrán do cloudu!");
             };
             reader.readAsDataURL(file);
         }
 
         function renderAdminEmojis() {
             const listContainer = document.getElementById('adminEmojiList');
-            const emojis = getStorageEmojis();
             listContainer.innerHTML = '';
 
-            if (emojis.length === 0) {
+            if (cloudEmojis.length === 0) {
                 listContainer.innerHTML = '<span class="text-xs text-slate-500">Žádné nahrané emotikony.</span>';
                 return;
             }
 
-            emojis.forEach((imgSrc, idx) => {
+            cloudEmojis.forEach((imgSrc, idx) => {
                 const wrap = document.createElement('div');
                 wrap.className = "relative group bg-slate-900 p-1 rounded-lg border border-slate-800";
                 wrap.innerHTML = `
@@ -462,10 +462,14 @@
         }
 
         function deleteAdminEmoji(index) {
-            const emojis = getStorageEmojis();
-            emojis.splice(index, 1);
-            saveStorageEmojis(emojis);
-            renderAdminEmojis();
+            db.ref('emojis').once('value', (snapshot) => {
+                const val = snapshot.val();
+                if (!val) return;
+                const keys = Object.keys(val);
+                if (keys[index]) {
+                    db.ref('emojis/' + keys[index]).remove();
+                }
+            });
         }
 
         function toggleEmojiPicker() {
@@ -474,15 +478,14 @@
             popup.classList.toggle('hidden');
 
             if (!popup.classList.contains('hidden')) {
-                const emojis = getStorageEmojis();
                 content.innerHTML = '';
 
-                if (emojis.length === 0) {
+                if (cloudEmojis.length === 0) {
                     content.innerHTML = '<span class="text-xs text-slate-400 p-1">sorryyyy na emotikonech jeste makam</span>';
                     return;
                 }
 
-                emojis.forEach(imgSrc => {
+                cloudEmojis.forEach(imgSrc => {
                     const img = document.createElement('img');
                     img.src = imgSrc;
                     img.className = "w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform bg-slate-950 p-1 rounded border border-slate-800";
@@ -543,8 +546,7 @@
             saveStorageAuditLog(audit);
 
             if (mode === 'observed') {
-                const messages = getStorageMessages();
-                messages.push({
+                db.ref('messages').push({
                     id: 'msg_' + Date.now(),
                     user: 'Systém',
                     isAdmin: false,
@@ -556,7 +558,6 @@
                     edited: false,
                     isSystem: true
                 });
-                saveStorageMessages(messages);
             }
 
             document.getElementById('adminPageScreen').classList.add('hidden');
@@ -566,7 +567,7 @@
             document.getElementById('adminSidebar').classList.remove('hidden');
             document.getElementById('adminSidebar').classList.add('flex');
             updateSidebarLog();
-            loadMessages();
+            renderMessages();
             scrollToBottom(false);
         }
 
@@ -651,11 +652,10 @@
             });
             saveStorageAuditLog(audit);
 
-            const messages = getStorageMessages();
             const joinMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
             const joinText = `${currentUser} se pridal do Gjw chatuuuuuuu!!!`;
             
-            messages.push({
+            db.ref('messages').push({
                 id: joinMsgId,
                 user: 'Systém',
                 isAdmin: false,
@@ -667,11 +667,10 @@
                 edited: false,
                 isSystem: true
             });
-            saveStorageMessages(messages);
 
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser}`;
-            loadMessages();
+            renderMessages();
             scrollToBottom(false);
         }
 
@@ -717,7 +716,6 @@
             const text = input.value.trim();
             if (!text && !selectedImageBase64) return;
 
-            const messages = getStorageMessages();
             const audit = getStorageAuditLog();
             const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
             
@@ -732,8 +730,7 @@
                 edited: false
             };
 
-            messages.push(newMsg);
-            saveStorageMessages(messages);
+            db.ref('messages').push(newMsg);
 
             audit.push({
                 action: 'SENT_MESSAGE',
@@ -750,26 +747,21 @@
 
             input.value = '';
             clearImagePreview();
-            loadMessages();
+            renderMessages();
             scrollToBottom(true);
             if (isAdmin) updateSidebarLog();
         }
 
-        function loadMessages() {
-            const messages = getStorageMessages();
-            const currentHash = JSON.stringify(messages);
-            if (currentHash === lastLoadedMessagesHash) return; // Skip DOM redraw if nothing changed
-            lastLoadedMessagesHash = currentHash;
-
+        function renderMessages() {
             messagesList.innerHTML = '';
 
-            if (messages.length === 0) {
+            if (cloudMessages.length === 0) {
                 emptyState.classList.remove('hidden');
                 return;
             }
             emptyState.classList.add('hidden');
 
-            messages.forEach(msg => {
+            cloudMessages.forEach(msg => {
                 const div = document.createElement('div');
 
                 if (msg.isSystem) {
@@ -858,41 +850,55 @@
         }
 
         function editMessage(id) {
-            const messages = getStorageMessages();
-            const msg = messages.find(m => m.id === id);
+            const msg = cloudMessages.find(m => m.id === id);
             if (!msg) return;
 
             const newText = prompt("Uprav zprávu:", msg.text);
             if (newText === null) return;
 
-            msg.text = newText.trim();
-            msg.edited = true;
-            saveStorageMessages(messages);
+            db.ref('messages').once('value', (snapshot) => {
+                const val = snapshot.val();
+                if (!val) return;
+                for (let key in val) {
+                    if (val[key].id === id) {
+                        db.ref('messages/' + key).update({
+                            text: newText.trim(),
+                            edited: true
+                        });
+                        break;
+                    }
+                }
+            });
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'EDITED_MESSAGE', msgId: id, user: currentUser, text: msg.text, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'EDITED_MESSAGE', msgId: id, user: currentUser, text: newText.trim(), publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
-
-            loadMessages();
         }
 
         function deleteMessage(id) {
             if (!isAdmin && !confirm("Opravdu chceš tuto zprávu smazat?")) return;
-            let messages = getStorageMessages();
-            messages = messages.filter(m => m.id !== id);
-            saveStorageMessages(messages);
+            
+            db.ref('messages').once('value', (snapshot) => {
+                const val = snapshot.val();
+                if (!val) return;
+                for (let key in val) {
+                    if (val[key].id === id) {
+                        db.ref('messages/' + key).remove();
+                        break;
+                    }
+                }
+            });
 
             const audit = getStorageAuditLog();
             audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
-            loadMessages();
             if (isAdmin) updateSidebarLog();
         }
 
         function clearChatData() {
-            if (!confirm("OPRAVDU chceš vymazat celou historii chatu?")) return;
-            localStorage.removeItem('gjw_global_shared_chat_messages');
+            if (!confirm("OPRAVDU chceš vymazat celou historii chatu v cloudu?")) return;
+            db.ref('messages').remove();
             
             const audit = getStorageAuditLog();
             audit.push({ action: 'WIPE_CHAT_HISTORY', user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
@@ -901,23 +907,6 @@
             showAdminDashboard();
             if (isAdmin) updateSidebarLog();
         }
-
-        // Cross-window and cross-device lightning fast event listeners
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'gjw_global_shared_chat_messages' || e.key === 'gjw_chat_emojis') {
-                loadMessages();
-            }
-        });
-        window.addEventListener('storage_updated', () => {
-            loadMessages();
-        });
-
-        // Lightning-fast polling sync loop for flawless live chat experience
-        setInterval(() => {
-            if (currentUser || isAdmin) {
-                loadMessages();
-            }
-        }, 500);
     </script>
 </body>
 </html>
