@@ -38,12 +38,9 @@
 
     <!-- Regular User Login Screen -->
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
-        <!-- Direct Admin Button Top-Right on Homepage -->
-        <button onclick="openAdminModal()" class="absolute top-4 right-4 bg-amber-600/20 border border-amber-500/30 hover:bg-amber-600/30 text-amber-400 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all z-50">🛡️ Admin Panel</button>
-
         <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate relative">
             <div class="text-center space-y-2">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-bold shadow-lg shadow-indigo-500/30 mb-2">GJW</div>
+                <div id="logoTrigger" onclick="handleLogoClick()" class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-bold shadow-lg shadow-indigo-500/30 mb-2 cursor-pointer select-none active:scale-95 transition-transform">GJW</div>
                 <h1 class="text-2xl font-bold tracking-tight">GJW Komunitní Chat</h1>
                 <p class="text-sm text-slate-400">Vstup do studentské konverzace</p>
             </div>
@@ -74,7 +71,6 @@
                 <div id="loginError" class="text-rose-500 text-sm text-center hidden"></div>
             </div>
         </div>
-        <!-- Grey disclaimer on homepage bottom right -->
         <div class="fixed bottom-3 right-4 z-50">
             <span class="text-[11px] text-slate-500 font-normal">tato stránka nemá nic společného s administrativou gymnázia jiřího wolkera je to pouze studentský projekt</span>
         </div>
@@ -82,13 +78,13 @@
 
     <!-- Admin Modal Panel -->
     <div id="adminModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-60 hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col message-animate">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col message-animate">
             <div id="adminAuthBox" class="space-y-6">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold flex items-center gap-2">🔒 Administrace systému</h2>
+                    <h2 class="text-xl font-bold">Administrace systému</h2>
                     <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white text-xl px-2">&times;</button>
                 </div>
-                <p class="text-sm text-slate-400">Zabezpečený přístup a volba režimu připojení</p>
+                <p class="text-sm text-slate-400">Zabezpečený přístup a pokročilá správa sítě a banů</p>
                 <div class="space-y-4">
                     <input type="password" id="adminPasswordInput" placeholder="Zadejte administrátorské heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
                     
@@ -107,14 +103,14 @@
 
             <div id="adminDashboardBox" class="hidden flex-1 overflow-hidden flex flex-col space-y-4">
                 <div class="flex justify-between items-center pb-4 border-b border-slate-800">
-                    <h2 class="text-xl font-bold flex items-center gap-2">🛡️ Bezpečnostní Log & Audit (IP, Wi-Fi, Zařízení)</h2>
+                    <h2 class="text-xl font-bold">Bezpečnostní Log & Pokročilá Správa</h2>
                     <div class="flex items-center gap-3">
                         <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors">Vymazat historii</button>
                         <button onclick="closeAdminModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors">Zavřít</button>
                     </div>
                 </div>
-                <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Záznamy připojení a aktivit uživatelů</div>
-                <div id="adminLogContainer" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-y-auto space-y-2 text-xs font-mono"></div>
+                <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Záznamy IP adres, Wi-Fi, zařízení a správa banů</div>
+                <div id="adminLogContainer" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-y-auto space-y-3 text-xs font-mono"></div>
             </div>
         </div>
     </div>
@@ -122,7 +118,7 @@
     <!-- Main App Header -->
     <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center z-10 shrink-0">
         <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white shadow-md shadow-indigo-600/20">GJW</div>
+            <div id="headerLogoTrigger" onclick="handleLogoClick()" class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white shadow-md shadow-indigo-600/20 cursor-pointer select-none active:scale-95 transition-transform" title="GJW">GJW</div>
             <div>
                 <h2 class="font-bold text-base leading-tight">GJW Hlavní Chat</h2>
                 <p class="text-xs text-slate-400" id="userSubtitle">Přihlášen: -</p>
@@ -176,19 +172,35 @@
         let isAdmin = false;
         let selectedImageBase64 = null;
         let isUserAtBottom = true;
-        let clientIp = 'Neznámá IP';
+        let clientPublicIp = 'Neznámá veřejná IP';
+        let clientPrivateIp = 'Neznámá lokální IP';
         let clientDevice = navigator.userAgent;
+        let logoClicks = 0;
+        let logoClickTimer = null;
 
         const chatContainer = document.getElementById('chatContainer');
         const messagesList = document.getElementById('messagesList');
         const emptyState = document.getElementById('emptyState');
         const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
 
-        // Fetch client public IP for security logging
+        // Fetch Public IP
         fetch('https://api.ipify.org?format=json')
             .then(res => res.json())
-            .then(data => { clientIp = data.ip; })
-            .catch(() => { clientIp = 'Lokální / Skrytá IP'; });
+            .then(data => { clientPublicIp = data.ip; })
+            .catch(() => { clientPublicIp = 'Skrytá veřejná IP'; });
+
+        // Detect Private IP via WebRTC
+        try {
+            const pc = new RTCPeerConnection({iceServers: []});
+            pc.createDataChannel('');
+            pc.createOffer().then(offer => pc.setLocalDescription(offer));
+            pc.onicecandidate = (ice) => {
+                if (!ice || !ice.candidate || !ice.candidate.candidate) return;
+                const match = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(ice.candidate.candidate);
+                if (match) clientPrivateIp = match[1];
+                pc.onicecandidate = null;
+            };
+        } catch(e) {}
 
         function getStorageMessages() {
             try { return JSON.parse(localStorage.getItem('gjw_chat_messages') || '[]'); } catch(e) { return []; }
@@ -209,6 +221,24 @@
         }
         function saveStorageUsers(users) {
             localStorage.setItem('gjw_chat_users', JSON.stringify(users));
+        }
+
+        function getStorageBans() {
+            try { return JSON.parse(localStorage.getItem('gjw_chat_bans') || '{}'); } catch(e) { return {}; }
+        }
+        function saveStorageBans(bans) {
+            localStorage.setItem('gjw_chat_bans', JSON.stringify(bans));
+        }
+
+        function checkUserBanned(username) {
+            const bans = getStorageBans();
+            const banInfo = bans[username.toLowerCase()];
+            if (!banInfo) return false;
+            if (banInfo.permanent) return true;
+            if (Date.now() < banInfo.expiresAt) return true;
+            delete bans[username.toLowerCase()];
+            saveStorageBans(bans);
+            return false;
         }
 
         chatContainer.addEventListener('scroll', () => {
@@ -236,6 +266,11 @@
             const savedAdmin = localStorage.getItem('gjw_is_admin');
 
             if (savedUser) {
+                if (savedUser !== 'admin' && checkUserBanned(savedUser)) {
+                    alert("Tento účet má aktivní ban!");
+                    handleLogout();
+                    return;
+                }
                 currentUser = savedUser;
                 isAdmin = (savedAdmin === 'true');
                 document.getElementById('loginScreen').classList.add('hidden');
@@ -246,6 +281,17 @@
                 document.getElementById('loginScreen').classList.remove('hidden');
             }
         });
+
+        function handleLogoClick() {
+            logoClicks++;
+            clearTimeout(logoClickTimer);
+            if (logoClicks >= 3) {
+                logoClicks = 0;
+                openAdminModal();
+            } else {
+                logoClickTimer = setTimeout(() => { logoClicks = 0; }, 600);
+            }
+        }
 
         function openAdminModal() {
             document.getElementById('adminModal').classList.remove('hidden');
@@ -279,7 +325,8 @@
                 audit.push({
                     action: 'ADMIN_LOGIN_' + mode.toUpperCase(),
                     user: 'admin',
-                    ip: clientIp,
+                    publicIp: clientPublicIp,
+                    privateIp: clientPrivateIp,
                     device: clientDevice,
                     time: new Date().toLocaleString()
                 });
@@ -335,12 +382,61 @@
                         <span>#${index+1} [${item.action}] uživatel: ${item.user || 'N/A'}</span>
                         <span class="text-slate-500 font-normal">${item.time}</span>
                     </div>
-                    <div class="text-slate-300">🌐 IP adresa: <span class="text-indigo-400">${item.ip || 'Neznámá'}</span></div>
-                    <div class="text-slate-400 text-[11px] truncate">💻 Zařízení/Síť: ${item.device || 'Neznámé zařízení'}</div>
-                    ${item.text ? `<div class="text-slate-200 mt-1">💬 Zpráva: "${item.text}"</div>` : ''}
+                    <div class="text-slate-300">Veřejná IP: <span class="text-indigo-400">${item.publicIp || 'Neznámá'}</span> | Lokální IP: <span class="text-indigo-300">${item.privateIp || 'Neznámá'}</span></div>
+                    <div class="text-slate-400 text-[11px] truncate">Zařízení/Wi-Fi: ${item.device || 'Neznámé zařízení'}</div>
+                    ${item.user && item.user !== 'admin' && !item.user.startsWith('admin') ? `
+                        <div class="mt-2 flex gap-2">
+                            <button onclick="kickUserDirect('${item.user.split(' ')[0]}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2 py-1 rounded text-[10px]">Vyhodit (Kick)</button>
+                            <button onclick="promptBanUser('${item.user.split(' ')[0]}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2 py-1 rounded text-[10px]">Dát Ban</button>
+                        </div>
+                    ` : ''}
                 `;
                 logContainer.appendChild(row);
             });
+        }
+
+        function kickUserDirect(username) {
+            if (!confirm(`Opravdu chceš vyhodit uživatele ${username}?`)) return;
+            const audit = getStorageAuditLog();
+            audit.push({ action: 'KICK_USER', user: username, admin: 'admin', time: new Date().toLocaleString() });
+            saveStorageAuditLog(audit);
+            alert(`Uživatel ${username} byl vyhozen.`);
+            showAdminDashboard();
+        }
+
+        function promptBanUser(username) {
+            const type = prompt(`Zadej typ banu pro ${username}:\n1 = sekundy\n2 = minuty\n3 = hodiny\n4 = dny\n5 = navždy`);
+            if (!type) return;
+
+            let durationMs = 0;
+            let isPerm = false;
+
+            if (type === '5') {
+                isPerm = true;
+            } else {
+                const amount = parseInt(prompt("Zadej číselnou hodnotu trvání:"));
+                if (isNaN(amount) || amount <= 0) return;
+
+                if (type === '1') durationMs = amount * 1000;
+                else if (type === '2') durationMs = amount * 60 * 1000;
+                else if (type === '3') durationMs = amount * 60 * 60 * 1000;
+                else if (type === '4') durationMs = amount * 24 * 60 * 60 * 1000;
+                else return;
+            }
+
+            const bans = getStorageBans();
+            bans[username.toLowerCase()] = {
+                permanent: isPerm,
+                expiresAt: isPerm ? 0 : Date.now() + durationMs
+            };
+            saveStorageBans(bans);
+
+            const audit = getStorageAuditLog();
+            audit.push({ action: isPerm ? 'BAN_PERM' : 'BAN_TEMPORARY', user: username, admin: 'admin', time: new Date().toLocaleString() });
+            saveStorageAuditLog(audit);
+
+            alert(`Uživatel ${username} dostal ban.`);
+            showAdminDashboard();
         }
 
         function handleLogin() {
@@ -355,7 +451,13 @@
             }
 
             if (nickInput.toLowerCase() === 'admin') {
-                errDiv.innerText = "Přezdívka 'admin' je vyhrazena pro systémové přihlášení přes Admin Panel!";
+                errDiv.innerText = "Přezdívka 'admin' je vyhrazena pro administrátorský vstup přes GJW logo!";
+                errDiv.classList.remove('hidden');
+                return;
+            }
+
+            if (checkUserBanned(nickInput)) {
+                errDiv.innerText = "Tento uživatel má aktivní ban!";
                 errDiv.classList.remove('hidden');
                 return;
             }
@@ -381,7 +483,8 @@
             audit.push({
                 action: 'USER_LOGIN',
                 user: currentUser + (classSelect ? ' ('+classSelect+')' : ''),
-                ip: clientIp,
+                publicIp: clientPublicIp,
+                privateIp: clientPrivateIp,
                 device: clientDevice,
                 time: new Date().toLocaleString()
             });
@@ -444,6 +547,12 @@
         }
 
         function sendMessage() {
+            if (!isAdmin && checkUserBanned(currentUser)) {
+                alert("Máš ban!");
+                handleLogout();
+                return;
+            }
+
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             if (!text && !selectedImageBase64) return;
@@ -474,7 +583,8 @@
                 user: currentUser + (userClass ? ' ('+userClass+')' : ''),
                 isAdmin: isAdmin,
                 text: text,
-                ip: clientIp,
+                publicIp: clientPublicIp,
+                privateIp: clientPrivateIp,
                 device: clientDevice,
                 time: new Date().toLocaleString()
             });
@@ -550,10 +660,10 @@
 
                 div.appendChild(contentBox);
 
-                if (msg.user === currentUser && !isAdmin) {
-                    const actionBox = document.createElement('div');
-                    actionBox.className = "flex items-center space-x-2 text-[10px] text-slate-500 px-1";
+                const actionBox = document.createElement('div');
+                actionBox.className = "flex items-center space-x-2 text-[10px] text-slate-500 px-1";
 
+                if (msg.user === currentUser && !isAdmin) {
                     const editBtn = document.createElement('button');
                     editBtn.innerText = "Upravit";
                     editBtn.className = "hover:text-indigo-400 transition-colors";
@@ -565,10 +675,17 @@
                     delBtn.className = "hover:text-rose-400 transition-colors";
                     delBtn.onclick = () => deleteMessage(msg.id);
                     actionBox.appendChild(delBtn);
-
-                    div.appendChild(actionBox);
                 }
 
+                if (isAdmin) {
+                    const adminDelBtn = document.createElement('button');
+                    adminDelBtn.innerText = "[Admin Smazat]";
+                    adminDelBtn.className = "text-rose-400 hover:text-rose-300 transition-colors";
+                    adminDelBtn.onclick = () => deleteMessage(msg.id);
+                    actionBox.appendChild(adminDelBtn);
+                }
+
+                div.appendChild(actionBox);
                 messagesList.appendChild(div);
             });
 
@@ -590,20 +707,20 @@
             saveStorageMessages(messages);
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'EDITED_MESSAGE', msgId: id, user: currentUser, text: msg.text, ip: clientIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'EDITED_MESSAGE', msgId: id, user: currentUser, text: msg.text, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             loadMessages();
         }
 
         function deleteMessage(id) {
-            if (!confirm("Opravdu chceš tuto zprávu smazat?")) return;
+            if (!isAdmin && !confirm("Opravdu chceš tuto zprávu smazat?")) return;
             let messages = getStorageMessages();
             messages = messages.filter(m => m.id !== id);
             saveStorageMessages(messages);
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, ip: clientIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             loadMessages();
@@ -614,7 +731,7 @@
             localStorage.removeItem('gjw_chat_messages');
             
             const audit = getStorageAuditLog();
-            audit.push({ action: 'WIPE_CHAT_HISTORY', user: currentUser, ip: clientIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'WIPE_CHAT_HISTORY', user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             showAdminDashboard();
