@@ -56,12 +56,12 @@
                 </div>
                 <button onclick="closeUserProfileModal()" class="text-zinc-500 hover:text-white cursor-pointer">X</button>
             </div>
-            <p class="text-[10px] text-zinc-500">Správa uživatele a jeho aktivit v systému.</p>
+            <p class="text-[10px] text-zinc-500">Moderace uživatele:</p>
             <div class="flex gap-1 flex-wrap">
-                <button id="profileKickBtn" class="border border-yellow-800 text-yellow-400 px-2 py-0.5 cursor-pointer">Kick</button>
-                <button id="profileMuteBtn" class="border border-orange-800 text-orange-400 px-2 py-0.5 cursor-pointer">Mute</button>
-                <button id="profileBanBtn" class="border border-red-800 text-red-400 px-2 py-0.5 cursor-pointer">Ban</button>
-                <button id="profileRenameBtn" class="border border-blue-800 text-blue-400 px-2 py-0.5 cursor-pointer">Jméno</button>
+                <button id="profileKickBtn" onclick="actionKickActiveProfile()" class="border border-yellow-800 text-yellow-400 px-2 py-0.5 cursor-pointer">Kick</button>
+                <button id="profileMuteBtn" onclick="actionMuteActiveProfile()" class="border border-orange-800 text-orange-400 px-2 py-0.5 cursor-pointer">Mute</button>
+                <button id="profileBanBtn" onclick="actionBanActiveProfile()" class="border border-red-800 text-red-400 px-2 py-0.5 cursor-pointer">Ban</button>
+                <button id="profileRenameBtn" onclick="actionRenameActiveProfile()" class="border border-blue-800 text-blue-400 px-2 py-0.5 cursor-pointer">Jméno</button>
             </div>
             <div id="profileUserMessagesList" class="flex-1 overflow-y-auto border border-zinc-900 p-2 space-y-2 bg-black"></div>
             <div class="flex justify-end">
@@ -288,6 +288,8 @@
         let cloudRestrictions = {};
         let editingMessageId = null;
         let activeProfileUserId = null;
+        let activeProfileUsername = null;
+        let activeProfileFingerprint = null;
         let restrictionCountdownInterval = null;
 
         const chatContainer = document.getElementById('chatContainer');
@@ -303,14 +305,12 @@
         const connectedRef = db.ref('.info/connected');
         const presenceRef = db.ref('presence');
 
-        // Správa online statusu – počítá se POUZE tehdy, když uživatel reálně kouká na chat / je připojen na stránce chatu
         connectedRef.on('value', (snap) => {
             if (snap.val() === true) {
                 const myPresenceRef = presenceRef.push();
                 myPresenceRef.onDisconnect().remove();
                 myPresenceRef.set({ fingerprint: deviceFingerprint, user: currentUser || 'Anonym', timestamp: firebase.database.ServerValue.TIMESTAMP });
                 
-                // Keepalive heartbeat každých 10 sekund pro zajištění okamžitého odebrání při zavření okna
                 const heartbeatInterval = setInterval(() => {
                     myPresenceRef.update({ timestamp: firebase.database.ServerValue.TIMESTAMP });
                 }, 10000);
@@ -322,7 +322,6 @@
             }
         });
 
-        // Offline timeout detekce (pokud nepošle heartbeat do 20 sekund, vypadne z počítadla)
         presenceRef.on('value', (snapshot) => {
             const data = snapshot.val();
             let activeCount = 0;
@@ -330,11 +329,9 @@
             if (data) {
                 for (let key in data) {
                     const val = data[key];
-                    // Pokud má heartbeat mladší než 20 sekund, počítá se
                     if (val.timestamp && (now - val.timestamp < 20000)) {
                         activeCount++;
                     } else {
-                        // Staré záznamy hned promažeme
                         presenceRef.child(key).remove();
                     }
                 }
@@ -407,7 +404,11 @@
                 return;
             }
 
+            // KICK: pouze vyhodí uživatele (ihned smaže záznam v DB, aby se mohl znovu přihlásit)
             if (matchedRest.kicked) {
+                if (currentUserId) {
+                    db.ref('restrictions/' + currentUserId + '/kicked').remove();
+                }
                 alert("Byl jsi vyhozen správcem!");
                 handleLogout();
                 return;
@@ -706,13 +707,14 @@
                 }
             });
             alert("Přezdívka byla změněna.");
-            showAdminDashboard();
+            if (isAdmin) showAdminDashboard();
         }
 
         function kickUserDirect(targetUid, username, userFp) {
-            db.ref('restrictions/' + targetUid).update({ kicked: true, fingerprint: userFp });
+            // Kick nastaví flag, který uživatele ihned odhlásí, ale hned se smaže, takže se může znovu připojit
+            db.ref('restrictions/' + targetUid).update({ kicked: true, fingerprint: userFp || deviceFingerprint });
             alert("Uživatel byl vyhozen.");
-            showAdminDashboard();
+            if (isAdmin) showAdminDashboard();
         }
 
         function promptMuteUser(targetUid, username, userFp) {
@@ -720,13 +722,13 @@
             if (mins === null) return;
             if (mins === '0') {
                 db.ref('restrictions/' + targetUid + '/mute').remove();
-                showAdminDashboard();
+                if (isAdmin) showAdminDashboard();
                 return;
             }
             const ms = parseInt(mins) * 60 * 1000;
-            db.ref('restrictions/' + targetUid).update({ mute: { permanent: false, expiresAt: Date.now() + ms }, fingerprint: userFp, userId: targetUid });
+            db.ref('restrictions/' + targetUid).update({ mute: { permanent: false, expiresAt: Date.now() + ms }, fingerprint: userFp || deviceFingerprint, userId: targetUid });
             alert("Uživatel byl ztlumen.");
-            showAdminDashboard();
+            if (isAdmin) showAdminDashboard();
         }
 
         function promptBanUser(targetUid, username, userFp) {
@@ -734,19 +736,45 @@
             if (mins === null) return;
             if (mins === '0') {
                 db.ref('restrictions/' + targetUid + '/ban').remove();
-                showAdminDashboard();
+                if (isAdmin) showAdminDashboard();
                 return;
             }
             const reason = prompt("Zadej důvod banu:") || "Porušení pravidel chatu";
             const ms = parseInt(mins) * 60 * 1000;
-            db.ref('restrictions/' + targetUid).update({ ban: { permanent: false, expiresAt: Date.now() + ms, reason, username }, fingerprint: userFp, userId: targetUid });
+            db.ref('restrictions/' + targetUid).update({ ban: { permanent: false, expiresAt: Date.now() + ms, reason, username: username || 'Uživatel' }, fingerprint: userFp || deviceFingerprint, userId: targetUid });
             alert("Uživatel byl zabanován.");
-            showAdminDashboard();
+            if (isAdmin) showAdminDashboard();
         }
 
-        function openUserProfileModal(uid, username) {
+        function actionKickActiveProfile() {
+            if (!activeProfileUserId) return;
+            kickUserDirect(activeProfileUserId, activeProfileUsername, activeProfileFingerprint);
+            closeUserProfileModal();
+        }
+
+        function actionMuteActiveProfile() {
+            if (!activeProfileUserId) return;
+            promptMuteUser(activeProfileUserId, activeProfileUsername, activeProfileFingerprint);
+            closeUserProfileModal();
+        }
+
+        function actionBanActiveProfile() {
+            if (!activeProfileUserId) return;
+            promptBanUser(activeProfileUserId, activeProfileUsername, activeProfileFingerprint);
+            closeUserProfileModal();
+        }
+
+        function actionRenameActiveProfile() {
+            if (!activeProfileUserId) return;
+            adminChangeNickname(activeProfileUserId, activeProfileUsername);
+            closeUserProfileModal();
+        }
+
+        function openUserProfileModal(uid, username, fingerprint) {
             if (!isAdmin) return;
             activeProfileUserId = uid;
+            activeProfileUsername = username;
+            activeProfileFingerprint = fingerprint || deviceFingerprint;
             document.getElementById('profileUsernameTitle').innerText = username;
             document.getElementById('profileUserIdSub').innerText = 'ID: ' + uid;
             renderUserProfileModalContent(uid);
@@ -755,6 +783,8 @@
 
         function closeUserProfileModal() {
             activeProfileUserId = null;
+            activeProfileUsername = null;
+            activeProfileFingerprint = null;
             document.getElementById('userProfileModal').classList.add('hidden');
         }
 
