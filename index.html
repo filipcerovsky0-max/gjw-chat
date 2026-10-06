@@ -134,7 +134,7 @@
                         <button onclick="openChatFromAdmin()" ontouchend="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0">Vstoupit do chatu s bočním panelem</button>
                     </div>
 
-                    <!-- Admin Active Users Manager Section (s tlačítkem na celou obrazovku) -->
+                    <!-- Admin Active Users Manager Section -->
                     <div id="usersCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all">
                         <div class="flex items-center justify-between">
                             <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Seznam aktuálních uživatelů a správa (Ban / Kick / Změna přezdívky)</h3>
@@ -154,7 +154,7 @@
                         <div id="adminEmojiList" class="flex flex-wrap gap-2 pt-2"></div>
                     </div>
 
-                    <!-- Živá diagnostika / Logy (s tlačítkem na celou obrazovku) -->
+                    <!-- Živá diagnostika / Logy -->
                     <div id="logsCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all flex flex-col">
                         <div class="flex items-center justify-between">
                             <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů (Veřejná IP, Lokální IP, Wi-Fi hinty, Zařízení)</div>
@@ -323,6 +323,7 @@
         }
 
         function checkUserBanned(username) {
+            if (!username) return false;
             const bans = getStorageBans();
             const banInfo = bans[username.toLowerCase()];
             if (!banInfo) return false;
@@ -686,7 +687,7 @@
                     nickname: 'admin',
                     userClass: 'Admin',
                     isAdmin: true,
-                    text: `admin se pridal do Gjw chatuuuuuuu!!!`,
+                    text: `admin (Admin) se pridal do Gjw chatuuuuuuu!!!`,
                     image: null,
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     timestamp: Date.now(),
@@ -750,8 +751,8 @@
             
             db.ref('messages').push({
                 id: joinMsgId,
-                nickname: 'Systém',
-                userClass: '',
+                nickname: currentNickname,
+                userClass: currentClass || '',
                 isAdmin: false,
                 text: joinText,
                 image: null,
@@ -814,7 +815,7 @@
             
             const newMsg = {
                 id: msgId,
-                nickname: currentNickname,
+                nickname: currentNickname || 'Neznámý',
                 userClass: currentClass || '',
                 isAdmin: isAdmin,
                 text: text,
@@ -829,7 +830,7 @@
             audit.push({
                 action: 'SENT_MESSAGE',
                 msgId: msgId,
-                user: currentNickname + (currentClass ? ' ('+currentClass+')' : ''),
+                user: (currentNickname || 'Neznámý') + (currentClass ? ' ('+currentClass+')' : ''),
                 isAdmin: isAdmin,
                 text: text,
                 publicIp: clientPublicIp,
@@ -868,21 +869,25 @@
                     return;
                 }
 
-                const isMyMessage = msg.nickname === currentNickname && !msg.isAdmin;
+                // Podpora pro starší zprávy s klíčem 'user' nebo 'nickname'
+                const msgAuthor = msg.nickname || msg.user || 'Neznámý';
+                const msgClass = msg.userClass || '';
+                const isMyMessage = msgAuthor === currentNickname && !msg.isAdmin;
+
                 div.className = `flex flex-col space-y-1 message-animate ${isMyMessage ? 'items-end' : 'items-start'} my-2`;
 
                 const metaDiv = document.createElement('div');
                 metaDiv.className = "flex items-center space-x-2 text-xs text-slate-400 px-1";
 
                 const nameSpan = document.createElement('span');
-                const classLabel = msg.userClass ? ` (${msg.userClass})` : '';
+                const classLabel = msgClass ? ` (${msgClass})` : '';
 
                 if (msg.isAdmin) {
                     nameSpan.className = "rainbow-admin text-sm";
-                    nameSpan.innerText = `${msg.nickname}${classLabel} (Admin)`;
+                    nameSpan.innerText = `${msgAuthor}${classLabel} (Admin)`;
                 } else {
                     nameSpan.className = "font-semibold text-slate-300";
-                    nameSpan.innerText = `${msg.nickname}${classLabel}`;
+                    nameSpan.innerText = `${msgAuthor}${classLabel}`;
                 }
                 metaDiv.appendChild(nameSpan);
 
