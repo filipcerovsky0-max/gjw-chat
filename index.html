@@ -80,39 +80,42 @@
     <div id="loginScreen" class="fixed inset-0 bg-black z-50 flex flex-col justify-between p-4 overflow-y-auto">
         <div class="flex-1 flex items-center justify-center w-full py-6">
             <div class="border border-zinc-800 bg-zinc-950 p-5 w-full max-w-xs space-y-3">
-<div class="-mx-5 -mt-5 mb-3">
-                <img src="./images.jpg" alt="Logo" class="w-full h-40 object-fill border-b border-zinc-800">
-            </div>
-
-            <div class="text-center space-y-1">
-                <div id="logoTrigger" onclick="handleLogoClick()" class="font-bold tracking-widest cursor-pointer py-1 text-sm text-zinc-100">GJW CHAT</div>
-                <p class="text-[10px] text-zinc-500">chat pro všechny z GJW</p>
-                <div class="space-y-2.5">
-                    <div>
-                        <label class="block text-[10px] text-zinc-400 mb-0.5">Přezdívka</label>
-                        <input type="text" id="loginNickname" placeholder="vyber si nickname..." class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none focus:border-zinc-600" maxlength="20" autocomplete="off">
-                        <p class="text-[9px] text-zinc-600 mt-0.5">Max. 20 znaků btw</p>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-zinc-400 mb-0.5">Třída</label>
-                        <select id="loginClass" class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none">
-                            <option value="">(bez třídy / učitel)</option>
-                            <option value="01.A">01.A</option><option value="01.B">01.B</option>
-                            <option value="02.A">02.A</option><option value="02.B">02.B</option>
-                            <option value="03.A">03.A</option><option value="03.B">03.B</option>
-                            <option value="04.A">04.A</option><option value="04.B">04.B</option>
-                            <option value="05.A">05.A</option><option value="05.B">05.B</option>
-                            <option value="06.A">06.A</option><option value="06.B">06.B</option>
-                            <option value="07.A">07.A</option><option value="07.B">07.B</option>
-                            <option value="08.A">08.A</option><option value="08.B">08.B</option>
-                        </select>
-                        <p class="text-[9px] text-zinc-600 mt-0.5">vyber si tridu at te homies lip poznaj</p>
-                    </div>
-                    <button onclick="handleLogin()" class="w-full border border-zinc-700 bg-zinc-900 py-2 hover:bg-zinc-800 text-zinc-200 cursor-pointer">KLikni a joini hromadnej GJW chat</button>
-                    <div id="loginError" class="text-red-500 text-[10px] text-center hidden"></div>
+                
+                <!-- Opravená fotka nahoře -->
+                <div class="-mx-5 -mt-5 mb-3">
+                    <img src="./images.jpg" alt="Logo" class="w-full h-32 object-cover border-b border-zinc-800">
                 </div>
-                <div class="pt-2 border-t border-zinc-900 text-[9px] text-zinc-600 text-center space-y-0.5">
-                    <p>Gymnázium Jiřího Wolkera, Prostějov</p>
+
+                <div class="text-center space-y-1">
+                    <div id="logoTrigger" onclick="handleLogoClick()" class="font-bold tracking-widest cursor-pointer py-1 text-sm text-zinc-100">GJW CHAT</div>
+                    <p class="text-[10px] text-zinc-500">chat pro všechny z GJW</p>
+                    <div class="space-y-2.5 pt-2">
+                        <div>
+                            <label class="block text-[10px] text-zinc-400 mb-0.5">Přezdívka</label>
+                            <input type="text" id="loginNickname" placeholder="vyber si nickname..." class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none focus:border-zinc-600" maxlength="20" autocomplete="off">
+                            <p class="text-[9px] text-zinc-600 mt-0.5">Max. 20 znaků btw</p>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-zinc-400 mb-0.5">Třída</label>
+                            <select id="loginClass" class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none">
+                                <option value="">(bez třídy / učitel)</option>
+                                <option value="O1.A">O1.A</option><option value="O1.B">O1.B</option>
+                                <option value="O2.A">O2.A</option><option value="O2.B">O2.B</option>
+                                <option value="O3.A">O3.A</option><option value="O3.B">O3.B</option>
+                                <option value="O4.A">O4.A</option><option value="O4.B">O4.B</option>
+                                <option value="O5.A">O5.A</option><option value="O5.B">O5.B</option>
+                                <option value="O6.A">O6.A</option><option value="O6.B">O6.B</option>
+                                <option value="O7.A">O7.A</option><option value="O7.B">O7.B</option>
+                                <option value="O8.A">O8.A</option><option value="O8.B">O8.B</option>
+                            </select>
+                            <p class="text-[9px] text-zinc-600 mt-0.5">vyber si tridu at te homies lip poznaj</p>
+                        </div>
+                        <button onclick="handleLogin()" class="w-full border border-zinc-700 bg-zinc-900 py-2 hover:bg-zinc-800 text-zinc-200 cursor-pointer">KLikni a joini hromadnej GJW chat</button>
+                        <div id="loginError" class="text-red-500 text-[10px] text-center hidden"></div>
+                    </div>
+                    <div class="pt-2 border-t border-zinc-900 text-[9px] text-zinc-600 text-center space-y-0.5">
+                        <p>Gymnázium Jiřího Wolkera, Prostějov</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -352,7 +355,6 @@
                         activeCount++;
                         activePresenceList[uid] = val;
 
-                        // Pokud se jedná o mě a moje jméno v presence se liší od aktuálního currentUser, aktualizujeme ho
                         if (uid === currentUserId && val.user !== currentUser) {
                             currentUser = val.user;
                             localStorage.setItem('gjw_saved_user', currentUser);
@@ -395,7 +397,6 @@
             const restrictionsData = snapshot.val() || {};
             cloudRestrictions = restrictionsData;
             
-            // Sledování změny jména přes restrikce/profil (pokud admin změní jméno)
             if (currentUserId && restrictionsData[currentUserId] && restrictionsData[currentUserId].newName) {
                 const updatedName = restrictionsData[currentUserId].newName;
                 if (updatedName !== currentUser) {
@@ -404,7 +405,6 @@
                     const subtitle = document.getElementById('userSubtitle');
                     if (subtitle) subtitle.innerText = currentUser;
                     
-                    // Aktualizujeme i v presence
                     presenceRef.child(currentUserId).update({ user: currentUser });
                 }
             }
@@ -753,13 +753,11 @@
             });
         }
 
-        // Změna přezdívky s okamžitým propsáním v chatu, zprávách i přítomnosti
         function adminChangeNickname(targetUid, oldName) {
             const newName = prompt("Zadej nové jméno uživatele:", oldName);
             if (!newName || !newName.trim()) return;
             const trimmedNewName = newName.trim();
 
-            // 1. Aktualizace jména u všech jeho předchozích zpráv v databázi
             db.ref('messages').once('value', (snapshot) => {
                 const val = snapshot.val();
                 if (!val) return;
@@ -770,10 +768,7 @@
                 }
             });
 
-            // 2. Aktualizace v tabulce přítomnosti (presence), pokud je online
             db.ref('presence/' + targetUid).update({ user: trimmedNewName });
-
-            // 3. Uložení požadavku na změnu do restrikcí/profilu, aby si to klientský skript daného uživatele hned všimnul
             db.ref('restrictions/' + targetUid).update({ newName: trimmedNewName });
 
             alert("Přezdívka byla úspěšně změněna.");
