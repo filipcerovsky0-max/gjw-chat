@@ -37,7 +37,7 @@
             top: 0;
             z-index: 9999;
             pointer-events: none;
-            animation: flyToChat 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: flyToChat 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .message-animate {
             animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -69,20 +69,34 @@
 </head>
 <body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans overflow-hidden">
 
-    <!-- Stylový modální dialog pro úpravu zprávy -->
+    <!-- Modální dialog pro úpravu zprávy -->
     <div id="editModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-lg space-y-4 popup-animate">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                 <h3 class="text-base font-bold text-slate-200">Upravit zprávu</h3>
-                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-200 text-lg font-bold">&times;</button>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-200 text-lg font-bold cursor-pointer">&times;</button>
             </div>
             <div>
                 <textarea id="editModalInput" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100 focus:outline-none focus:border-indigo-500 text-base resize-none" placeholder="Napište upravenou zprávu..."></textarea>
             </div>
             <div class="flex justify-end gap-3 pt-2">
-                <button onclick="closeEditModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl text-xs font-semibold transition">Zrušit</button>
-                <button onclick="saveEditedMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition shadow-lg shadow-indigo-600/25">Uložit změny</button>
+                <button onclick="closeEditModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer">Zrušit</button>
+                <button onclick="saveEditedMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition shadow-lg shadow-indigo-600/25 cursor-pointer">Uložit změny</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Lightbox pro zvětšení a stažení obrázků / memů -->
+    <div id="imageLightbox" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4">
+        <div class="absolute top-4 right-4 flex items-center gap-3">
+            <a id="lightboxDownloadBtn" href="#" download="gjw-chat-image.png" class="bg-slate-800 hover:bg-slate-700 text-slate-100 p-3 rounded-xl transition flex items-center gap-2 text-xs font-semibold cursor-pointer shadow-lg" title="Stáhnout obrázek">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Stáhnout</span>
+            </a>
+            <button onclick="closeLightbox()" class="bg-slate-800 hover:bg-slate-700 text-slate-100 p-3 rounded-xl transition text-lg font-bold cursor-pointer shadow-lg">&times;</button>
+        </div>
+        <div class="max-w-4xl max-h-[85vh] flex items-center justify-center">
+            <img id="lightboxImg" src="" class="max-w-full max-h-[85vh] object-contain rounded-2xl border border-slate-800 shadow-2xl">
         </div>
     </div>
 
@@ -156,7 +170,7 @@
                 <div class="flex justify-between items-center pb-4 border-b border-slate-800 shrink-0">
                     <h2 class="text-xl font-bold">Admin Control Room - Správa a logy</h2>
                     <div class="flex items-center gap-3">
-                        <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors">Vymazat historii</button>
+                        <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer">Vymazat historii</button>
                         <a href="./" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3.5 py-1.5 rounded-lg transition-colors">Odhlásit</a>
                     </div>
                 </div>
@@ -178,7 +192,7 @@
                             <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Seznam aktuálních uživatelů a správa (Ban / Kick)</h3>
                             <div class="flex items-center gap-2 w-full sm:w-auto">
                                 <input type="text" id="adminUserSearchInput" placeholder="Vyhledat uživatele..." oninput="renderAdminUsersList()" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1 text-xs text-slate-100 focus:outline-none focus:border-amber-500 w-full sm:w-48">
-                                <button onclick="toggleFullscreen('usersCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition shrink-0">⤢</button>
+                                <button onclick="toggleFullscreen('usersCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition shrink-0 cursor-pointer">⤢</button>
                             </div>
                         </div>
                         <div id="adminUsersListContainer" class="space-y-2 max-h-40 overflow-y-auto"></div>
@@ -202,7 +216,7 @@
                     <div id="logsCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all flex flex-col">
                         <div class="flex items-center justify-between">
                             <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů</div>
-                            <button onclick="toggleFullscreen('logsCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition">⤢</button>
+                            <button onclick="toggleFullscreen('logsCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition cursor-pointer">⤢</button>
                         </div>
                         <div id="adminLogContainer" class="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-y-auto max-h-72 space-y-3 text-xs font-mono"></div>
                     </div>
@@ -250,7 +264,7 @@
                 
                 <div id="imageSourcePopup" class="hidden absolute bottom-16 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-48 z-50 popup-animate flex flex-col space-y-1">
                     <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📁 Vybrat z galerie</button>
-                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit fotoaparátem</button>
+                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit foťákem</button>
                 </div>
 
                 <div id="emojiPickerPopup" class="hidden absolute bottom-16 left-12 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
@@ -602,7 +616,7 @@
                 row.className = "flex items-center justify-between bg-slate-950 p-2.5 rounded-lg border border-slate-800 gap-3";
                 row.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <img src="${msg.image}" class="w-12 h-12 rounded object-cover cursor-pointer border border-slate-800" onclick="window.open('${msg.image}')">
+                        <img src="${msg.image}" class="w-12 h-12 rounded object-cover cursor-pointer border border-slate-800" onclick="openLightbox('${msg.image}')">
                         <div class="space-y-0.5">
                             <div class="text-xs font-bold text-slate-200">Uživatel: <span class="text-indigo-400">${msg.user}</span></div>
                             <div class="text-[10px] text-slate-400">Čas: ${msg.time}</div>
@@ -712,7 +726,7 @@
                 const wrap = document.createElement('div');
                 wrap.className = "relative group bg-slate-900 p-1 rounded-lg border border-slate-800";
                 wrap.innerHTML = `
-                    <img src="${imgSrc}" class="w-10 h-10 object-contain">
+                    <img src="${imgSrc}" class="w-10 h-10 object-contain cursor-pointer" onclick="openLightbox('${imgSrc}')">
                     <button onclick="deleteAdminEmoji(${idx})" class="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center cursor-pointer">&times;</button>
                 `;
                 listContainer.appendChild(wrap);
@@ -738,7 +752,18 @@
 
         function parseMessageText(text) {
             if (!text) return '';
-            return text.replace(/\[meme:(data:image\/[^\]]+)\]/g, '<img src="$1" class="inline-block w-6 h-6 object-contain mx-0.5 align-middle">');
+            return text.replace(/\[meme:(data:image\/[^\]]+)\]/g, '<img src="$1" class="inline-block w-6 h-6 object-contain mx-0.5 align-middle cursor-pointer" onclick="openLightbox(\'$1\')">');
+        }
+
+        // --- Lightbox pro obrázky ---
+        function openLightbox(imgSrc) {
+            document.getElementById('lightboxImg').src = imgSrc;
+            document.getElementById('lightboxDownloadBtn').href = imgSrc;
+            document.getElementById('imageLightbox').classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('imageLightbox').classList.add('hidden');
         }
 
         function openChatFromAdmin() {
@@ -876,6 +901,7 @@
             document.getElementById('imagePreviewContainer').classList.add('hidden');
         }
 
+        // --- Precizní animace letící bubliny ---
         function playFlyingBubbleAnimation(text, image, isUserAdmin) {
             const sendBtn = document.getElementById('sendBtn');
             const startRect = sendBtn.getBoundingClientRect();
@@ -899,8 +925,8 @@
             document.body.appendChild(flyer);
 
             const chatRect = chatContainer.getBoundingClientRect();
-            const endX = chatRect.right - 100 - flyer.offsetWidth;
-            const endY = chatRect.bottom - 70;
+            const endX = chatRect.right - 80 - flyer.offsetWidth;
+            const endY = chatRect.bottom - 60;
 
             flyer.style.setProperty('--start-x', `${startRect.left}px`);
             flyer.style.setProperty('--start-y', `${startRect.top}px`);
@@ -909,7 +935,7 @@
 
             setTimeout(() => {
                 flyer.remove();
-            }, 700);
+            }, 500);
         }
 
         function sendMessage() {
@@ -1032,7 +1058,7 @@
                     const img = document.createElement('img');
                     img.src = msg.image;
                     img.className = "mt-2 rounded-xl max-h-60 object-cover cursor-pointer hover:opacity-95 transition-opacity";
-                    img.onclick = () => window.open(msg.image);
+                    img.onclick = () => openLightbox(msg.image);
                     contentBox.appendChild(img);
                 }
 
