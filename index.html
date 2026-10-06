@@ -79,12 +79,9 @@
             </div>
         </div>
         
-        <!-- Bottom Left: Ideas / Complaints Email Link -->
         <div class="fixed bottom-3 left-4 z-50">
             <a href="mailto:anonym.gjw@proton.me" class="text-[11px] text-slate-400 hover:text-slate-200 underline transition-colors">Napady / Stiznosti</a>
         </div>
-
-        <!-- Bottom Right: Student Project Disclaimer -->
         <div class="fixed bottom-3 right-4 z-50">
             <span class="text-[11px] text-slate-500 font-normal">tato stranka nikoho nezastupuje je to pouze studentsky projekt</span>
         </div>
@@ -93,8 +90,6 @@
     <!-- Admin Control Room Screen (/admin) -->
     <div id="adminPageScreen" class="fixed inset-0 bg-slate-950 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col message-animate">
-            
-            <!-- Admin Password Form -->
             <div id="adminAuthBox" class="space-y-6 my-auto">
                 <div class="text-center space-y-2">
                     <h1 class="text-2xl font-bold tracking-tight">Admin Control Room</h1>
@@ -102,7 +97,6 @@
                 </div>
                 <div class="space-y-4 max-w-md mx-auto">
                     <input type="password" id="adminPasswordInput" placeholder="Zadejte administratorske heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
-                    
                     <button onclick="verifyAdminPassword()" ontouchend="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit heslo a otevřít panel</button>
                     <div id="adminLoginError" class="text-rose-500 text-sm text-center hidden">Nesprávné heslo!</div>
                     <div class="text-center pt-2">
@@ -111,7 +105,6 @@
                 </div>
             </div>
 
-            <!-- Admin Dashboard (Unlocked after password) -->
             <div id="adminDashboardBox" class="hidden flex-1 overflow-hidden flex flex-col space-y-4">
                 <div class="flex justify-between items-center pb-4 border-b border-slate-800 shrink-0">
                     <h2 class="text-xl font-bold">Admin Control Room - Správa a logy</h2>
@@ -122,7 +115,6 @@
                 </div>
 
                 <div class="flex-1 overflow-y-auto space-y-4 pr-1">
-                    <!-- Admin Connection Mode Selector & Join Button -->
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div class="w-full sm:w-auto flex-1">
                             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Režim připojení admina do chatu</label>
@@ -134,7 +126,6 @@
                         <button onclick="openChatFromAdmin()" ontouchend="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0">Vstoupit do chatu s bočním panelem</button>
                     </div>
 
-                    <!-- Admin Active Users Manager Section -->
                     <div id="usersCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all">
                         <div class="flex items-center justify-between">
                             <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Seznam aktuálních uživatelů a správa (Ban / Kick / Změna přezdívky)</h3>
@@ -143,7 +134,6 @@
                         <div id="adminUsersListContainer" class="space-y-2 max-h-40 overflow-y-auto"></div>
                     </div>
 
-                    <!-- Admin PNG Emoticon Uploader Section -->
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
                         <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Správa PNG emotikonů (Memů) pro chat</h3>
                         <div class="flex items-center gap-3">
@@ -154,7 +144,6 @@
                         <div id="adminEmojiList" class="flex flex-wrap gap-2 pt-2"></div>
                     </div>
 
-                    <!-- Živá diagnostika / Logy -->
                     <div id="logsCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all flex flex-col">
                         <div class="flex items-center justify-between">
                             <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů (Veřejná IP, Lokální IP, Wi-Fi hinty, Zařízení)</div>
@@ -181,14 +170,34 @@
             </div>
         </div>
         <div class="flex items-center space-x-3">
+            <!-- Share / QR Button -->
+            <button onclick="toggleShareModal()" ontouchend="toggleShareModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 border border-slate-700">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+                <span>Sdílet</span>
+            </button>
             <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" ontouchend="openAdminModalFromChat()" class="hidden bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">Control Room</button>
             <button onclick="handleLogout()" ontouchend="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">Odhlásit</button>
         </div>
     </header>
 
+    <!-- Share Modal Popup -->
+    <div id="shareModal" class="fixed inset-0 bg-slate-950/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col items-center space-y-4 message-animate text-center">
+            <h3 class="font-bold text-base text-slate-100">Sdílet GJW Chat</h3>
+            <p class="text-xs text-slate-400">Naskenuj QR kód mobilem nebo zkopíruj odkaz pro spolužáky:</p>
+            <div class="bg-white p-3 rounded-xl shadow-inner">
+                <img id="qrCodeImg" src="" alt="QR Kód" class="w-40 h-40 object-contain">
+            </div>
+            <div class="w-full flex items-center gap-2 bg-slate-950 border border-slate-800 p-2 rounded-xl">
+                <input type="text" id="shareLinkInput" readonly class="w-full bg-transparent text-xs text-slate-300 focus:outline-none px-1">
+                <button onclick="copyShareLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg shrink-0 font-medium">Kopírovat</button>
+            </div>
+            <button onclick="toggleShareModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold py-2.5 rounded-xl transition-all">Zavřít</button>
+        </div>
+    </div>
+
     <!-- App Body with Optional Admin Sidebar -->
     <div class="flex-1 flex overflow-hidden relative">
-        <!-- Chat Messages & Input Container -->
         <div class="flex-1 flex flex-col h-full overflow-hidden relative">
             <div id="chatContainer" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative">
                 <div id="emptyState" class="hidden h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
@@ -206,11 +215,24 @@
             <!-- Message Input Footer -->
             <footer class="bg-slate-900 border-t border-slate-800 p-3 sm:p-4 shrink-0 relative z-30 shadow-2xl">
                 <div class="max-w-3xl mx-auto flex items-end space-x-2">
-                    <!-- Image Upload -->
-                    <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-                    <button onclick="document.getElementById('imageInput').click()" ontouchend="document.getElementById('imageInput').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center" title="Nahrát obrázek">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    </button>
+                    <!-- Image Upload / Camera Capture Menu -->
+                    <div class="relative">
+                        <button onclick="toggleAttachMenu()" ontouchend="toggleAttachMenu()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center" title="Připojit obrázek nebo fotku">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </button>
+                        <!-- Popup Attach Menu -->
+                        <div id="attachMenuPopup" class="hidden absolute bottom-14 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-44 z-50 space-y-1">
+                            <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
+                            
+                            <button onclick="document.getElementById('cameraInput').click(); toggleAttachMenu();" class="w-full text-left text-xs bg-slate-950 hover:bg-slate-800 text-slate-200 px-3 py-2 rounded-lg transition-colors flex items-center gap-2">
+                                <span>📷 Vyfotit fotku</span>
+                            </button>
+                            <button onclick="document.getElementById('imageInput').click(); toggleAttachMenu();" class="w-full text-left text-xs bg-slate-950 hover:bg-slate-800 text-slate-200 px-3 py-2 rounded-lg transition-colors flex items-center gap-2">
+                                <span>🖼️ Vybrat z galerie</span>
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- Emoji / Meme Picker Toggle Button -->
                     <div class="relative">
@@ -364,6 +386,7 @@
             scrollToBottomBtn.classList.add('opacity-0', 'pointer-events-none');
         }
 
+        // Automatická obnova relace (karta zůstává aktivní, dokud uživatel nedá Odhlásit)
         window.addEventListener('DOMContentLoaded', () => {
             const path = window.location.pathname;
             if (path.includes('admin')) {
@@ -378,8 +401,21 @@
                 return;
             }
 
-            sessionStorage.removeItem('gjw_active_session');
-            document.getElementById('loginScreen').classList.remove('hidden');
+            const savedNick = localStorage.getItem('gjw_persistent_nick');
+            const savedClass = localStorage.getItem('gjw_persistent_class');
+
+            if (savedNick) {
+                currentNickname = savedNick;
+                currentClass = savedClass || '';
+                isAdmin = false;
+                document.getElementById('loginScreen').classList.add('hidden');
+                const classTextFull = currentClass ? ` (${currentClass})` : '';
+                document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentNickname}${classTextFull}`;
+                renderMessages();
+                scrollToBottom(false);
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
+            }
         });
 
         function handleLogoClick() {
@@ -607,6 +643,31 @@
             });
         }
 
+        function toggleAttachMenu() {
+            const menu = document.getElementById('attachMenuPopup');
+            menu.classList.toggle('hidden');
+        }
+
+        function toggleShareModal() {
+            const modal = document.getElementById('shareModal');
+            modal.classList.toggle('hidden');
+
+            if (!modal.classList.contains('hidden')) {
+                const currentUrl = window.location.href;
+                document.getElementById('shareLinkInput').value = currentUrl;
+                // Generování QR kódu přes veřejné bezplatné API
+                document.getElementById('qrCodeImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(currentUrl)}`;
+            }
+        }
+
+        function copyShareLink() {
+            const input = document.getElementById('shareLinkInput');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(input.value);
+            alert("Odkaz byl zkopírován do schránky!");
+        }
+
         function toggleEmojiPicker() {
             const popup = document.getElementById('emojiPickerPopup');
             const content = document.getElementById('emojiPickerContent');
@@ -667,7 +728,8 @@
             currentClass = 'Admin';
             isAdmin = true;
 
-            sessionStorage.setItem('gjw_active_session', 'true');
+            localStorage.setItem('gjw_persistent_nick', 'admin');
+            localStorage.setItem('gjw_persistent_class', 'Admin');
             sessionStorage.setItem('gjw_admin_mode', mode);
 
             const audit = getStorageAuditLog();
@@ -732,7 +794,9 @@
             currentNickname = nickInput;
             currentClass = classSelect;
             isAdmin = false;
-            sessionStorage.setItem('gjw_active_session', 'true');
+
+            localStorage.setItem('gjw_persistent_nick', currentNickname);
+            localStorage.setItem('gjw_persistent_class', currentClass);
 
             const audit = getStorageAuditLog();
             audit.push({
@@ -769,7 +833,8 @@
         }
 
         function handleLogout() {
-            sessionStorage.removeItem('gjw_active_session');
+            localStorage.removeItem('gjw_persistent_nick');
+            localStorage.removeItem('gjw_persistent_class');
             sessionStorage.removeItem('gjw_admin_logged');
             location.href = './';
         }
@@ -796,6 +861,7 @@
         function clearImagePreview() {
             selectedImageBase64 = null;
             document.getElementById('imageInput').value = '';
+            document.getElementById('cameraInput').value = '';
             document.getElementById('imagePreviewContainer').classList.add('hidden');
         }
 
@@ -869,7 +935,6 @@
                     return;
                 }
 
-                // Podpora pro starší zprávy s klíčem 'user' nebo 'nickname'
                 const msgAuthor = msg.nickname || msg.user || 'Neznámý';
                 const msgClass = msg.userClass || '';
                 const isMyMessage = msgAuthor === currentNickname && !msg.isAdmin;
