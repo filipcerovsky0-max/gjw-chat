@@ -9,12 +9,27 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateY(15px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes waveText {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+        @keyframes popUp {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .message-animate {
-            animation: fadeIn 0.3s ease-out forwards;
+            animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .wave-animation {
+            display: inline-block;
+            animation: waveText 2.5s ease-in-out infinite;
+        }
+        .popup-animate {
+            animation: popUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .rainbow-admin {
             background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
@@ -40,50 +55,49 @@
 <body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans overflow-hidden">
 
     <!-- Regular User Login Screen -->
-    <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col justify-between p-4 overflow-y-auto">
-        <div class="flex-1 flex items-center justify-center p-2">
-            <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate flex flex-col items-center my-auto">
-                <div class="text-center space-y-3 w-full flex flex-col items-center">
-                    <div id="logoTrigger" onclick="handleLogoClick()" ontouchend="handleLogoClick()" class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-750 flex items-center justify-center mx-auto" title="GJW Logo">
-                        <svg viewBox="0 0 160 80" class="h-14 w-32 text-slate-100 fill-current block">
-                            <text x="80" y="58" font-family="Georgia, serif" font-size="70" font-weight="bold" letter-spacing="-3" text-anchor="middle">GJW</text>
-                        </svg>
-                    </div>
-                    <h1 class="text-2xl font-bold tracking-tight">GJW Komunitní Chat</h1>
-                    <p class="text-sm text-slate-400">Vstup do studentské konverzace</p>
+    <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate flex flex-col items-center my-auto">
+            <div class="text-center space-y-3 w-full flex flex-col items-center">
+                <div id="logoTrigger" onclick="handleLogoClick()" ontouchend="handleLogoClick()" class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-750 flex items-center justify-center mx-auto" title="GJW Logo">
+                    <svg viewBox="0 0 160 80" class="h-14 w-32 text-slate-100 fill-current block">
+                        <text x="80" y="58" font-family="Georgia, serif" font-size="70" font-weight="bold" letter-spacing="-3" text-anchor="middle">GJW</text>
+                    </svg>
                 </div>
-                <div class="space-y-4 w-full">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Přezdívka</label>
-                        <input type="text" id="loginNickname" value="" placeholder="Sem zadejte svou přezdívku" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors text-base" maxlength="20" autocomplete="off">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Třída (volitelně)</label>
-                        <select id="loginClass" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors text-base">
-                            <option value="">Bez třídy / Učitel</option>
-                            <option value="01.A">01.A</option><option value="01.B">01.B</option>
-                            <option value="02.A">02.A</option><option value="02.B">02.B</option>
-                            <option value="03.A">03.A</option><option value="03.B">03.B</option>
-                            <option value="04.A">04.A</option><option value="04.B">04.B</option>
-                            <option value="05.A">05.A</option><option value="05.B">05.B</option>
-                            <option value="06.A">06.A</option><option value="06.B">06.B</option>
-                            <option value="07.A">07.A</option><option value="07.B">07.B</option>
-                            <option value="08.A">08.A</option><option value="08.B">08.B</option>
-                            <option value="1.A">1.A</option><option value="1.B">1.B</option>
-                            <option value="2.A">2.A</option><option value="2.B">2.B</option>
-                            <option value="3.A">3.A</option><option value="3.B">3.B</option>
-                            <option value="4.A">4.A</option><option value="4.B">4.B</option>
-                        </select>
-                    </div>
-                    <button onclick="handleLogin()" ontouchend="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.99]">Vstoupit do chatu</button>
-                    <div id="loginError" class="text-rose-500 text-sm text-center hidden"></div>
+                <h1 class="text-2xl font-bold tracking-tight">GJW Komunitní Chat</h1>
+                <p class="text-sm text-slate-400">Vstup do studentské konverzace</p>
+            </div>
+            <div class="space-y-4 w-full">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Přezdívka</label>
+                    <input type="text" id="loginNickname" value="" placeholder="Sem zadejte svou přezdívku" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors text-base" maxlength="20" autocomplete="off">
                 </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Třída (volitelně)</label>
+                    <select id="loginClass" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors text-base">
+                        <option value="">Bez třídy / Učitel</option>
+                        <option value="01.A">01.A</option><option value="01.B">01.B</option>
+                        <option value="02.A">02.A</option><option value="02.B">02.B</option>
+                        <option value="03.A">03.A</option><option value="03.B">03.B</option>
+                        <option value="04.A">04.A</option><option value="04.B">04.B</option>
+                        <option value="05.A">05.A</option><option value="05.B">05.B</option>
+                        <option value="06.A">06.A</option><option value="06.B">06.B</option>
+                        <option value="07.A">07.A</option><option value="07.B">07.B</option>
+                        <option value="08.A">08.A</option><option value="08.B">08.B</option>
+                        <option value="1.A">1.A</option><option value="1.B">1.B</option>
+                        <option value="2.A">2.A</option><option value="2.B">2.B</option>
+                        <option value="3.A">3.A</option><option value="3.B">3.B</option>
+                        <option value="4.A">4.A</option><option value="4.B">4.B</option>
+                    </select>
+                </div>
+                <button onclick="handleLogin()" ontouchend="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.99]">Vstoupit do chatu</button>
+                <div id="loginError" class="text-rose-500 text-sm text-center hidden"></div>
             </div>
         </div>
         
-        <!-- Fixované footery vedle sebe / pod sebou bez překrývání -->
-        <div class="w-full max-w-md mx-auto py-3 px-2 flex flex-col sm:flex-row justify-between items-center text-center gap-1 z-40 shrink-0">
+        <div class="fixed bottom-3 left-4 z-50">
             <a href="mailto:anonym.gjw@proton.me" class="text-[11px] text-slate-400 hover:text-slate-200 underline transition-colors">Napady / Stiznosti</a>
+        </div>
+        <div class="fixed bottom-3 right-4 z-50">
             <span class="text-[11px] text-slate-500 font-normal">tato stranka nikoho nezastupuje je to pouze studentsky projekt</span>
         </div>
     </div>
@@ -170,41 +184,16 @@
                 <p class="text-xs text-slate-400" id="userSubtitle">Přihlášen: -</p>
             </div>
         </div>
-        <div class="flex items-center space-x-2 sm:space-x-3">
-            <!-- Share / QR Button -->
-            <button onclick="toggleShareModal()" ontouchend="toggleShareModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 border border-slate-700">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
-                <span class="hidden sm:inline">Sdílet</span>
-            </button>
-            <!-- Admin Panel Toggle Button (Pro telefony i PC) -->
-            <button id="adminToggleSidebarBtn" onclick="toggleAdminSidebar()" ontouchend="toggleAdminSidebar()" class="hidden bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 text-xs font-semibold px-3 py-2 rounded-xl transition-all">
-                📊 Admin Panel
-            </button>
+        <div class="flex items-center space-x-3">
             <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" ontouchend="openAdminModalFromChat()" class="hidden bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">Control Room</button>
             <button onclick="handleLogout()" ontouchend="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">Odhlásit</button>
         </div>
     </header>
 
-    <!-- Share Modal Popup -->
-    <div id="shareModal" class="fixed inset-0 bg-slate-950/80 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col items-center space-y-4 message-animate text-center">
-            <h3 class="font-bold text-base text-slate-100">Sdílet GJW Chat</h3>
-            <p class="text-xs text-slate-400">Naskenuj QR kód mobilem nebo zkopíruj odkaz pro spolužáky:</p>
-            <div class="bg-white p-3 rounded-xl shadow-inner">
-                <img id="qrCodeImg" src="" alt="QR Kód" class="w-40 h-40 object-contain">
-            </div>
-            <div class="w-full flex items-center gap-2 bg-slate-950 border border-slate-800 p-2 rounded-xl">
-                <input type="text" id="shareLinkInput" readonly class="w-full bg-transparent text-xs text-slate-300 focus:outline-none px-1">
-                <button onclick="copyShareLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg shrink-0 font-medium">Kopírovat</button>
-            </div>
-            <button onclick="toggleShareModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold py-2.5 rounded-xl transition-all">Zavřít</button>
-        </div>
-    </div>
-
     <!-- App Body with Optional Admin Sidebar -->
     <div class="flex-1 flex overflow-hidden relative">
         <div class="flex-1 flex flex-col h-full overflow-hidden relative">
-            <div id="chatContainer" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative">
+            <div id="chatContainer" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative pb-28">
                 <div id="emptyState" class="hidden h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
                     <p class="text-sm">Zatím žádné zprávy. Napiš první!</p>
                 </div>
@@ -212,40 +201,28 @@
             </div>
 
             <!-- Instagram-Style Floating Scroll-to-Bottom Button -->
-            <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" ontouchend="scrollToBottom(true)" class="absolute bottom-20 right-6 sm:right-12 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-30 text-xs font-semibold">
+            <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" ontouchend="scrollToBottom(true)" class="fixed bottom-28 right-6 sm:right-12 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-30 text-xs font-semibold">
                 <span>Nové zprávy</span>
                 <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
             </button>
 
             <!-- Message Input Footer -->
-            <footer class="bg-slate-900 border-t border-slate-800 p-3 sm:p-4 shrink-0 relative z-30 shadow-2xl">
-                <div class="max-w-3xl mx-auto flex items-end space-x-2">
-                    <!-- Image Upload / Camera Capture Menu -->
-                    <div class="relative">
-                        <button onclick="toggleAttachMenu()" ontouchend="toggleAttachMenu()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center" title="Připojit obrázek nebo fotku">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        </button>
-                        <!-- Popup Attach Menu -->
-                        <div id="attachMenuPopup" class="hidden absolute bottom-14 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-44 z-50 space-y-1">
-                            <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-                            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
-                            
-                            <button onclick="document.getElementById('cameraInput').click(); toggleAttachMenu();" class="w-full text-left text-xs bg-slate-950 hover:bg-slate-800 text-slate-200 px-3 py-2 rounded-lg transition-colors flex items-center gap-2">
-                                <span>📷 Vyfotit fotku</span>
-                            </button>
-                            <button onclick="document.getElementById('imageInput').click(); toggleAttachMenu();" class="w-full text-left text-xs bg-slate-950 hover:bg-slate-800 text-slate-200 px-3 py-2 rounded-lg transition-colors flex items-center gap-2">
-                                <span>🖼️ Vybrat z galerie</span>
-                            </button>
-                        </div>
-                    </div>
+            <footer class="bg-slate-900 border-t border-slate-800 p-3 sm:p-4 shrink-0 fixed bottom-0 left-0 right-0 z-40 shadow-2xl">
+                <div class="max-w-3xl mx-auto flex items-end space-x-2 relative">
+                    
+                    <!-- Image Upload Button -->
+                    <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                    <button onclick="triggerImageUpload()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center select-none active:scale-95" title="Nahrát obrázek">
+                        <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </button>
 
-                    <!-- Emoji / Meme Picker Toggle Button -->
+                    <!-- Meme Picker Toggle Button -->
                     <div class="relative">
-                        <button onclick="toggleEmojiPicker()" ontouchend="toggleEmojiPicker()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center text-xs font-bold" title="Meme emotikony">
+                        <button onclick="toggleMemePicker()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center text-xs font-bold select-none active:scale-95" title="Meme emotikony">
                             [MEME]
                         </button>
-                        <!-- Popup Emoji Picker Menu -->
-                        <div id="emojiPickerPopup" class="hidden absolute bottom-14 left-0 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50">
+                        <!-- Popup Emoji Picker Menu (S plynulým rozvinutím) -->
+                        <div id="emojiPickerPopup" class="hidden absolute bottom-14 left-0 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
                             <div class="text-xs text-slate-400 font-semibold mb-2">Vyber meme emotikon:</div>
                             <div id="emojiPickerContent" class="flex flex-wrap gap-2"></div>
                         </div>
@@ -253,7 +230,8 @@
 
                     <!-- Input Box -->
                     <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl focus-within:border-indigo-500 transition-colors flex flex-col">
-                        <div id="imagePreviewContainer" class="hidden p-2 pb-0 flex items-center gap-2">
+                        <!-- Náhled obrázku (S plynulým rozvinutím) -->
+                        <div id="imagePreviewContainer" class="hidden p-2 pb-0 flex items-center gap-2 popup-animate">
                             <img id="imagePreview" src="" class="h-14 rounded-lg object-cover border border-slate-800">
                             <button onclick="clearImagePreview()" ontouchend="clearImagePreview()" class="text-slate-400 hover:text-rose-400 text-xs font-semibold">&times; Zrušit obrázek</button>
                         </div>
@@ -267,14 +245,10 @@
             </footer>
         </div>
 
-        <!-- Admin Sidebar (Rozbalovací panel pro admina, na mobilu i PC) -->
-        <div id="adminSidebar" class="hidden absolute right-0 inset-y-0 sm:relative w-80 bg-slate-900 border-l border-slate-800 p-4 overflow-y-auto flex-col space-y-4 z-40 shadow-2xl shrink-0">
+        <div id="adminSidebar" class="hidden w-80 bg-slate-900 border-l border-slate-800 p-4 overflow-y-auto flex-col space-y-4 shrink-0">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                 <h3 class="font-bold text-sm text-amber-400">Admin Control Sidebar</h3>
-                <div class="flex items-center gap-2">
-                    <button onclick="openAdminModalFromChat()" ontouchend="openAdminModalFromChat()" class="text-xs bg-amber-600/20 text-amber-400 px-2 py-1 rounded hover:bg-amber-600/30">Room</button>
-                    <button onclick="toggleAdminSidebar()" class="text-xs text-slate-400 hover:text-white px-1">✕</button>
-                </div>
+                <button onclick="openAdminModalFromChat()" ontouchend="openAdminModalFromChat()" class="text-xs bg-amber-600/20 text-amber-400 px-2 py-1 rounded hover:bg-amber-600/30">Control Room</button>
             </div>
             <div class="text-[11px] text-slate-400">Živý přehled připojení, IP, Wi-Fi a správa banů:</div>
             <div id="sidebarLogContainer" class="space-y-2 text-xs font-mono flex-1"></div>
@@ -288,8 +262,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let currentNickname = null;
-        let currentClass = null;
+        let currentUser = null;
         let isAdmin = false;
         let selectedImageBase64 = null;
         let isUserAtBottom = true;
@@ -306,13 +279,11 @@
         const emptyState = document.getElementById('emptyState');
         const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
 
-        // Fetch Public IP
         fetch('https://api.ipify.org?format=json')
             .then(res => res.json())
             .then(data => { clientPublicIp = data.ip; })
             .catch(() => { clientPublicIp = 'Skrytá veřejná IP'; });
 
-        // Detect Private IP via WebRTC
         try {
             const pc = new RTCPeerConnection({iceServers: []});
             pc.createDataChannel('');
@@ -325,7 +296,6 @@
             };
         } catch(e) {}
 
-        // --- REAL-TIME CLOUD LISTENERS ---
         db.ref('messages').on('value', (snapshot) => {
             const data = snapshot.val();
             cloudMessages = data ? Object.values(data) : [];
@@ -353,7 +323,6 @@
         }
 
         function checkUserBanned(username) {
-            if (!username) return false;
             const bans = getStorageBans();
             const banInfo = bans[username.toLowerCase()];
             if (!banInfo) return false;
@@ -365,12 +334,47 @@
         }
 
         function checkKickStatus() {
-            if (!currentNickname || isAdmin) return;
+            if (!currentUser || isAdmin) return;
             const kickedUsers = JSON.parse(localStorage.getItem('gjw_kicked_users') || '[]');
-            if (kickedUsers.includes(currentNickname)) {
+            if (kickedUsers.includes(currentUser)) {
                 alert("Byl jsi vyhozen adminem!");
                 handleLogout();
             }
+        }
+
+        const emojiPopup = document.getElementById('emojiPickerPopup');
+
+        function toggleMemePicker() {
+            emojiPopup.classList.toggle('hidden');
+            if (!emojiPopup.classList.contains('hidden')) {
+                renderEmojiPickerList();
+            }
+        }
+
+        function triggerImageUpload() {
+            emojiPopup.classList.add('hidden');
+            document.getElementById('imageInput').click();
+        }
+
+        function renderEmojiPickerList() {
+            const content = document.getElementById('emojiPickerContent');
+            content.innerHTML = '';
+
+            if (cloudEmojis.length === 0) {
+                content.innerHTML = '<span class="text-xs text-slate-400 p-1">sorryyyy na emotikonech jeste makam</span>';
+                return;
+            }
+
+            cloudEmojis.forEach(imgSrc => {
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.className = "w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform bg-slate-950 p-1 rounded border border-slate-800";
+                img.onclick = () => {
+                    insertEmojiIntoMessage(imgSrc);
+                    emojiPopup.classList.add('hidden');
+                };
+                content.appendChild(img);
+            });
         }
 
         chatContainer.addEventListener('scroll', () => {
@@ -408,21 +412,8 @@
                 return;
             }
 
-            const savedNick = localStorage.getItem('gjw_persistent_nick');
-            const savedClass = localStorage.getItem('gjw_persistent_class');
-
-            if (savedNick) {
-                currentNickname = savedNick;
-                currentClass = savedClass || '';
-                isAdmin = false;
-                document.getElementById('loginScreen').classList.add('hidden');
-                const classTextFull = currentClass ? ` (${currentClass})` : '';
-                document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentNickname}${classTextFull}`;
-                renderMessages();
-                scrollToBottom(false);
-            } else {
-                document.getElementById('loginScreen').classList.remove('hidden');
-            }
+            sessionStorage.removeItem('gjw_active_session');
+            document.getElementById('loginScreen').classList.remove('hidden');
         });
 
         function handleLogoClick() {
@@ -650,62 +641,6 @@
             });
         }
 
-        function toggleAttachMenu() {
-            const menu = document.getElementById('attachMenuPopup');
-            menu.classList.toggle('hidden');
-        }
-
-        function toggleAdminSidebar() {
-            const sidebar = document.getElementById('adminSidebar');
-            sidebar.classList.toggle('hidden');
-            sidebar.classList.toggle('flex');
-        }
-
-        function toggleShareModal() {
-            const modal = document.getElementById('shareModal');
-            modal.classList.toggle('hidden');
-
-            if (!modal.classList.contains('hidden')) {
-                const currentUrl = window.location.href;
-                document.getElementById('shareLinkInput').value = currentUrl;
-                document.getElementById('qrCodeImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(currentUrl)}`;
-            }
-        }
-
-        function copyShareLink() {
-            const input = document.getElementById('shareLinkInput');
-            input.select();
-            input.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(input.value);
-            alert("Odkaz byl zkopírován do schránky!");
-        }
-
-        function toggleEmojiPicker() {
-            const popup = document.getElementById('emojiPickerPopup');
-            const content = document.getElementById('emojiPickerContent');
-            popup.classList.toggle('hidden');
-
-            if (!popup.classList.contains('hidden')) {
-                content.innerHTML = '';
-
-                if (cloudEmojis.length === 0) {
-                    content.innerHTML = '<span class="text-xs text-slate-400 p-1">sorryyyy na emotikonech jeste makam</span>';
-                    return;
-                }
-
-                cloudEmojis.forEach(imgSrc => {
-                    const img = document.createElement('img');
-                    img.src = imgSrc;
-                    img.className = "w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform bg-slate-950 p-1 rounded border border-slate-800";
-                    img.onclick = () => {
-                        insertEmojiIntoMessage(imgSrc);
-                        popup.classList.add('hidden');
-                    };
-                    content.appendChild(img);
-                });
-            }
-        }
-
         function insertEmojiIntoMessage(imgSrc) {
             const input = document.getElementById('messageInput');
             input.value += ` [meme:${imgSrc}] `;
@@ -736,12 +671,10 @@
 
         function openChatFromAdmin() {
             const mode = document.getElementById('adminModeSelect').value;
-            currentNickname = 'admin';
-            currentClass = 'Admin';
+            currentUser = 'admin';
             isAdmin = true;
 
-            localStorage.setItem('gjw_persistent_nick', 'admin');
-            localStorage.setItem('gjw_persistent_class', 'Admin');
+            sessionStorage.setItem('gjw_active_session', 'true');
             sessionStorage.setItem('gjw_admin_mode', mode);
 
             const audit = getStorageAuditLog();
@@ -758,9 +691,9 @@
             if (mode === 'observed') {
                 db.ref('messages').push({
                     id: 'msg_' + Date.now(),
-                    nickname: 'admin',
-                    userClass: 'Admin',
-                    isAdmin: true,
+                    user: 'Systém',
+                    isAdmin: false,
+                    class: '',
                     text: `admin (Admin) se pridal do Gjw chatuuuuuuu!!!`,
                     image: null,
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -774,7 +707,8 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('userSubtitle').innerText = `Přihlášen: admin (Admin)`;
             document.getElementById('adminHeaderBtn').classList.remove('hidden');
-            document.getElementById('adminToggleSidebarBtn').classList.remove('hidden');
+            document.getElementById('adminSidebar').classList.remove('hidden');
+            document.getElementById('adminSidebar').classList.add('flex');
             updateSidebarLog();
             renderMessages();
             scrollToBottom(false);
@@ -802,17 +736,14 @@
                 return;
             }
 
-            currentNickname = nickInput;
-            currentClass = classSelect;
+            currentUser = nickInput + (classSelect ? ' ('+classSelect+')' : '');
             isAdmin = false;
-
-            localStorage.setItem('gjw_persistent_nick', currentNickname);
-            localStorage.setItem('gjw_persistent_class', currentClass);
+            sessionStorage.setItem('gjw_active_session', 'true');
 
             const audit = getStorageAuditLog();
             audit.push({
                 action: 'USER_LOGIN',
-                user: currentNickname + (currentClass ? ' ('+currentClass+')' : ''),
+                user: currentUser,
                 publicIp: clientPublicIp,
                 privateIp: clientPrivateIp,
                 device: clientDevice,
@@ -821,14 +752,13 @@
             saveStorageAuditLog(audit);
 
             const joinMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-            const classTextFull = currentClass ? ` (${currentClass})` : '';
-            const joinText = `${currentNickname}${classTextFull} se pridal do Gjw chatuuuuuuu!!!`;
+            const joinText = `${currentUser} se pridal do Gjw chatuuuuuuu!!!`;
             
             db.ref('messages').push({
                 id: joinMsgId,
-                nickname: currentNickname,
-                userClass: currentClass || '',
+                user: 'Systém',
                 isAdmin: false,
+                class: '',
                 text: joinText,
                 image: null,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -838,14 +768,13 @@
             });
 
             document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentNickname}${classTextFull}`;
+            document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser}`;
             renderMessages();
             scrollToBottom(false);
         }
 
         function handleLogout() {
-            localStorage.removeItem('gjw_persistent_nick');
-            localStorage.removeItem('gjw_persistent_class');
+            sessionStorage.removeItem('gjw_active_session');
             sessionStorage.removeItem('gjw_admin_logged');
             location.href = './';
         }
@@ -863,7 +792,8 @@
             const reader = new FileReader();
             reader.onload = function(uploadEvent) {
                 selectedImageBase64 = uploadEvent.target.result;
-                document.getElementById('imagePreview').src = selectedImageBase64;
+                const previewImg = document.getElementById('imagePreview');
+                previewImg.src = selectedImageBase64;
                 document.getElementById('imagePreviewContainer').classList.remove('hidden');
             };
             reader.readAsDataURL(file);
@@ -872,12 +802,11 @@
         function clearImagePreview() {
             selectedImageBase64 = null;
             document.getElementById('imageInput').value = '';
-            document.getElementById('cameraInput').value = '';
             document.getElementById('imagePreviewContainer').classList.add('hidden');
         }
 
         function sendMessage() {
-            if (!isAdmin && checkUserBanned(currentNickname)) {
+            if (!isAdmin && checkUserBanned(currentUser)) {
                 alert("Máš ban!");
                 handleLogout();
                 return;
@@ -892,8 +821,7 @@
             
             const newMsg = {
                 id: msgId,
-                nickname: currentNickname || 'Neznámý',
-                userClass: currentClass || '',
+                user: currentUser,
                 isAdmin: isAdmin,
                 text: text,
                 image: selectedImageBase64,
@@ -907,7 +835,7 @@
             audit.push({
                 action: 'SENT_MESSAGE',
                 msgId: msgId,
-                user: (currentNickname || 'Neznámý') + (currentClass ? ' ('+currentClass+')' : ''),
+                user: currentUser,
                 isAdmin: isAdmin,
                 text: text,
                 publicIp: clientPublicIp,
@@ -939,31 +867,25 @@
                 if (msg.isSystem) {
                     div.className = "flex justify-center my-3 message-animate";
                     const span = document.createElement('span');
-                    span.className = "text-xs text-slate-500 font-mono tracking-tight";
+                    span.className = "text-xs text-slate-500 font-mono tracking-tight wave-animation";
                     span.innerText = `— ${msg.text} —`;
                     div.appendChild(span);
                     messagesList.appendChild(div);
                     return;
                 }
 
-                const msgAuthor = msg.nickname || msg.user || 'Neznámý';
-                const msgClass = msg.userClass || '';
-                const isMyMessage = msgAuthor === currentNickname && !msg.isAdmin;
-
-                div.className = `flex flex-col space-y-1 message-animate ${isMyMessage ? 'items-end' : 'items-start'} my-2`;
+                div.className = `flex flex-col space-y-1 message-animate ${msg.user === currentUser ? 'items-end' : 'items-start'} my-2`;
 
                 const metaDiv = document.createElement('div');
                 metaDiv.className = "flex items-center space-x-2 text-xs text-slate-400 px-1";
 
                 const nameSpan = document.createElement('span');
-                const classLabel = msgClass ? ` (${msgClass})` : '';
-
                 if (msg.isAdmin) {
                     nameSpan.className = "rainbow-admin text-sm";
-                    nameSpan.innerText = `${msgAuthor}${classLabel} (Admin)`;
+                    nameSpan.innerText = `${msg.user} (Admin)`;
                 } else {
                     nameSpan.className = "font-semibold text-slate-300";
-                    nameSpan.innerText = `${msgAuthor}${classLabel}`;
+                    nameSpan.innerText = msg.user;
                 }
                 metaDiv.appendChild(nameSpan);
 
@@ -974,7 +896,7 @@
                 div.appendChild(metaDiv);
 
                 const contentBox = document.createElement('div');
-                contentBox.className = `max-w-md rounded-2xl px-4 py-3 text-sm shadow-sm ${isMyMessage ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-slate-900 border border-slate-800 text-slate-100 rounded-bl-sm'}`;
+                contentBox.className = `max-w-md rounded-2xl px-4 py-3 text-sm shadow-sm ${msg.user === currentUser ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-slate-900 border border-slate-800 text-slate-100 rounded-bl-sm'}`;
 
                 if (msg.text) {
                     const textP = document.createElement('div');
@@ -996,7 +918,7 @@
                 const actionBox = document.createElement('div');
                 actionBox.className = "flex items-center space-x-2 text-[10px] text-slate-500 px-1";
 
-                if (isMyMessage) {
+                if (msg.user === currentUser && !isAdmin) {
                     const editBtn = document.createElement('button');
                     editBtn.innerText = "Upravit";
                     editBtn.className = "hover:text-indigo-400 transition-colors";
@@ -1049,7 +971,7 @@
             });
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'EDITED_MESSAGE', msgId: id, user: currentNickname, text: newText.trim(), publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'EDITED_MESSAGE', msgId: id, user: currentUser, text: newText.trim(), publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
         }
 
@@ -1068,7 +990,7 @@
             });
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentNickname, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             if (isAdmin) updateSidebarLog();
@@ -1079,7 +1001,7 @@
             db.ref('messages').remove();
             
             const audit = getStorageAuditLog();
-            audit.push({ action: 'WIPE_CHAT_HISTORY', user: currentNickname, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'WIPE_CHAT_HISTORY', user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             showAdminDashboard();
