@@ -24,20 +24,18 @@
         @keyframes flyToChat {
             0% {
                 opacity: 1;
-                transform: translate(var(--start-x), var(--start-y)) scale(0.85);
+                transform: translate(0px, 0px) scale(0.85);
             }
             100% {
                 opacity: 1;
-                transform: translate(var(--end-x), var(--end-y)) scale(1);
+                transform: translate(var(--delta-x), var(--delta-y)) scale(1);
             }
         }
         .flying-bubble {
             position: fixed;
-            left: 0;
-            top: 0;
             z-index: 9999;
             pointer-events: none;
-            animation: flyToChat 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: flyToChat 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .message-animate {
             animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -86,7 +84,7 @@
         </div>
     </div>
 
-    <!-- Lightbox pro zvětšení a stažení obrázků / memů -->
+    <!-- Lightbox pro obrázky a memy -->
     <div id="imageLightbox" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4">
         <div class="absolute top-4 right-4 flex items-center gap-3">
             <a id="lightboxDownloadBtn" href="#" download="gjw-chat-image.png" class="bg-slate-800 hover:bg-slate-700 text-slate-100 p-3 rounded-xl transition flex items-center gap-2 text-xs font-semibold cursor-pointer shadow-lg" title="Stáhnout obrázek">
@@ -264,7 +262,7 @@
                 
                 <div id="imageSourcePopup" class="hidden absolute bottom-16 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-48 z-50 popup-animate flex flex-col space-y-1">
                     <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📁 Vybrat z galerie</button>
-                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit foťákem</button>
+                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit fotoaparátem</button>
                 </div>
 
                 <div id="emojiPickerPopup" class="hidden absolute bottom-16 left-12 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
@@ -750,12 +748,19 @@
             input.focus();
         }
 
+        // --- Zpracování textu zpráv (memes + klikací URL odkazy) ---
         function parseMessageText(text) {
             if (!text) return '';
-            return text.replace(/\[meme:(data:image\/[^\]]+)\]/g, '<img src="$1" class="inline-block w-6 h-6 object-contain mx-0.5 align-middle cursor-pointer" onclick="openLightbox(\'$1\')">');
+            
+            // 1. Nejprve převedeme URL adresy na klikací odkazy otevírající se v nové záložce
+            let formatted = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="underline text-indigo-300 hover:text-indigo-200 break-all">$1</a>');
+            
+            // 2. Poté nahradíme [meme:...] tagy obrázky
+            formatted = formatted.replace(/\[meme:(data:image\/[^\]]+)\]/g, '<img src="$1" class="inline-block w-6 h-6 object-contain mx-0.5 align-middle cursor-pointer" onclick="openLightbox(\'$1\')">');
+            
+            return formatted;
         }
 
-        // --- Lightbox pro obrázky ---
         function openLightbox(imgSrc) {
             document.getElementById('lightboxImg').src = imgSrc;
             document.getElementById('lightboxDownloadBtn').href = imgSrc;
@@ -901,7 +906,6 @@
             document.getElementById('imagePreviewContainer').classList.add('hidden');
         }
 
-        // --- Precizní animace letící bubliny ---
         function playFlyingBubbleAnimation(text, image, isUserAdmin) {
             const sendBtn = document.getElementById('sendBtn');
             const startRect = sendBtn.getBoundingClientRect();
@@ -922,20 +926,24 @@
                 flyer.appendChild(img);
             }
 
+            flyer.style.left = `${startRect.left}px`;
+            flyer.style.top = `${startRect.top}px`;
+
             document.body.appendChild(flyer);
 
             const chatRect = chatContainer.getBoundingClientRect();
-            const endX = chatRect.right - 80 - flyer.offsetWidth;
-            const endY = chatRect.bottom - 60;
+            const targetX = chatRect.right - flyer.offsetWidth - 24;
+            const targetY = chatRect.bottom - 90;
 
-            flyer.style.setProperty('--start-x', `${startRect.left}px`);
-            flyer.style.setProperty('--start-y', `${startRect.top}px`);
-            flyer.style.setProperty('--end-x', `${endX}px`);
-            flyer.style.setProperty('--end-y', `${endY}px`);
+            const deltaX = targetX - startRect.left;
+            const deltaY = targetY - startRect.top;
+
+            flyer.style.setProperty('--delta-x', `${deltaX}px`);
+            flyer.style.setProperty('--delta-y', `${deltaY}px`);
 
             setTimeout(() => {
                 flyer.remove();
-            }, 500);
+            }, 600);
         }
 
         function sendMessage() {
