@@ -190,7 +190,7 @@
     <div class="flex-1 flex overflow-hidden relative">
         <!-- Chat Messages & Input Container -->
         <div class="flex-1 flex flex-col h-full overflow-hidden relative">
-            <div id="chatContainer" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative pb-28">
+            <div id="chatContainer" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative">
                 <div id="emptyState" class="hidden h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
                     <p class="text-sm">Zatím žádné zprávy. Napiš první!</p>
                 </div>
@@ -198,13 +198,13 @@
             </div>
 
             <!-- Instagram-Style Floating Scroll-to-Bottom Button -->
-            <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" ontouchend="scrollToBottom(true)" class="fixed bottom-28 right-6 sm:right-12 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-30 text-xs font-semibold">
+            <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" ontouchend="scrollToBottom(true)" class="absolute bottom-20 right-6 sm:right-12 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-30 text-xs font-semibold">
                 <span>Nové zprávy</span>
                 <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
             </button>
 
-            <!-- Message Input Footer (Pevně nahoře nad mobilní klávesnicí) -->
-            <footer class="bg-slate-900 border-t border-slate-800 p-3 sm:p-4 shrink-0 fixed bottom-0 left-0 right-0 z-40 shadow-2xl">
+            <!-- Message Input Footer -->
+            <footer class="bg-slate-900 border-t border-slate-800 p-3 sm:p-4 shrink-0 relative z-30 shadow-2xl">
                 <div class="max-w-3xl mx-auto flex items-end space-x-2">
                     <!-- Image Upload -->
                     <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
@@ -258,7 +258,8 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let currentUser = null;
+        let currentNickname = null;
+        let currentClass = null;
         let isAdmin = false;
         let selectedImageBase64 = null;
         let isUserAtBottom = true;
@@ -333,9 +334,9 @@
         }
 
         function checkKickStatus() {
-            if (!currentUser || isAdmin) return;
+            if (!currentNickname || isAdmin) return;
             const kickedUsers = JSON.parse(localStorage.getItem('gjw_kicked_users') || '[]');
-            if (kickedUsers.includes(currentUser)) {
+            if (kickedUsers.includes(currentNickname)) {
                 alert("Byl jsi vyhozen adminem!");
                 handleLogout();
             }
@@ -489,7 +490,6 @@
             });
         }
 
-        // Funkce pro přepnutí kontejneru na celou obrazovku
         function toggleFullscreen(elementId) {
             const el = document.getElementById(elementId);
             if (!el) return;
@@ -662,7 +662,8 @@
 
         function openChatFromAdmin() {
             const mode = document.getElementById('adminModeSelect').value;
-            currentUser = 'admin';
+            currentNickname = 'admin';
+            currentClass = 'Admin';
             isAdmin = true;
 
             sessionStorage.setItem('gjw_active_session', 'true');
@@ -682,10 +683,10 @@
             if (mode === 'observed') {
                 db.ref('messages').push({
                     id: 'msg_' + Date.now(),
-                    user: 'Systém',
-                    isAdmin: false,
-                    class: '',
-                    text: `admin (Admin) se pridal do Gjw chatuuuuuuu!!!`,
+                    nickname: 'admin',
+                    userClass: 'Admin',
+                    isAdmin: true,
+                    text: `admin se pridal do Gjw chatuuuuuuu!!!`,
                     image: null,
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     timestamp: Date.now(),
@@ -727,14 +728,15 @@
                 return;
             }
 
-            currentUser = nickInput + (classSelect ? ' ('+classSelect+')' : '');
+            currentNickname = nickInput;
+            currentClass = classSelect;
             isAdmin = false;
             sessionStorage.setItem('gjw_active_session', 'true');
 
             const audit = getStorageAuditLog();
             audit.push({
                 action: 'USER_LOGIN',
-                user: currentUser,
+                user: currentNickname + (currentClass ? ' ('+currentClass+')' : ''),
                 publicIp: clientPublicIp,
                 privateIp: clientPrivateIp,
                 device: clientDevice,
@@ -743,13 +745,14 @@
             saveStorageAuditLog(audit);
 
             const joinMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-            const joinText = `${currentUser} se pridal do Gjw chatuuuuuuu!!!`;
+            const classTextFull = currentClass ? ` (${currentClass})` : '';
+            const joinText = `${currentNickname}${classTextFull} se pridal do Gjw chatuuuuuuu!!!`;
             
             db.ref('messages').push({
                 id: joinMsgId,
-                user: 'Systém',
+                nickname: 'Systém',
+                userClass: '',
                 isAdmin: false,
-                class: '',
                 text: joinText,
                 image: null,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -759,7 +762,7 @@
             });
 
             document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser}`;
+            document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentNickname}${classTextFull}`;
             renderMessages();
             scrollToBottom(false);
         }
@@ -796,7 +799,7 @@
         }
 
         function sendMessage() {
-            if (!isAdmin && checkUserBanned(currentUser)) {
+            if (!isAdmin && checkUserBanned(currentNickname)) {
                 alert("Máš ban!");
                 handleLogout();
                 return;
@@ -811,7 +814,8 @@
             
             const newMsg = {
                 id: msgId,
-                user: currentUser,
+                nickname: currentNickname,
+                userClass: currentClass || '',
                 isAdmin: isAdmin,
                 text: text,
                 image: selectedImageBase64,
@@ -825,7 +829,7 @@
             audit.push({
                 action: 'SENT_MESSAGE',
                 msgId: msgId,
-                user: currentUser,
+                user: currentNickname + (currentClass ? ' ('+currentClass+')' : ''),
                 isAdmin: isAdmin,
                 text: text,
                 publicIp: clientPublicIp,
@@ -864,18 +868,21 @@
                     return;
                 }
 
-                div.className = `flex flex-col space-y-1 message-animate ${msg.user === currentUser ? 'items-end' : 'items-start'} my-2`;
+                const isMyMessage = msg.nickname === currentNickname && !msg.isAdmin;
+                div.className = `flex flex-col space-y-1 message-animate ${isMyMessage ? 'items-end' : 'items-start'} my-2`;
 
                 const metaDiv = document.createElement('div');
                 metaDiv.className = "flex items-center space-x-2 text-xs text-slate-400 px-1";
 
                 const nameSpan = document.createElement('span');
+                const classLabel = msg.userClass ? ` (${msg.userClass})` : '';
+
                 if (msg.isAdmin) {
                     nameSpan.className = "rainbow-admin text-sm";
-                    nameSpan.innerText = `${msg.user} (Admin)`;
+                    nameSpan.innerText = `${msg.nickname}${classLabel} (Admin)`;
                 } else {
                     nameSpan.className = "font-semibold text-slate-300";
-                    nameSpan.innerText = msg.user;
+                    nameSpan.innerText = `${msg.nickname}${classLabel}`;
                 }
                 metaDiv.appendChild(nameSpan);
 
@@ -886,7 +893,7 @@
                 div.appendChild(metaDiv);
 
                 const contentBox = document.createElement('div');
-                contentBox.className = `max-w-md rounded-2xl px-4 py-3 text-sm shadow-sm ${msg.user === currentUser ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-slate-900 border border-slate-800 text-slate-100 rounded-bl-sm'}`;
+                contentBox.className = `max-w-md rounded-2xl px-4 py-3 text-sm shadow-sm ${isMyMessage ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-slate-900 border border-slate-800 text-slate-100 rounded-bl-sm'}`;
 
                 if (msg.text) {
                     const textP = document.createElement('div');
@@ -908,7 +915,7 @@
                 const actionBox = document.createElement('div');
                 actionBox.className = "flex items-center space-x-2 text-[10px] text-slate-500 px-1";
 
-                if (msg.user === currentUser && !isAdmin) {
+                if (isMyMessage) {
                     const editBtn = document.createElement('button');
                     editBtn.innerText = "Upravit";
                     editBtn.className = "hover:text-indigo-400 transition-colors";
@@ -961,7 +968,7 @@
             });
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'EDITED_MESSAGE', msgId: id, user: currentUser, text: newText.trim(), publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'EDITED_MESSAGE', msgId: id, user: currentNickname, text: newText.trim(), publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
         }
 
@@ -980,7 +987,7 @@
             });
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentNickname, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             if (isAdmin) updateSidebarLog();
@@ -991,7 +998,7 @@
             db.ref('messages').remove();
             
             const audit = getStorageAuditLog();
-            audit.push({ action: 'WIPE_CHAT_HISTORY', user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'WIPE_CHAT_HISTORY', user: currentNickname, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             showAdminDashboard();
