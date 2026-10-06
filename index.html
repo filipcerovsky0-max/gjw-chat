@@ -227,8 +227,8 @@
 
                 <div id="activeInputControls" class="space-y-1.5">
                     <div id="imageSourcePopup" class="hidden absolute bottom-12 left-0 border border-zinc-800 bg-zinc-950 p-1 shadow-lg w-28 z-50 flex flex-col space-y-1">
-                        <button onclick="triggerFileInput(false)" class="text-left p-1 text-zinc-300 hover:bg-zinc-900 cursor-pointer">Galerie</button>
-                        <button onclick="triggerFileInput(true)" class="text-left p-1 text-zinc-300 hover:bg-zinc-900 cursor-pointer">Fotoaparát</button>
+                        <button onclick="triggerFileInput(false)" class="text-left p-1 text-zinc-300 hover:bg-zinc-900 cursor-pointer">Pošli něco z galerie</button>
+                        <button onclick="triggerFileInput(true)" class="text-left p-1 text-zinc-300 hover:bg-zinc-900 cursor-pointer">Vyfoť fotku</button>
                     </div>
 
                     <div id="emojiPickerPopup" class="hidden absolute bottom-12 left-10 border border-zinc-800 bg-zinc-950 p-2 shadow-lg w-48 max-h-36 overflow-y-auto z-50">
@@ -869,7 +869,7 @@
                 id: 'msg_' + Date.now(),
                 userId: currentUserId,
                 user: 'Systém',
-                text: `${currentUser} se připojil do místnosti`,
+                text: `${currentUser} se k nam dnes pripojil do chatuuuu`,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 isSystem: true
             });
