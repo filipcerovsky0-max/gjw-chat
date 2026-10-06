@@ -84,6 +84,34 @@
         </div>
     </div>
 
+    <!-- Admin Profilový Dialog uživatele přímo z chatu -->
+    <div id="userProfileModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col space-y-4 popup-animate">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <div>
+                    <h3 id="profileUsernameTitle" class="text-lg font-bold text-slate-100">Profil uživatele</h3>
+                    <p class="text-xs text-slate-400">Správa a historie aktivity</p>
+                </div>
+                <button onclick="closeUserProfileModal()" class="text-slate-400 hover:text-slate-200 text-lg font-bold cursor-pointer">&times;</button>
+            </div>
+            
+            <div class="flex items-center gap-2 flex-wrap">
+                <button id="profileKickBtn" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer font-semibold">Vyhodit (Kick)</button>
+                <button id="profileBanBtn" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer font-semibold">Dát Ban / Omezit</button>
+                <button id="profileRenameBtn" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer font-semibold">Přejmenovat</button>
+            </div>
+
+            <div class="space-y-2 flex-1 overflow-hidden flex flex-col">
+                <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Historie zpráv a obrázků uživatele:</h4>
+                <div id="profileUserMessagesList" class="flex-1 overflow-y-auto bg-slate-950 border border-slate-800 p-3 rounded-xl space-y-2.5 text-xs"></div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="closeUserProfileModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer">Zavřít</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Lightbox pro obrázky a memy -->
     <div id="imageLightbox" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4">
         <div class="absolute top-4 right-4 flex items-center gap-3">
@@ -262,7 +290,7 @@
                 
                 <div id="imageSourcePopup" class="hidden absolute bottom-16 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-48 z-50 popup-animate flex flex-col space-y-1">
                     <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📁 Vybrat z galerie</button>
-                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit foťákem</button>
+                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit fotoaparátem</button>
                 </div>
 
                 <div id="emojiPickerPopup" class="hidden absolute bottom-16 left-12 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
@@ -321,6 +349,7 @@
         let cloudMessages = [];
         let cloudEmojis = [];
         let editingMessageId = null;
+        let activeProfileUsername = null;
 
         const chatContainer = document.getElementById('chatContainer');
         const messagesList = document.getElementById('messagesList');
@@ -375,6 +404,9 @@
             cloudMessages = data ? Object.values(data) : [];
             renderMessages();
             checkKickStatus();
+            if (!document.getElementById('userProfileModal').classList.contains('hidden') && activeProfileUsername) {
+                renderUserProfileModalContent(activeProfileUsername);
+            }
         });
 
         db.ref('emojis').on('value', (snapshot) => {
@@ -739,6 +771,68 @@
             showAdminDashboard();
         }
 
+        // --- Interaktivní rozklikávání profilů uživatelů z chatu pro admina ---
+        function openUserProfileModal(username) {
+            if (!isAdmin) return;
+            activeProfileUsername = username;
+            const cleanName = username.split(' ')[0];
+
+            document.getElementById('profileUsernameTitle').innerText = `Profil: ${username}`;
+            
+            // Nastavení akčních tlačítek
+            document.getElementById('profileKickBtn').onclick = () => {
+                kickUserDirect(cleanName);
+                closeUserProfileModal();
+            };
+            document.getElementById('profileBanBtn').onclick = () => {
+                promptBanUser(cleanName);
+                closeUserProfileModal();
+            };
+            document.getElementById('profileRenameBtn').onclick = () => {
+                adminChangeNickname(cleanName);
+                closeUserProfileModal();
+            };
+
+            renderUserProfileModalContent(username);
+            document.getElementById('userProfileModal').classList.remove('hidden');
+        }
+
+        function closeUserProfileModal() {
+            activeProfileUsername = null;
+            document.getElementById('userProfileModal').classList.add('hidden');
+        }
+
+        function renderUserProfileModalContent(username) {
+            const container = document.getElementById('profileUserMessagesList');
+            container.innerHTML = '';
+
+            const userMsgs = cloudMessages.filter(m => m.user === username && !m.isSystem);
+
+            if (userMsgs.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-center py-4">Uživatel zatím nenapsal žádné zprávy.</p>';
+                return;
+            }
+
+            userMsgs.reverse().forEach(msg => {
+                const row = document.createElement('div');
+                row.className = "bg-slate-900 border border-slate-800 p-2.5 rounded-xl space-y-1";
+                
+                let contentHtml = `<div class="text-slate-200">${parseMessageText(msg.text || '')}</div>`;
+                if (msg.image) {
+                    contentHtml += `<img src="${msg.image}" class="mt-2 w-20 h-20 object-cover rounded-lg cursor-pointer border border-slate-800" onclick="openLightbox('${msg.image}')">`;
+                }
+
+                row.innerHTML = `
+                    <div class="flex justify-between text-[10px] text-slate-400 font-mono pb-1 border-b border-slate-800">
+                        <span>Čas: ${msg.time}</span>
+                        <button onclick="deleteMessage('${msg.id}')" class="text-rose-400 hover:text-rose-300 font-semibold cursor-pointer">Smazat zprávu</button>
+                    </div>
+                    ${contentHtml}
+                `;
+                container.appendChild(row);
+            });
+        }
+
         function handleAdminUploadEmoji(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -1080,14 +1174,17 @@
                     nameSpan.className = "rainbow-admin text-sm";
                     nameSpan.innerText = `${msg.user}`;
                 } else {
-                    nameSpan.className = "font-semibold text-slate-300";
+                    nameSpan.className = "font-semibold text-slate-300 " + (isAdmin ? "cursor-pointer hover:underline hover:text-indigo-400" : "");
                     nameSpan.innerText = msg.user;
+                    if (isAdmin) {
+                        nameSpan.title = "Kliknutím otevřeš profil uživatele";
+                        nameSpan.onclick = () => openUserProfileModal(msg.user);
+                    }
                 }
                 metaDiv.appendChild(nameSpan);
 
                 const timeSpan = document.createElement('span');
                 timeSpan.className = "text-[10px] shrink-0";
-                // Pokud je to admin, štítek "(upraveno)" nezobrazíme
                 const editedLabel = (msg.edited && !msg.isAdmin) ? ' (upraveno)' : '';
                 timeSpan.innerText = msg.time + editedLabel;
                 metaDiv.appendChild(timeSpan);
@@ -1116,7 +1213,6 @@
                 const actionBox = document.createElement('div');
                 actionBox.className = "flex items-center space-x-2 text-[10px] text-slate-500 px-1 flex-wrap";
 
-                // Úprava zprávy: uživatelé pro své zprávy, admin pro své vlastní zprávy
                 if ((isAuthor && !isAdmin) || (isAdmin && msg.isAdmin)) {
                     const editBtn = document.createElement('button');
                     editBtn.innerText = "Upravit";
