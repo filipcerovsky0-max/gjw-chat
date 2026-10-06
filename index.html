@@ -285,7 +285,14 @@
                 <p class="text-xs text-slate-400" id="userSubtitle">Přihlášen: -</p>
             </div>
         </div>
-        <div class="flex items-center space-x-2">
+        
+        <div class="flex items-center space-x-3">
+            <!-- Counter aktivních lidí online -->
+            <div class="bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-inner" title="Počet lidí s otevřeným chatem">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-xs text-slate-300 font-semibold">Online: <span id="onlineCountBadge" class="text-emerald-400 font-mono">1</span></span>
+            </div>
+
             <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" ontouchend="openAdminModalFromChat()" class="hidden bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 text-xs font-semibold px-3 py-2 rounded-xl transition-all cursor-pointer">Control Room</button>
             <button onclick="handleLogout()" ontouchend="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer">Odhlásit</button>
         </div>
@@ -318,7 +325,7 @@
                 <div id="activeInputControls" class="space-y-2">
                     <div id="imageSourcePopup" class="hidden absolute bottom-16 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-48 z-50 popup-animate flex flex-col space-y-1">
                         <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📁 Vybrat z galerie</button>
-                        <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit foťákem</button>
+                        <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit fotoaparátem</button>
                     </div>
 
                     <div id="emojiPickerPopup" class="hidden absolute bottom-16 left-12 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
@@ -398,6 +405,33 @@
         const messagesList = document.getElementById('messagesList');
         const emptyState = document.getElementById('emptyState');
         const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+
+        // --- FIREBASE PRESENCE (Sledování aktivních lidí online) ---
+        const connectedRef = db.ref('.info/connected');
+        const presenceRef = db.ref('presence');
+
+        connectedRef.on('value', (snap) => {
+            if (snap.val() === true) {
+                const myPresenceRef = presenceRef.push();
+                // Jakmile uživatel zavře stránku nebo ztratí spojení, Firebase automaticky záznam smaže
+                myPresenceRef.onDisconnect().remove();
+                myPresenceRef.set({
+                    fingerprint: deviceFingerprint,
+                    user: currentUser || 'Anonym',
+                    joinedAt: Date.now()
+                });
+            }
+        });
+
+        // Posluchač počtu online uživatelů
+        presenceRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            const count = data ? Object.keys(data).length : 1;
+            const badge = document.getElementById('onlineCountBadge');
+            if (badge) {
+                badge.innerText = count;
+            }
+        });
 
         fetch('https://api.ipify.org?format=json')
             .then(res => res.json())
@@ -482,7 +516,6 @@
         function checkLiveRestrictions() {
             if (isAdmin) return;
 
-            // Kontrola podle ID nebo podle hardwarového fingerprintu tohoto konkrétního zařízení
             let matchedRest = null;
             if (currentUserId && cloudRestrictions[currentUserId]) {
                 matchedRest = cloudRestrictions[currentUserId];
@@ -511,14 +544,12 @@
                 return;
             }
 
-            // 1. Kontrola Kicku
             if (matchedRest.kicked) {
                 alert("Byl jsi vyhozen adminem!");
                 handleLogout();
                 return;
             }
 
-            // 2. Kontrola Banu (včetně živého odpočtu a auto-refreshu)
             if (matchedRest.ban) {
                 const ban = matchedRest.ban;
                 if (ban.permanent || Date.now() < ban.expiresAt) {
@@ -555,7 +586,6 @@
                 bannedScreen.classList.add('hidden');
             }
 
-            // 3. Kontrola Ztlumení (Mute) s odpočtem a refreshem
             const noticeText = document.getElementById('mutedNoticeText');
             const mutedCountdownContainer = document.getElementById('mutedCountdownContainer');
             const mutedCountdownTimer = document.getElementById('mutedCountdownTimer');
@@ -1050,7 +1080,6 @@
             }
         }
 
-        // --- Interaktivní rozklikávání profilů uživatelů z chatu pro admina podle ID ---
         function openUserProfileModal(uid, username) {
             if (!isAdmin) return;
             activeProfileUserId = uid;
@@ -1250,7 +1279,6 @@
 
             currentUser = nickInput + (classSelect ? ' ('+classSelect+')' : '');
             
-            // Ověření banu z cloudu POUZE pro toto konkrétní zařízení a ID (bez vlivu na ostatní na Wi-Fi)
             let isBanned = false;
             let banReason = '';
             let banExp = '';
