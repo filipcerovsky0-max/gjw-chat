@@ -67,6 +67,19 @@
 </head>
 <body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans overflow-hidden">
 
+    <!-- Celoobrazovková obrazovka pro zabanované uživatele -->
+    <div id="bannedScreen" class="fixed inset-0 bg-slate-950 z-[9999] hidden flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div class="bg-slate-900 border border-rose-500/40 p-8 rounded-2xl shadow-2xl max-w-md w-full space-y-4 message-animate">
+            <div class="text-rose-500 text-4xl font-bold">⛔</div>
+            <h1 class="text-xl font-bold text-slate-100">Máš aktivní ban!</h1>
+            <div id="bannedReasonBox" class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-2">
+                <p><strong>Důvod:</strong> <span id="bannedReasonText" class="text-rose-400">-</span></p>
+                <p><strong>Trvání:</strong> <span id="bannedDurationText" class="text-amber-400">-</span></p>
+            </div>
+            <p class="text-[11px] text-slate-500">Tento ban je vázán na tvé konkrétní zařízení. Změna přezdívky nepomůže.</p>
+        </div>
+    </div>
+
     <!-- Modální dialog pro úpravu zprávy -->
     <div id="editModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-lg space-y-4 popup-animate">
@@ -225,6 +238,12 @@
                         <div id="adminUsersListContainer" class="space-y-2 max-h-40 overflow-y-auto"></div>
                     </div>
 
+                    <!-- Log zabanovaných uživatelů -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h3 class="text-xs uppercase tracking-wider text-rose-400 font-semibold">Log zabanovaných uživatelů (včetně důvodů)</h3>
+                        <div id="adminBansLogContainer" class="space-y-2 max-h-48 overflow-y-auto bg-slate-900 border border-slate-800 p-3 rounded-xl"></div>
+                    </div>
+
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
                         <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Log odeslaných obrázků a fotek</h3>
                         <div id="adminImageLogContainer" class="space-y-2 max-h-48 overflow-y-auto bg-slate-900 border border-slate-800 p-3 rounded-xl"></div>
@@ -297,7 +316,7 @@
                 <div id="activeInputControls" class="space-y-2">
                     <div id="imageSourcePopup" class="hidden absolute bottom-16 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-48 z-50 popup-animate flex flex-col space-y-1">
                         <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📁 Vybrat z galerie</button>
-                        <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit foťákem</button>
+                        <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit fotoaparátem</button>
                     </div>
 
                     <div id="emojiPickerPopup" class="hidden absolute bottom-16 left-12 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
@@ -345,8 +364,19 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // Generování unikátního otisku zařízení (Fingerprint), který spolehlivě odliší dva lidi na stejné Wi-Fi
+        function getDeviceFingerprint() {
+            let fp = localStorage.getItem('gjw_device_fingerprint');
+            if (!fp) {
+                fp = 'fp_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now() + '_' + navigator.hardwareConcurrency + '_' + screen.width + 'x' + screen.height;
+                localStorage.setItem('gjw_device_fingerprint', fp);
+            }
+            return fp;
+        }
+
         let currentUser = localStorage.getItem('gjw_saved_user') || null;
         let currentUserId = localStorage.getItem('gjw_saved_user_id') || null;
+        let deviceFingerprint = getDeviceFingerprint();
         let isAdmin = false;
         let selectedImageBase64 = null;
         let isUserAtBottom = true;
@@ -357,6 +387,7 @@
         let logoClickTimer = null;
         let cloudMessages = [];
         let cloudEmojis = [];
+        let cloudRestrictions = {};
         let editingMessageId = null;
         let activeProfileUserId = null;
 
@@ -370,10 +401,12 @@
             .then(data => { 
                 clientPublicIp = data.ip; 
                 recordPresenceAudit();
+                checkLiveRestrictions();
             })
             .catch(() => { 
                 clientPublicIp = 'Skrytá veřejná IP'; 
                 recordPresenceAudit();
+                checkLiveRestrictions();
             });
 
         try {
@@ -399,6 +432,7 @@
                 audit.push({
                     action: 'USER_PRESENCE',
                     userId: currentUserId,
+                    fingerprint: deviceFingerprint,
                     user: currentUser,
                     publicIp: clientPublicIp,
                     privateIp: clientPrivateIp,
@@ -409,21 +443,30 @@
             }
         }
 
+        // Posluchač zpráv z Firebase
         db.ref('messages').on('value', (snapshot) => {
             const data = snapshot.val();
             cloudMessages = data ? Object.values(data) : [];
-            
-            checkLiveRestrictions();
-
             renderMessages();
             if (!document.getElementById('userProfileModal').classList.contains('hidden') && activeProfileUserId) {
                 renderUserProfileModalContent(activeProfileUserId);
             }
         });
 
+        // Posluchač emotikonů z Firebase
         db.ref('emojis').on('value', (snapshot) => {
             const data = snapshot.val();
             cloudEmojis = data ? Object.values(data) : [];
+        });
+
+        // Posluchač restrikcí v reálném čase z cloudu
+        db.ref('restrictions').on('value', (snapshot) => {
+            cloudRestrictions = snapshot.val() || {};
+            checkLiveRestrictions();
+            if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                renderAdminUsersList();
+                renderAdminBansLog();
+            }
         });
 
         function getStorageAuditLog() {
@@ -433,56 +476,66 @@
             localStorage.setItem('gjw_chat_audit', JSON.stringify(logs));
         }
 
-        function getStorageBans() {
-            try { return JSON.parse(localStorage.getItem('gjw_chat_bans') || '{}'); } catch(e) { return {}; }
-        }
-        function saveStorageBans(bans) {
-            localStorage.setItem('gjw_chat_bans', JSON.stringify(bans));
-        }
-
-        function getStorageMutes() {
-            try { return JSON.parse(localStorage.getItem('gjw_chat_mutes') || '{}'); } catch(e) { return {}; }
-        }
-        function saveStorageMutes(mutes) {
-            localStorage.setItem('gjw_chat_mutes', JSON.stringify(mutes));
-        }
-
         function checkLiveRestrictions() {
-            if (!currentUserId || isAdmin) return;
+            if (isAdmin) return;
 
-            // 1. Kontrola banu
-            const bans = getStorageBans();
-            const banInfo = bans[currentUserId];
-            if (banInfo) {
-                if (banInfo.permanent || Date.now() < banInfo.expiresAt) {
-                    alert("Tento účet obdržel ban!");
-                    handleLogout();
-                    return;
+            // Zkontrolujeme podle userId NEBO podle unikátního otisku zařízení (fingerprintu)
+            let matchedRest = null;
+            if (currentUserId && cloudRestrictions[currentUserId]) {
+                matchedRest = cloudRestrictions[currentUserId];
+            } else {
+                for (let uid in cloudRestrictions) {
+                    if (cloudRestrictions[uid].fingerprint === deviceFingerprint) {
+                        matchedRest = cloudRestrictions[uid];
+                        break;
+                    }
                 }
             }
 
-            // 2. Kontrola kicku
-            const kickedUsers = JSON.parse(localStorage.getItem('gjw_kicked_users') || '[]');
-            if (kickedUsers.includes(currentUserId) || (currentUser && kickedUsers.includes(currentUser.split(' ')[0]))) {
+            const bannedScreen = document.getElementById('bannedScreen');
+
+            if (!matchedRest) {
+                bannedScreen.classList.add('hidden');
+                document.getElementById('mutedNoticeBox').classList.add('hidden');
+                document.getElementById('activeInputControls').classList.remove('hidden');
+                return;
+            }
+
+            // 1. Kontrola Kicku
+            if (matchedRest.kicked) {
                 alert("Byl jsi vyhozen adminem!");
                 handleLogout();
                 return;
             }
 
-            // 3. Kontrola ztlumení (Mute)
-            const mutes = getStorageMutes();
-            const muteInfo = mutes[currentUserId];
+            // 2. Kontrola Banu (včetně zobrazení důvodu na obrazovce)
+            if (matchedRest.ban) {
+                const ban = matchedRest.ban;
+                if (ban.permanent || Date.now() < ban.expiresAt) {
+                    document.getElementById('bannedReasonText').innerText = ban.reason || 'Bez udání důvodu';
+                    document.getElementById('bannedDurationText').innerText = ban.permanent ? 'Natrvalo' : `Do ${new Date(ban.expiresAt).toLocaleString()}`;
+                    bannedScreen.classList.remove('hidden');
+                    bannedScreen.classList.add('flex');
+                    return;
+                } else {
+                    bannedScreen.classList.add('hidden');
+                }
+            } else {
+                bannedScreen.classList.add('hidden');
+            }
+
+            // 3. Kontrola Ztlumení (Mute)
             const noticeBox = document.getElementById('mutedNoticeBox');
             const noticeText = document.getElementById('mutedNoticeText');
             const activeControls = document.getElementById('activeInputControls');
 
-            if (muteInfo) {
-                if (muteInfo.permanent) {
+            if (matchedRest.mute) {
+                if (matchedRest.mute.permanent) {
                     noticeText.innerText = `Byl jsi ztlumen adminem natrvalo.`;
                     noticeBox.classList.remove('hidden');
                     activeControls.classList.add('hidden');
-                } else if (Date.now() < muteInfo.expiresAt) {
-                    const remainingSec = Math.ceil((muteInfo.expiresAt - Date.now()) / 1000);
+                } else if (Date.now() < matchedRest.mute.expiresAt) {
+                    const remainingSec = Math.ceil((matchedRest.mute.expiresAt - Date.now()) / 1000);
                     const minutes = Math.floor(remainingSec / 60);
                     const seconds = remainingSec % 60;
                     const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
@@ -491,8 +544,6 @@
                     noticeBox.classList.remove('hidden');
                     activeControls.classList.add('hidden');
                 } else {
-                    delete mutes[currentUserId];
-                    saveStorageMutes(mutes);
                     noticeBox.classList.add('hidden');
                     activeControls.classList.remove('hidden');
                 }
@@ -622,6 +673,7 @@
                 audit.push({
                     action: 'ADMIN_PANEL_ACCESS',
                     userId: 'admin_uid',
+                    fingerprint: 'admin_fp',
                     user: 'admin',
                     publicIp: clientPublicIp,
                     privateIp: clientPrivateIp,
@@ -662,6 +714,7 @@
             }
 
             renderAdminUsersList();
+            renderAdminBansLog();
             renderAdminImageLog();
             renderAdminEmojis();
         }
@@ -678,6 +731,7 @@
                 if (item.userId && item.user && item.user !== 'admin' && !item.user.startsWith('admin')) {
                     activeUsersMap[item.userId] = { 
                         userId: item.userId,
+                        fingerprint: item.fingerprint || '',
                         name: item.user, 
                         ip: item.publicIp || 'Neznámá', 
                         privateIp: item.privateIp || 'Neznámá',
@@ -703,15 +757,10 @@
                 return;
             }
 
-            const bans = getStorageBans();
-            const mutes = getStorageMutes();
-
             users.forEach(u => {
-                const banInfo = bans[u.userId];
-                const isBanned = banInfo && (banInfo.permanent || Date.now() < banInfo.expiresAt);
-
-                const muteInfo = mutes[u.userId];
-                const isMuted = muteInfo && (muteInfo.permanent || Date.now() < muteInfo.expiresAt);
+                const rest = cloudRestrictions[u.userId] || {};
+                const isBanned = rest.ban && (rest.ban.permanent || Date.now() < rest.ban.expiresAt);
+                const isMuted = rest.mute && (rest.mute.permanent || Date.now() < rest.mute.expiresAt);
 
                 const row = document.createElement('div');
                 row.className = "flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-800 gap-3";
@@ -723,13 +772,44 @@
                     </div>
                     <div class="flex items-center gap-2 flex-wrap shrink-0">
                         <button onclick="adminChangeNickname('${u.userId}', '${u.name}')" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Přejmenovat</button>
-                        <button onclick="kickUserDirect('${u.userId}', '${u.name}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Kick</button>
-                        <button onclick="promptMuteUser('${u.userId}', '${u.name}')" class="bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isMuted ? 'Odpustit Mute' : 'Ztlumit'}</button>
-                        <button onclick="promptBanUser('${u.userId}', '${u.name}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isBanned ? 'Odpustit Ban' : 'Dát Ban'}</button>
+                        <button onclick="kickUserDirect('${u.userId}', '${u.name}', '${u.fingerprint}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Kick</button>
+                        <button onclick="promptMuteUser('${u.userId}', '${u.name}', '${u.fingerprint}')" class="bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isMuted ? 'Odpustit Mute' : 'Ztlumit'}</button>
+                        <button onclick="promptBanUser('${u.userId}', '${u.name}', '${u.fingerprint}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isBanned ? 'Odpustit Ban' : 'Dát Ban'}</button>
                     </div>
                 `;
                 container.appendChild(row);
             });
+        }
+
+        function renderAdminBansLog() {
+            const container = document.getElementById('adminBansLogContainer');
+            container.innerHTML = '';
+
+            let bannedCount = 0;
+            for (let uid in cloudRestrictions) {
+                const rest = cloudRestrictions[uid];
+                if (rest.ban && (rest.ban.permanent || Date.now() < rest.ban.expiresAt)) {
+                    bannedCount++;
+                    const ban = rest.ban;
+                    const durationStr = ban.permanent ? 'Natrvalo' : `Do ${new Date(ban.expiresAt).toLocaleString()}`;
+                    
+                    const row = document.createElement('div');
+                    row.className = "bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1 text-xs";
+                    row.innerHTML = `
+                        <div class="flex justify-between font-bold text-rose-400">
+                            <span>Uživatel: ${ban.username || 'Neznámý'} (ID: ${uid})</span>
+                            <span class="text-slate-400 font-normal">Zabanován: ${ban.bannedAt || 'N/A'}</span>
+                        </div>
+                        <div class="text-slate-300"><strong>Důvod:</strong> ${ban.reason || 'Bez udání důvodu'}</div>
+                        <div class="text-slate-400 font-mono text-[11px]">Trvání: <span class="text-amber-400">${durationStr}</span> | Zařízení ID: ${rest.fingerprint || 'Neznámé'}</div>
+                    `;
+                    container.appendChild(row);
+                }
+            }
+
+            if (bannedCount === 0) {
+                container.innerHTML = '<span class="text-xs text-slate-500">Zatím žádní zabanovaní uživatelé.</span>';
+            }
         }
 
         function renderAdminImageLog() {
@@ -800,12 +880,10 @@
             }
         }
 
-        function kickUserDirect(targetUid, username) {
+        function kickUserDirect(targetUid, username, userFp) {
             if (!confirm(`Opravdu chceš vyhodit uživatele ${username}?`)) return;
-            const kicked = JSON.parse(localStorage.getItem('gjw_kicked_users') || '[]');
-            
-            if (!kicked.includes(targetUid)) kicked.push(targetUid);
-            localStorage.setItem('gjw_kicked_users', JSON.stringify(kicked));
+
+            db.ref('restrictions/' + targetUid).update({ kicked: true, fingerprint: userFp || deviceFingerprint });
 
             const audit = getStorageAuditLog();
             audit.push({ action: 'KICK_USER', userId: targetUid, user: username, admin: 'admin', time: new Date().toLocaleString() });
@@ -820,15 +898,12 @@
             }
         }
 
-        function promptMuteUser(targetUid, username) {
+        function promptMuteUser(targetUid, username, userFp) {
             const type = prompt(`Zadej typ ztlumení (Mute) pro ${username}:\n1 = sekundy\n2 = minuty\n3 = hodiny\n4 = dny\n5 = natrvalo\n(Nebo zadej 0 pro zrušení ztlumení)`);
             if (type === null) return;
 
-            const mutes = getStorageMutes();
-
             if (type === '0') {
-                delete mutes[targetUid];
-                saveStorageMutes(mutes);
+                db.ref('restrictions/' + targetUid + '/mute').remove();
                 alert(`Ztlumení pro uživatele ${username} bylo zrušeno.`);
                 if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
                     closeUserProfileModal();
@@ -855,11 +930,12 @@
                 else return;
             }
 
-            mutes[targetUid] = {
+            const muteData = {
                 permanent: isPerm,
                 expiresAt: isPerm ? 0 : Date.now() + durationMs
             };
-            saveStorageMutes(mutes);
+
+            db.ref('restrictions/' + targetUid).update({ mute: muteData, fingerprint: userFp || deviceFingerprint });
 
             const audit = getStorageAuditLog();
             audit.push({ action: isPerm ? 'MUTE_PERM' : 'MUTE_TEMPORARY', userId: targetUid, user: username, admin: 'admin', time: new Date().toLocaleString() });
@@ -874,15 +950,12 @@
             }
         }
 
-        function promptBanUser(targetUid, username) {
+        function promptBanUser(targetUid, username, userFp) {
             const type = prompt(`Zadej typ banu pro ${username}:\n1 = sekundy\n2 = minuty\n3 = hodiny\n4 = dny\n5 = navždy\n(Nebo zadej 0 pro zrušení banu)`);
             if (type === null) return;
 
-            const bans = getStorageBans();
-
             if (type === '0') {
-                delete bans[targetUid];
-                saveStorageBans(bans);
+                db.ref('restrictions/' + targetUid + '/ban').remove();
                 alert(`Ban pro uživatele ${username} byl zrušen.`);
                 if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
                     closeUserProfileModal();
@@ -892,6 +965,8 @@
                 }
                 return;
             }
+
+            const reason = prompt("Zadej důvod banu (zobrazí se uživateli na obrazovce a v logu):") || "Porušení pravidel chatu";
 
             let durationMs = 0;
             let isPerm = false;
@@ -909,14 +984,18 @@
                 else return;
             }
 
-            bans[targetUid] = {
+            const banData = {
                 permanent: isPerm,
-                expiresAt: isPerm ? 0 : Date.now() + durationMs
+                expiresAt: isPerm ? 0 : Date.now() + durationMs,
+                reason: reason,
+                username: username,
+                bannedAt: new Date().toLocaleString()
             };
-            saveStorageBans(bans);
+
+            db.ref('restrictions/' + targetUid).update({ ban: banData, fingerprint: userFp || deviceFingerprint });
 
             const audit = getStorageAuditLog();
-            audit.push({ action: isPerm ? 'BAN_PERM' : 'BAN_TEMPORARY', userId: targetUid, user: username, admin: 'admin', time: new Date().toLocaleString() });
+            audit.push({ action: isPerm ? 'BAN_PERM' : 'BAN_TEMPORARY', userId: targetUid, user: username, reason: reason, admin: 'admin', time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             alert(`Uživatel ${username} dostal ban.`);
@@ -936,14 +1015,17 @@
             document.getElementById('profileUsernameTitle').innerText = `Profil: ${username}`;
             document.getElementById('profileUserIdSub').innerText = `ID: ${uid}`;
             
+            const rest = cloudRestrictions[uid] || {};
+            const userFp = rest.fingerprint || deviceFingerprint;
+
             document.getElementById('profileKickBtn').onclick = () => {
-                kickUserDirect(uid, username);
+                kickUserDirect(uid, username, userFp);
             };
             document.getElementById('profileMuteBtn').onclick = () => {
-                promptMuteUser(uid, username);
+                promptMuteUser(uid, username, userFp);
             };
             document.getElementById('profileBanBtn').onclick = () => {
-                promptBanUser(uid, username);
+                promptBanUser(uid, username, userFp);
             };
             document.getElementById('profileRenameBtn').onclick = () => {
                 adminChangeNickname(uid, username);
@@ -1069,6 +1151,7 @@
             audit.push({
                 action: 'ADMIN_LOGIN_' + mode.toUpperCase(),
                 userId: currentUserId,
+                fingerprint: 'admin_fp',
                 user: 'admin',
                 publicIp: clientPublicIp,
                 privateIp: clientPrivateIp,
@@ -1124,11 +1207,29 @@
 
             currentUser = nickInput + (classSelect ? ' ('+classSelect+')' : '');
             
-            const bans = getStorageBans();
-            const banInfo = bans[currentUserId];
-            if (banInfo && (banInfo.permanent || Date.now() < banInfo.expiresAt)) {
-                errDiv.innerText = "Tento uživatel má aktivní ban!";
-                errDiv.classList.remove('hidden');
+            // Ověření banu z cloudu při přihlášení (podle ID nebo přesného otisku zařízení)
+            let isBanned = false;
+            let banReason = '';
+            let banExp = '';
+
+            for (let uid in cloudRestrictions) {
+                const rest = cloudRestrictions[uid];
+                if ((uid === currentUserId || (rest.fingerprint && rest.fingerprint === deviceFingerprint)) && rest.ban) {
+                    if (rest.ban.permanent || Date.now() < rest.ban.expiresAt) {
+                        isBanned = true;
+                        banReason = rest.ban.reason;
+                        banExp = rest.ban.permanent ? 'Natrvalo' : `Do ${new Date(rest.ban.expiresAt).toLocaleString()}`;
+                        break;
+                    }
+                }
+            }
+
+            if (isBanned) {
+                document.getElementById('bannedReasonText').innerText = banReason || 'Bez udání důvodu';
+                document.getElementById('bannedDurationText').innerText = banExp;
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('bannedScreen').classList.remove('hidden');
+                document.getElementById('bannedScreen').classList.add('flex');
                 return;
             }
 
@@ -1140,6 +1241,7 @@
             audit.push({
                 action: 'USER_LOGIN',
                 userId: currentUserId,
+                fingerprint: deviceFingerprint,
                 user: currentUser,
                 publicIp: clientPublicIp,
                 privateIp: clientPrivateIp,
@@ -1253,17 +1355,23 @@
 
         function sendMessage() {
             if (!isAdmin) {
-                const bans = getStorageBans();
-                const banInfo = bans[currentUserId];
-                if (banInfo && (banInfo.permanent || Date.now() < banInfo.expiresAt)) {
+                let userRest = cloudRestrictions[currentUserId] || {};
+                if (!userRest.ban) {
+                    for (let uid in cloudRestrictions) {
+                        if (cloudRestrictions[uid].fingerprint === deviceFingerprint && cloudRestrictions[uid].ban) {
+                            userRest = cloudRestrictions[uid];
+                            break;
+                        }
+                    }
+                }
+                
+                if (userRest.ban && (userRest.ban.permanent || Date.now() < userRest.ban.expiresAt)) {
                     alert("Máš ban!");
                     handleLogout();
                     return;
                 }
 
-                const mutes = getStorageMutes();
-                const muteInfo = mutes[currentUserId];
-                if (muteInfo && (muteInfo.permanent || Date.now() < muteInfo.expiresAt)) {
+                if (userRest.mute && (userRest.mute.permanent || Date.now() < userRest.mute.expiresAt)) {
                     alert("Jsi ztlumen a nemůžeš psát!");
                     return;
                 }
@@ -1303,6 +1411,7 @@
                 action: 'SENT_MESSAGE',
                 msgId: msgId,
                 userId: currentUserId,
+                fingerprint: deviceFingerprint,
                 user: currentUser,
                 isAdmin: isAdmin,
                 text: capturedText,
@@ -1462,7 +1571,7 @@
             });
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'EDITED_MESSAGE', msgId: editingMessageId, userId: currentUserId, user: currentUser, text: newText, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'EDITED_MESSAGE', msgId: editingMessageId, userId: currentUserId, fingerprint: deviceFingerprint, user: currentUser, text: newText, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             closeEditModal();
@@ -1483,7 +1592,7 @@
             });
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'DELETED_MESSAGE', msgId: id, userId: currentUserId, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'DELETED_MESSAGE', msgId: id, userId: currentUserId, fingerprint: deviceFingerprint, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
             
             if (isAdmin) renderAdminImageLog();
@@ -1492,9 +1601,10 @@
         function clearChatData() {
             if (!confirm("OPRAVDU chceš vymazat celou historii chatu v cloudu?")) return;
             db.ref('messages').remove();
+            db.ref('restrictions').remove();
             
             const audit = getStorageAuditLog();
-            audit.push({ action: 'WIPE_CHAT_HISTORY', userId: currentUserId, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'WIPE_CHAT_HISTORY', userId: currentUserId, fingerprint: deviceFingerprint, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             showAdminDashboard();
