@@ -153,8 +153,8 @@
                 <div class="border border-zinc-900 p-2.5 bg-black space-y-2">
                     <div class="flex justify-between items-center">
                         <div>
-                            <span class="text-yellow-400 font-bold">Připojení uživatelé</span>
-                            <p class="text-[9px] text-zinc-600">Seznam aktivních sessions a hardwarových otisků</p>
+                            <span class="text-yellow-400 font-bold">Připojení uživatelé (právě v chatu)</span>
+                            <p class="text-[9px] text-zinc-600">Seznam uživatelů, kteří mají aktivně otevřený chat</p>
                         </div>
                         <input type="text" id="adminUserSearchInput" placeholder="hledat..." oninput="renderAdminUsersList()" class="bg-black border border-zinc-800 p-1 w-32 text-white">
                     </div>
@@ -286,6 +286,7 @@
         let cloudMessages = [];
         let cloudEmojis = [];
         let cloudRestrictions = {};
+        let activePresenceList = {};
         let editingMessageId = null;
         let activeProfileUserId = null;
         let activeProfileUsername = null;
@@ -306,10 +307,15 @@
         const presenceRef = db.ref('presence');
 
         connectedRef.on('value', (snap) => {
-            if (snap.val() === true) {
-                const myPresenceRef = presenceRef.push();
+            if (snap.val() === true && currentUser && currentUserId) {
+                const myPresenceRef = presenceRef.child(currentUserId);
                 myPresenceRef.onDisconnect().remove();
-                myPresenceRef.set({ fingerprint: deviceFingerprint, user: currentUser || 'Anonym', timestamp: firebase.database.ServerValue.TIMESTAMP });
+                myPresenceRef.set({
+                    userId: currentUserId,
+                    fingerprint: deviceFingerprint,
+                    user: currentUser,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
                 
                 const heartbeatInterval = setInterval(() => {
                     myPresenceRef.update({ timestamp: firebase.database.ServerValue.TIMESTAMP });
@@ -326,19 +332,26 @@
             const data = snapshot.val();
             let activeCount = 0;
             const now = Date.now();
+            activePresenceList = {};
+            
             if (data) {
-                for (let key in data) {
-                    const val = data[key];
-                    if (val.timestamp && (now - val.timestamp < 20000)) {
+                for (let uid in data) {
+                    const val = data[uid];
+                    if (val && val.timestamp && (now - val.timestamp < 20000)) {
                         activeCount++;
+                        activePresenceList[uid] = val;
                     } else {
-                        presenceRef.child(key).remove();
+                        presenceRef.child(uid).remove();
                     }
                 }
             }
-            if (activeCount < 1) activeCount = 1;
+            if (activeCount < 1 && currentUser) activeCount = 1;
             const badge = document.getElementById('onlineCountBadge');
             if (badge) badge.innerText = activeCount;
+
+            if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                renderAdminUsersList();
+            }
         });
 
         db.ref('messages').on('value', (snapshot) => {
@@ -353,6 +366,9 @@
         db.ref('emojis').on('value', (snapshot) => {
             const data = snapshot.val();
             cloudEmojis = data ? Object.values(data) : [];
+            if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                renderAdminEmojis();
+            }
         });
 
         db.ref('restrictions').on('value', (snapshot) => {
@@ -404,15 +420,14 @@
                 return;
             }
 
-            // KICK: Zkontrolujeme, zda uživatel tento kick na této session už viděl
             if (matchedRest.kicked) {
                 const kickKey = 'gjw_kicked_notified_' + (matchedRest.userId || currentUserId);
                 if (sessionStorage.getItem(kickKey) !== 'true') {
                     sessionStorage.setItem(kickKey, 'true');
                     
-                    // Okamžitě smažeme flag v databázi, aby příště nebyl zablokovaný
                     if (currentUserId) {
                         db.ref('restrictions/' + currentUserId + '/kicked').remove();
+                        presenceRef.child(currentUserId).remove();
                     }
 
                     alert("Byl jsi vyhozen správcem!");
@@ -603,24 +618,19 @@
             renderAdminLogs();
         }
 
+        // Vykresluje POUZE ty uživatele, kteří jsou aktuálně v tabulce presence (jsou na stránce chatu)
         function renderAdminUsersList() {
             const container = document.getElementById('adminUsersListContainer');
             const searchVal = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase().trim();
             container.innerHTML = '';
 
-            const audit = getStorageAuditLog();
-            const activeUsersMap = {};
-            audit.forEach(item => {
-                if (item.userId && item.user && item.user !== 'admin') {
-                    activeUsersMap[item.userId] = { userId: item.userId, fingerprint: item.fingerprint || deviceFingerprint, name: item.user, ip: item.publicIp || 'N/A' };
-                }
-            });
-
-            let users = Object.values(activeUsersMap);
-            if (searchVal) users = users.filter(u => u.name.toLowerCase().includes(searchVal) || u.userId.toLowerCase().includes(searchVal));
+            let users = Object.values(activePresenceList);
+            if (searchVal) {
+                users = users.filter(u => (u.user || '').toLowerCase().includes(searchVal) || (u.userId || '').toLowerCase().includes(searchVal));
+            }
 
             if (users.length === 0) {
-                container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádní aktivní uživatelé v záznamech</span>';
+                container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádní aktivní uživatelé v chatu</span>';
                 return;
             }
 
@@ -633,14 +643,14 @@
                 row.className = "flex justify-between items-center bg-zinc-950 border border-zinc-900 p-1.5 gap-1";
                 row.innerHTML = `
                     <div>
-                        <div class="text-zinc-200">${u.name} ${isBanned ? '<span class="text-red-500 font-bold">[BAN]</span>' : ''} ${isMuted ? '<span class="text-orange-500 font-bold">[MUTE]</span>' : ''}</div>
-                        <div class="text-[9px] text-zinc-600">ID: ${u.userId} | IP: ${u.ip}</div>
+                        <div class="text-zinc-200">${u.user} ${isBanned ? '<span class="text-red-500 font-bold">[BAN]</span>' : ''} ${isMuted ? '<span class="text-orange-500 font-bold">[MUTE]</span>' : ''}</div>
+                        <div class="text-[9px] text-zinc-600">ID: ${u.userId}</div>
                     </div>
                     <div class="flex gap-1">
-                        <button onclick="adminChangeNickname('${u.userId}', '${u.name}')" class="border border-zinc-700 px-1 text-zinc-400 cursor-pointer">Jméno</button>
-                        <button onclick="kickUserDirect('${u.userId}', '${u.name}', '${u.fingerprint}')" class="border border-yellow-800 text-yellow-400 px-1 cursor-pointer">Kick</button>
-                        <button onclick="promptMuteUser('${u.userId}', '${u.name}', '${u.fingerprint}')" class="border border-orange-800 text-orange-400 px-1 cursor-pointer">Mute</button>
-                        <button onclick="promptBanUser('${u.userId}', '${u.name}', '${u.fingerprint}')" class="border border-red-800 text-red-400 px-1 cursor-pointer">Ban</button>
+                        <button onclick="adminChangeNickname('${u.userId}', '${u.user}')" class="border border-zinc-700 px-1 text-zinc-400 cursor-pointer">Jméno</button>
+                        <button onclick="kickUserDirect('${u.userId}', '${u.user}', '${u.fingerprint}')" class="border border-yellow-800 text-yellow-400 px-1 cursor-pointer">Kick</button>
+                        <button onclick="promptMuteUser('${u.userId}', '${u.user}', '${u.fingerprint}')" class="border border-orange-800 text-orange-400 px-1 cursor-pointer">Mute</button>
+                        <button onclick="promptBanUser('${u.userId}', '${u.user}', '${u.fingerprint}')" class="border border-red-800 text-red-400 px-1 cursor-pointer">Ban</button>
                     </div>
                 `;
                 container.appendChild(row);
@@ -718,7 +728,6 @@
         }
 
         function kickUserDirect(targetUid, username, userFp) {
-            // Smažeme případný předchozí sessionStorage záznam pro tento účet, aby ho to při novém kiku správně vyhodilo
             sessionStorage.removeItem('gjw_kicked_notified_' + targetUid);
             db.ref('restrictions/' + targetUid).update({ kicked: true, fingerprint: userFp || deviceFingerprint, userId: targetUid });
             alert("Uživatel byl vyhozen.");
@@ -812,12 +821,16 @@
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) { db.ref('emojis').push(e.target.result); alert("Obrázek nahrán."); showAdminDashboard(); };
+            reader.onload = function(e) {
+                db.ref('emojis').push(e.target.result);
+                alert("Obrázek nahrán.");
+            };
             reader.readAsDataURL(file);
         }
 
         function renderAdminEmojis() {
             const list = document.getElementById('adminEmojiList');
+            if (!list) return;
             list.innerHTML = '';
             cloudEmojis.forEach((img, idx) => {
                 const wrap = document.createElement('div');
@@ -832,7 +845,7 @@
                 const val = s.val();
                 if (val) {
                     const keys = Object.keys(val);
-                    if (keys[idx]) { db.ref('emojis/' + keys[idx]).remove(); showAdminDashboard(); }
+                    if (keys[idx]) { db.ref('emojis/' + keys[idx]).remove(); }
                 }
             });
         }
@@ -859,7 +872,6 @@
         }
 
         function openChatFromAdmin() {
-            const mode = document.getElementById('adminModeSelect').value;
             currentUser = 'admin (Admin)';
             currentUserId = 'admin_uid';
             isAdmin = true;
@@ -914,11 +926,23 @@
 
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('userSubtitle').innerText = currentUser;
+            
+            // Okamžitá registrace do presence po přihlášení
+            db.ref('presence/' + currentUserId).set({
+                userId: currentUserId,
+                fingerprint: deviceFingerprint,
+                user: currentUser,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+
             renderMessages();
             scrollToBottom(false);
         }
 
         function handleLogout() {
+            if (currentUserId) {
+                db.ref('presence/' + currentUserId).remove();
+            }
             localStorage.removeItem('gjw_saved_user');
             localStorage.removeItem('gjw_saved_user_id');
             sessionStorage.removeItem('gjw_admin_logged');
