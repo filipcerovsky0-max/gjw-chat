@@ -276,6 +276,13 @@
 
         let currentUser = localStorage.getItem('gjw_saved_user') || null;
         let currentUserId = localStorage.getItem('gjw_saved_user_id') || null;
+
+        // Pokud uživatel nemá ID, vygenerujeme ho hned při startu, aby nikdy nebylo undefined
+        if (!currentUserId || currentUserId === 'undefined' || currentUserId === 'null') {
+            currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('gjw_saved_user_id', currentUserId);
+        }
+
         let deviceFingerprint = getDeviceFingerprint();
         let isAdmin = false;
         let selectedImageBase64 = null;
@@ -307,7 +314,7 @@
         const presenceRef = db.ref('presence');
 
         connectedRef.on('value', (snap) => {
-            if (snap.val() === true && currentUser && currentUserId) {
+            if (snap.val() === true && currentUser && currentUserId && currentUserId !== 'undefined') {
                 const myPresenceRef = presenceRef.child(currentUserId);
                 myPresenceRef.onDisconnect().remove();
                 myPresenceRef.set({
@@ -318,7 +325,9 @@
                 });
                 
                 const heartbeatInterval = setInterval(() => {
-                    myPresenceRef.update({ timestamp: firebase.database.ServerValue.TIMESTAMP });
+                    if (currentUserId && currentUser) {
+                        myPresenceRef.update({ timestamp: firebase.database.ServerValue.TIMESTAMP });
+                    }
                 }, 10000);
 
                 window.addEventListener('beforeunload', () => {
@@ -337,7 +346,8 @@
             if (data) {
                 for (let uid in data) {
                     const val = data[uid];
-                    if (val && val.timestamp && (now - val.timestamp < 20000)) {
+                    // Ignorujeme záznamy, kde chybí uživatel nebo ID
+                    if (val && val.userId && val.user && val.userId !== 'undefined' && val.timestamp && (now - val.timestamp < 20000)) {
                         activeCount++;
                         activePresenceList[uid] = val;
                     } else {
@@ -369,6 +379,8 @@
             if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
                 renderAdminEmojis();
             }
+            // Rovnou aktualizujeme i picker v chatu, pokud je otevřený
+            renderEmojiPickerList();
         });
 
         db.ref('restrictions').on('value', (snapshot) => {
@@ -531,6 +543,7 @@
 
         function renderEmojiPickerList() {
             const content = document.getElementById('emojiPickerContent');
+            if (!content) return;
             content.innerHTML = '';
             if (cloudEmojis.length === 0) {
                 content.innerHTML = '<span class="text-zinc-600 text-[9px]">Žádné vlastní memy</span>';
@@ -574,7 +587,7 @@
                 return;
             }
 
-            if (currentUser && currentUserId) {
+            if (currentUser && currentUserId && currentUserId !== 'undefined') {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('userSubtitle').innerText = currentUser;
                 renderMessages();
@@ -618,9 +631,9 @@
             renderAdminLogs();
         }
 
-        // Vykresluje POUZE ty uživatele, kteří jsou aktuálně v tabulce presence (jsou na stránce chatu)
         function renderAdminUsersList() {
             const container = document.getElementById('adminUsersListContainer');
+            if (!container) return;
             const searchVal = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase().trim();
             container.innerHTML = '';
 
@@ -659,6 +672,7 @@
 
         function renderAdminBansLog() {
             const container = document.getElementById('adminBansLogContainer');
+            if (!container) return;
             container.innerHTML = '';
             let count = 0;
             for (let uid in cloudRestrictions) {
@@ -677,6 +691,7 @@
 
         function renderAdminImageLog() {
             const container = document.getElementById('adminImageLogContainer');
+            if (!container) return;
             container.innerHTML = '';
             const imgs = cloudMessages.filter(m => m.image);
             if (imgs.length === 0) {
@@ -699,6 +714,7 @@
 
         function renderAdminLogs() {
             const container = document.getElementById('adminLogContainer');
+            if (!container) return;
             const audit = getStorageAuditLog();
             container.innerHTML = '';
             if (audit.length === 0) {
@@ -807,6 +823,7 @@
 
         function renderUserProfileModalContent(uid) {
             const container = document.getElementById('profileUserMessagesList');
+            if (!container) return;
             container.innerHTML = '';
             const userMsgs = cloudMessages.filter(m => m.userId === uid && !m.isSystem);
             userMsgs.reverse().forEach(msg => {
@@ -891,7 +908,9 @@
             if (!nick) { err.innerText = "Zadej svou přezdívku!"; err.classList.remove('hidden'); return; }
             if (nick.toLowerCase() === 'admin') { err.innerText = "Tato přezdívka je zakázaná!"; err.classList.remove('hidden'); return; }
 
-            if (!currentUserId) currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
+            if (!currentUserId || currentUserId === 'undefined') {
+                currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
+            }
             currentUser = nick + (cls ? ' (' + cls + ')' : '');
 
             let isBanned = false;
@@ -927,7 +946,6 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('userSubtitle').innerText = currentUser;
             
-            // Okamžitá registrace do presence po přihlášení
             db.ref('presence/' + currentUserId).set({
                 userId: currentUserId,
                 fingerprint: deviceFingerprint,
@@ -940,7 +958,7 @@
         }
 
         function handleLogout() {
-            if (currentUserId) {
+            if (currentUserId && currentUserId !== 'undefined') {
                 db.ref('presence/' + currentUserId).remove();
             }
             localStorage.removeItem('gjw_saved_user');
@@ -1120,9 +1138,11 @@
         }
 
         function clearChatData() {
-            if (!confirm("Opravdu smazat celou historii zpráv a restrikce?")) return;
+            if (!confirm("Opravdu smazat celou historii zpráv, memy a restrikce?")) return;
             db.ref('messages').remove();
             db.ref('restrictions').remove();
+            db.ref('emojis').remove();
+            db.ref('presence').remove();
             showAdminDashboard();
         }
     </script>
