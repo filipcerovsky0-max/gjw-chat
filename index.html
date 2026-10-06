@@ -10,26 +10,26 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
         @keyframes fadeInSlide {
-            from { opacity: 0; transform: translateY(15px) scale(0.98); }
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes waveText {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-4px) rotate(0.5deg); }
         }
         @keyframes popUp {
-            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            from { opacity: 0; transform: translateY(15px) scale(0.9); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .message-animate {
-            animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .wave-animation {
             display: inline-block;
-            animation: waveText 2.5s ease-in-out infinite;
+            animation: waveText 2s ease-in-out infinite;
         }
         .popup-animate {
-            animation: popUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: popUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .rainbow-admin {
             background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
@@ -46,9 +46,6 @@
         ::-webkit-scrollbar-thumb {
             background: #334155;
             border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
         }
     </style>
 </head>
@@ -69,7 +66,7 @@
             <div class="space-y-4 w-full">
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Přezdívka</label>
-                    <input type="text" id="loginNickname" value="" placeholder="Sem zadejte svou přezdívku" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors text-base" maxlength="20" autocomplete="off">
+                    <input type="text" id="loginNickname" placeholder="Sem zadejte svou přezdívku" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors text-base" maxlength="20" autocomplete="off">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Třída (volitelně)</label>
@@ -102,7 +99,7 @@
         </div>
     </div>
 
-    <!-- Admin Control Room Screen (/admin) -->
+    <!-- Admin Control Room Screen (přístupno přes /admin nebo trojklik na logo) -->
     <div id="adminPageScreen" class="fixed inset-0 bg-slate-950 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col message-animate">
             <div id="adminAuthBox" class="space-y-6 my-auto">
@@ -138,7 +135,7 @@
                                 <option value="hidden">Nepozorovaně / Ghost mode (zcela skrytý v roomce)</option>
                             </select>
                         </div>
-                        <button onclick="openChatFromAdmin()" ontouchend="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0">Vstoupit do chatu s bočním panelem</button>
+                        <button onclick="openChatFromAdmin()" ontouchend="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0">Vstoupit do chatu</button>
                     </div>
 
                     <div id="usersCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all">
@@ -161,7 +158,7 @@
 
                     <div id="logsCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all flex flex-col">
                         <div class="flex items-center justify-between">
-                            <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů (Veřejná IP, Lokální IP, Wi-Fi hinty, Zařízení)</div>
+                            <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů</div>
                             <button onclick="toggleFullscreen('logsCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition">Celá obrazovka ⤢</button>
                         </div>
                         <div id="adminLogContainer" class="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-y-auto max-h-72 space-y-3 text-xs font-mono"></div>
@@ -172,7 +169,7 @@
     </div>
 
     <!-- Main App Header -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center z-10 shrink-0">
+    <header class="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-3 flex justify-between items-center z-10 shrink-0">
         <div class="flex items-center space-x-3">
             <div id="headerLogoTrigger" onclick="handleLogoClick()" ontouchend="handleLogoClick()" class="p-1.5 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-750 flex items-center justify-center" title="GJW Logo">
                 <svg viewBox="0 0 160 80" class="h-6 w-16 text-slate-100 fill-current block">
@@ -180,61 +177,66 @@
                 </svg>
             </div>
             <div>
-                <h2 class="font-bold text-base leading-tight">GJW Hlavní Chat</h2>
+                <h2 class="font-bold text-sm sm:text-base leading-tight">GJW Hlavní Chat</h2>
                 <p class="text-xs text-slate-400" id="userSubtitle">Přihlášen: -</p>
             </div>
         </div>
-        <div class="flex items-center space-x-3">
-            <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" ontouchend="openAdminModalFromChat()" class="hidden bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">Control Room</button>
+        <div class="flex items-center space-x-2">
+            <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" ontouchend="openAdminModalFromChat()" class="hidden bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 text-xs font-semibold px-3 py-2 rounded-xl transition-all">Control Room</button>
             <button onclick="handleLogout()" ontouchend="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">Odhlásit</button>
         </div>
     </header>
 
-    <!-- App Body with Optional Admin Sidebar -->
-    <div class="flex-1 flex overflow-hidden relative">
-        <div class="flex-1 flex flex-col h-full overflow-hidden relative">
-            <div id="chatContainer" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative pb-28">
-                <div id="emptyState" class="hidden h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
-                    <p class="text-sm">Zatím žádné zprávy. Napiš první!</p>
-                </div>
-                <div id="messagesList" class="space-y-3 max-w-3xl mx-auto pb-4"></div>
+    <!-- App Body -->
+    <div class="flex-1 flex flex-col overflow-hidden relative">
+        <div id="chatContainer" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative pb-36">
+            <div id="emptyState" class="hidden h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
+                <p class="text-sm">Zatím žádné zprávy. Napiš první!</p>
             </div>
+            <div id="messagesList" class="space-y-3 max-w-3xl mx-auto pb-6"></div>
+        </div>
 
-            <!-- Instagram-Style Floating Scroll-to-Bottom Button -->
-            <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" ontouchend="scrollToBottom(true)" class="fixed bottom-28 right-6 sm:right-12 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-30 text-xs font-semibold">
-                <span>Nové zprávy</span>
-                <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-            </button>
+        <!-- Instagram-Style Floating Scroll-to-Bottom Button -->
+        <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" ontouchend="scrollToBottom(true)" class="fixed bottom-28 right-6 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-30 text-xs font-semibold">
+            <span>Nové zprávy</span>
+            <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+        </button>
 
-            <!-- Message Input Footer -->
-            <footer class="bg-slate-900 border-t border-slate-800 p-3 sm:p-4 shrink-0 fixed bottom-0 left-0 right-0 z-40 shadow-2xl">
-                <div class="max-w-3xl mx-auto flex items-end space-x-2 relative">
-                    
-                    <!-- Image Upload Button -->
-                    <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-                    <button onclick="triggerImageUpload()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center select-none active:scale-95" title="Nahrát obrázek">
+        <!-- Message Input Footer -->
+        <footer class="bg-slate-900 border-t border-slate-800 p-3 sm:p-4 shrink-0 fixed bottom-0 left-0 right-0 z-40 shadow-2xl">
+            <div class="max-w-3xl mx-auto flex flex-col space-y-2 relative">
+                
+                <div id="imageSourcePopup" class="hidden absolute bottom-16 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-48 z-50 popup-animate flex flex-col space-y-1">
+                    <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition">📁 Vybrat z galerie</button>
+                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition">📷 Vyfotit fotoaparátem</button>
+                </div>
+
+                <div id="emojiPickerPopup" class="hidden absolute bottom-16 left-12 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
+                    <div class="text-xs text-slate-400 font-semibold mb-2">Vyber meme emotikon:</div>
+                    <div id="emojiPickerContent" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <input type="file" id="imageInputGallery" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                <input type="file" id="imageInputCamera" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
+
+                <div id="imagePreviewContainer" class="hidden p-2 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between popup-animate">
+                    <div class="flex items-center gap-2">
+                        <img id="imagePreview" src="" class="h-12 w-12 rounded-lg object-cover border border-slate-800">
+                        <span class="text-xs text-slate-300">Obrázek připraven k odeslání</span>
+                    </div>
+                    <button onclick="clearImagePreview()" ontouchend="clearImagePreview()" class="text-slate-400 hover:text-rose-400 text-xs font-semibold px-2 py-1">&times; Zrušit</button>
+                </div>
+
+                <div class="flex items-end space-x-2">
+                    <button onclick="toggleImageSourceMenu()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center select-none active:scale-95" title="Připojit obrázek nebo fotku">
                         <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     </button>
 
-                    <!-- Meme Picker Toggle Button -->
-                    <div class="relative">
-                        <button onclick="toggleMemePicker()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center text-xs font-bold select-none active:scale-95" title="Meme emotikony">
-                            [MEME]
-                        </button>
-                        <!-- Popup Emoji Picker Menu (S plynulým rozvinutím) -->
-                        <div id="emojiPickerPopup" class="hidden absolute bottom-14 left-0 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
-                            <div class="text-xs text-slate-400 font-semibold mb-2">Vyber meme emotikon:</div>
-                            <div id="emojiPickerContent" class="flex flex-wrap gap-2"></div>
-                        </div>
-                    </div>
+                    <button onclick="toggleMemePicker()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center text-xs font-bold select-none active:scale-95" title="Meme emotikony">
+                        [MEME]
+                    </button>
 
-                    <!-- Input Box -->
                     <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl focus-within:border-indigo-500 transition-colors flex flex-col">
-                        <!-- Náhled obrázku (S plynulým rozvinutím) -->
-                        <div id="imagePreviewContainer" class="hidden p-2 pb-0 flex items-center gap-2 popup-animate">
-                            <img id="imagePreview" src="" class="h-14 rounded-lg object-cover border border-slate-800">
-                            <button onclick="clearImagePreview()" ontouchend="clearImagePreview()" class="text-slate-400 hover:text-rose-400 text-xs font-semibold">&times; Zrušit obrázek</button>
-                        </div>
                         <textarea id="messageInput" placeholder="Napiš zprávu..." rows="1" class="w-full bg-transparent px-4 py-3 text-slate-100 focus:outline-none resize-none max-h-32 text-base" onkeydown="handleKeydown(event)"></textarea>
                     </div>
                     
@@ -242,17 +244,8 @@
                         <svg class="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                     </button>
                 </div>
-            </footer>
-        </div>
-
-        <div id="adminSidebar" class="hidden w-80 bg-slate-900 border-l border-slate-800 p-4 overflow-y-auto flex-col space-y-4 shrink-0">
-            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                <h3 class="font-bold text-sm text-amber-400">Admin Control Sidebar</h3>
-                <button onclick="openAdminModalFromChat()" ontouchend="openAdminModalFromChat()" class="text-xs bg-amber-600/20 text-amber-400 px-2 py-1 rounded hover:bg-amber-600/30">Control Room</button>
             </div>
-            <div class="text-[11px] text-slate-400">Živý přehled připojení, IP, Wi-Fi a správa banů:</div>
-            <div id="sidebarLogContainer" class="space-y-2 text-xs font-mono flex-1"></div>
-        </div>
+        </footer>
     </div>
 
     <script>
@@ -262,7 +255,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let currentUser = null;
+        let currentUser = localStorage.getItem('gjw_saved_user') || null;
         let isAdmin = false;
         let selectedImageBase64 = null;
         let isUserAtBottom = true;
@@ -324,11 +317,12 @@
 
         function checkUserBanned(username) {
             const bans = getStorageBans();
-            const banInfo = bans[username.toLowerCase()];
+            const clean = username.split(' ')[0].toLowerCase();
+            const banInfo = bans[clean];
             if (!banInfo) return false;
             if (banInfo.permanent) return true;
             if (Date.now() < banInfo.expiresAt) return true;
-            delete bans[username.toLowerCase()];
+            delete bans[clean];
             saveStorageBans(bans);
             return false;
         }
@@ -336,24 +330,36 @@
         function checkKickStatus() {
             if (!currentUser || isAdmin) return;
             const kickedUsers = JSON.parse(localStorage.getItem('gjw_kicked_users') || '[]');
-            if (kickedUsers.includes(currentUser)) {
+            const clean = currentUser.split(' ')[0];
+            if (kickedUsers.includes(clean)) {
                 alert("Byl jsi vyhozen adminem!");
                 handleLogout();
             }
         }
 
         const emojiPopup = document.getElementById('emojiPickerPopup');
+        const imageSourcePopup = document.getElementById('imageSourcePopup');
 
         function toggleMemePicker() {
+            imageSourcePopup.classList.add('hidden');
             emojiPopup.classList.toggle('hidden');
             if (!emojiPopup.classList.contains('hidden')) {
                 renderEmojiPickerList();
             }
         }
 
-        function triggerImageUpload() {
+        function toggleImageSourceMenu() {
             emojiPopup.classList.add('hidden');
-            document.getElementById('imageInput').click();
+            imageSourcePopup.classList.toggle('hidden');
+        }
+
+        function triggerFileInput(isCamera) {
+            imageSourcePopup.classList.add('hidden');
+            if (isCamera) {
+                document.getElementById('imageInputCamera').click();
+            } else {
+                document.getElementById('imageInputGallery').click();
+            }
         }
 
         function renderEmojiPickerList() {
@@ -400,6 +406,8 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             const path = window.location.pathname;
+            
+            // ADMIN PŘÍSTUP: Povoleno přes adresu /admin NEBO přes trojklik na logo
             if (path.includes('admin')) {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('adminPageScreen').classList.remove('hidden');
@@ -412,8 +420,14 @@
                 return;
             }
 
-            sessionStorage.removeItem('gjw_active_session');
-            document.getElementById('loginScreen').classList.remove('hidden');
+            if (currentUser) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser}`;
+                renderMessages();
+                scrollToBottom(false);
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
+            }
         });
 
         function handleLogoClick() {
@@ -652,30 +666,13 @@
             return text.replace(/\[meme:(data:image\/[^\]]+)\]/g, '<img src="$1" class="inline-block w-6 h-6 object-contain mx-0.5 align-middle">');
         }
 
-        function updateSidebarLog() {
-            const sidebarLog = document.getElementById('sidebarLogContainer');
-            const audit = getStorageAuditLog();
-            sidebarLog.innerHTML = '';
-            audit.slice(-10).reverse().forEach(item => {
-                const box = document.createElement('div');
-                box.className = "bg-slate-950 p-2 rounded border border-slate-800 space-y-1";
-                box.innerHTML = `
-                    <div class="text-amber-400 font-bold">[${item.action}]</div>
-                    <div class="text-slate-300 truncate">Uživatel: ${item.user || 'N/A'}</div>
-                    <div class="text-indigo-300 truncate">IP: ${item.publicIp || item.privateIp || 'N/A'}</div>
-                    <div class="text-slate-500 text-[10px]">${item.time}</div>
-                `;
-                sidebarLog.appendChild(box);
-            });
-        }
-
         function openChatFromAdmin() {
             const mode = document.getElementById('adminModeSelect').value;
-            currentUser = 'admin';
+            currentUser = 'admin (Admin)';
             isAdmin = true;
 
-            sessionStorage.setItem('gjw_active_session', 'true');
-            sessionStorage.setItem('gjw_admin_mode', mode);
+            localStorage.setItem('gjw_saved_user', currentUser);
+            sessionStorage.setItem('gjw_admin_logged', 'true');
 
             const audit = getStorageAuditLog();
             audit.push({
@@ -707,9 +704,6 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('userSubtitle').innerText = `Přihlášen: admin (Admin)`;
             document.getElementById('adminHeaderBtn').classList.remove('hidden');
-            document.getElementById('adminSidebar').classList.remove('hidden');
-            document.getElementById('adminSidebar').classList.add('flex');
-            updateSidebarLog();
             renderMessages();
             scrollToBottom(false);
         }
@@ -725,8 +719,10 @@
                 return;
             }
 
+            // Ochrana: uživatel se nemůže přihlásit jako "admin" v přihlašovacím formuláři
             if (nickInput.toLowerCase() === 'admin') {
-                window.location.href = './admin';
+                errDiv.innerText = "Jméno admin je vyhrazené!";
+                errDiv.classList.remove('hidden');
                 return;
             }
 
@@ -738,7 +734,7 @@
 
             currentUser = nickInput + (classSelect ? ' ('+classSelect+')' : '');
             isAdmin = false;
-            sessionStorage.setItem('gjw_active_session', 'true');
+            localStorage.setItem('gjw_saved_user', currentUser);
 
             const audit = getStorageAuditLog();
             audit.push({
@@ -774,8 +770,9 @@
         }
 
         function handleLogout() {
-            sessionStorage.removeItem('gjw_active_session');
+            localStorage.removeItem('gjw_saved_user');
             sessionStorage.removeItem('gjw_admin_logged');
+            currentUser = null;
             location.href = './';
         }
 
@@ -792,8 +789,7 @@
             const reader = new FileReader();
             reader.onload = function(uploadEvent) {
                 selectedImageBase64 = uploadEvent.target.result;
-                const previewImg = document.getElementById('imagePreview');
-                previewImg.src = selectedImageBase64;
+                document.getElementById('imagePreview').src = selectedImageBase64;
                 document.getElementById('imagePreviewContainer').classList.remove('hidden');
             };
             reader.readAsDataURL(file);
@@ -801,7 +797,8 @@
 
         function clearImagePreview() {
             selectedImageBase64 = null;
-            document.getElementById('imageInput').value = '';
+            document.getElementById('imageInputGallery').value = '';
+            document.getElementById('imageInputCamera').value = '';
             document.getElementById('imagePreviewContainer').classList.add('hidden');
         }
 
@@ -849,7 +846,6 @@
             clearImagePreview();
             renderMessages();
             scrollToBottom(true);
-            if (isAdmin) updateSidebarLog();
         }
 
         function renderMessages() {
@@ -867,14 +863,24 @@
                 if (msg.isSystem) {
                     div.className = "flex justify-center my-3 message-animate";
                     const span = document.createElement('span');
-                    span.className = "text-xs text-slate-500 font-mono tracking-tight wave-animation";
+                    span.className = "text-xs text-slate-400 font-mono tracking-tight wave-animation px-3 py-1 bg-slate-900/80 rounded-full border border-slate-800 shadow-sm";
                     span.innerText = `— ${msg.text} —`;
                     div.appendChild(span);
+                    
+                    if (isAdmin) {
+                        const adminDelBtn = document.createElement('button');
+                        adminDelBtn.innerText = " [×]";
+                        adminDelBtn.className = "text-rose-400 hover:text-rose-300 font-bold ml-1";
+                        adminDelBtn.onclick = () => deleteMessage(msg.id);
+                        span.appendChild(adminDelBtn);
+                    }
+
                     messagesList.appendChild(div);
                     return;
                 }
 
-                div.className = `flex flex-col space-y-1 message-animate ${msg.user === currentUser ? 'items-end' : 'items-start'} my-2`;
+                const isAuthor = currentUser && msg.user === currentUser;
+                div.className = `flex flex-col space-y-1 message-animate ${isAuthor ? 'items-end' : 'items-start'} my-2`;
 
                 const metaDiv = document.createElement('div');
                 metaDiv.className = "flex items-center space-x-2 text-xs text-slate-400 px-1";
@@ -882,7 +888,7 @@
                 const nameSpan = document.createElement('span');
                 if (msg.isAdmin) {
                     nameSpan.className = "rainbow-admin text-sm";
-                    nameSpan.innerText = `${msg.user} (Admin)`;
+                    nameSpan.innerText = `${msg.user}`;
                 } else {
                     nameSpan.className = "font-semibold text-slate-300";
                     nameSpan.innerText = msg.user;
@@ -896,7 +902,7 @@
                 div.appendChild(metaDiv);
 
                 const contentBox = document.createElement('div');
-                contentBox.className = `max-w-md rounded-2xl px-4 py-3 text-sm shadow-sm ${msg.user === currentUser ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-slate-900 border border-slate-800 text-slate-100 rounded-bl-sm'}`;
+                contentBox.className = `max-w-md rounded-2xl px-4 py-3 text-sm shadow-sm ${isAuthor ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-slate-900 border border-slate-800 text-slate-100 rounded-bl-sm'}`;
 
                 if (msg.text) {
                     const textP = document.createElement('div');
@@ -918,7 +924,7 @@
                 const actionBox = document.createElement('div');
                 actionBox.className = "flex items-center space-x-2 text-[10px] text-slate-500 px-1";
 
-                if (msg.user === currentUser && !isAdmin) {
+                if (isAuthor && !isAdmin) {
                     const editBtn = document.createElement('button');
                     editBtn.innerText = "Upravit";
                     editBtn.className = "hover:text-indigo-400 transition-colors";
@@ -992,8 +998,6 @@
             const audit = getStorageAuditLog();
             audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
-
-            if (isAdmin) updateSidebarLog();
         }
 
         function clearChatData() {
@@ -1005,7 +1009,6 @@
             saveStorageAuditLog(audit);
 
             showAdminDashboard();
-            if (isAdmin) updateSidebarLog();
         }
     </script>
 </body>
