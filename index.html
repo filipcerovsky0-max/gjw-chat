@@ -24,7 +24,7 @@
         @keyframes flyToChat {
             0% {
                 opacity: 1;
-                transform: translate(var(--start-x), var(--start-y)) scale(0.8);
+                transform: translate(var(--start-x), var(--start-y)) scale(0.85);
             }
             100% {
                 opacity: 1;
@@ -37,7 +37,7 @@
             top: 0;
             z-index: 9999;
             pointer-events: none;
-            animation: flyToChat 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: flyToChat 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .message-animate {
             animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -68,6 +68,23 @@
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans overflow-hidden">
+
+    <!-- Stylový modální dialog pro úpravu zprávy (náhrada za hnusný prompt) -->
+    <div id="editModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-lg space-y-4 popup-animate">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                <h3 class="text-base font-bold text-slate-200">Upravit zprávu</h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-200 text-lg font-bold">&times;</button>
+            </div>
+            <div>
+                <textarea id="editModalInput" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100 focus:outline-none focus:border-indigo-500 text-base resize-none" placeholder="Napište upravenou zprávu..."></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeEditModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl text-xs font-semibold transition">Zrušit</button>
+                <button onclick="saveEditedMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition shadow-lg shadow-indigo-600/25">Uložit změny</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Regular User Login Screen -->
     <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-between p-4 overflow-y-auto">
@@ -156,7 +173,6 @@
                         <button onclick="openChatFromAdmin()" ontouchend="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0">Vstoupit do chatu</button>
                     </div>
 
-                    <!-- Uživatelé s vyhledáváním -->
                     <div id="usersCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                             <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Seznam aktuálních uživatelů a správa (Ban / Kick)</h3>
@@ -168,7 +184,6 @@
                         <div id="adminUsersListContainer" class="space-y-2 max-h-40 overflow-y-auto"></div>
                     </div>
 
-                    <!-- Log odeslaných obrázků -->
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
                         <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Log odeslaných obrázků a fotek</h3>
                         <div id="adminImageLogContainer" class="space-y-2 max-h-48 overflow-y-auto bg-slate-900 border border-slate-800 p-3 rounded-xl"></div>
@@ -293,6 +308,7 @@
         let logoClickTimer = null;
         let cloudMessages = [];
         let cloudEmojis = [];
+        let editingMessageId = null;
 
         const chatContainer = document.getElementById('chatContainer');
         const messagesList = document.getElementById('messagesList');
@@ -526,7 +542,6 @@
             renderAdminEmojis();
         }
 
-        // --- Vyhledávání uživatelů v admin panelu ---
         function renderAdminUsersList() {
             const container = document.getElementById('adminUsersListContainer');
             const searchVal = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase();
@@ -559,8 +574,8 @@
                 row.className = "flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-800 gap-3";
                 row.innerHTML = `
                     <div class="space-y-0.5">
-                        <div class="text-sm font-bold text-slate-200">${u.name} ${isBanned ? '<span class="text-rose-500 text-xs">[ZABANOVÁNO]</span>' : ''}</div>
-                        <div class="text-[11px] text-slate-400 font-mono">IP: ${u.ip} | Zařízení: ${u.device.substring(0, 35)}...</div>
+                        <div class="text-sm font-bold text-slate-200">${u.name}${isBanned ? '<span class="text-rose-500 text-xs">[ZABANOVÁNO]</span>' : ''}</div>
+                        <div class="text-[11px] text-slate-400 font-mono">IP: ${u.ip} \vert{} Zařízení: ${u.device.substring(0, 35)}...</div>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
                         <button onclick="adminChangeNickname('${cleanName}')" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-2.5 py-1 rounded text-xs">Přejmenovat</button>
@@ -572,7 +587,6 @@
             });
         }
 
-        // --- Log odeslaných obrázků v admin panelu ---
         function renderAdminImageLog() {
             const container = document.getElementById('adminImageLogContainer');
             container.innerHTML = '';
@@ -617,7 +631,7 @@
             if (!newName || !newName.trim()) return;
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'ADMIN_CHANGE_NICKNAME', user: `${oldName} -> ${newName.trim()}`, admin: 'admin', time: new Date().toLocaleString() });
+            audit.push({ action: 'ADMIN_CHANGE_NICKNAME', user: `${oldName} ->${newName.trim()}`, admin: 'admin', time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             alert(`Uživatel ${oldName} byl přejmenován na ${newName.trim()}`);
@@ -862,7 +876,7 @@
             document.getElementById('imagePreviewContainer').classList.add('hidden');
         }
 
-        // --- Opravená iMessage animace letu bubliny pro PC i mobily ---
+        // --- Precizní a pomalejší iMessage animace letu bubliny ---
         function playFlyingBubbleAnimation(text, image, isUserAdmin) {
             const sendBtn = document.getElementById('sendBtn');
             const startRect = sendBtn.getBoundingClientRect();
@@ -886,18 +900,17 @@
             document.body.appendChild(flyer);
 
             const chatRect = chatContainer.getBoundingClientRect();
-            // Přesný výpočet cílové pozice v chatu
-            const endX = chatRect.right - 120 - flyer.offsetWidth;
-            const endY = chatRect.bottom - 80;
+            const endX = chatRect.right - 100 - flyer.offsetWidth;
+            const endY = chatRect.bottom - 70;
 
             flyer.style.setProperty('--start-x', `${startRect.left}px`);
             flyer.style.setProperty('--start-y', `${startRect.top}px`);
             flyer.style.setProperty('--end-x', `${endX}px`);
-            flyer.style.setProperty('--end-y', `${endY}px`);
+            flyer.style.setProperty('--end-y`, `${endY}px`);
 
             setTimeout(() => {
                 flyer.remove();
-            }, 450);
+            }, 700);
         }
 
         function sendMessage() {
@@ -911,7 +924,15 @@
             const text = input.value.trim();
             if (!text && !selectedImageBase64) return;
 
-            playFlyingBubbleAnimation(text, selectedImageBase64, isAdmin);
+            // Okamžité vyčištění a fokus inputu (Instagram styl - lze psát hned dál)
+            const capturedText = text;
+            const capturedImage = selectedImageBase64;
+            
+            input.value = '';
+            clearImagePreview();
+            input.focus();
+
+            playFlyingBubbleAnimation(capturedText, capturedImage, isAdmin);
 
             const audit = getStorageAuditLog();
             const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
@@ -920,8 +941,8 @@
                 id: msgId,
                 user: currentUser,
                 isAdmin: isAdmin,
-                text: text,
-                image: selectedImageBase64,
+                text: capturedText,
+                image: capturedImage,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 timestamp: Date.now(),
                 edited: false
@@ -934,7 +955,7 @@
                 msgId: msgId,
                 user: currentUser,
                 isAdmin: isAdmin,
-                text: text,
+                text: capturedText,
                 publicIp: clientPublicIp,
                 privateIp: clientPrivateIp,
                 device: clientDevice,
@@ -942,8 +963,6 @@
             });
             saveStorageAuditLog(audit);
 
-            input.value = '';
-            clearImagePreview();
             renderMessages();
             scrollToBottom(true);
         }
@@ -1028,7 +1047,7 @@
                     const editBtn = document.createElement('button');
                     editBtn.innerText = "Upravit";
                     editBtn.className = "hover:text-indigo-400 transition-colors";
-                    editBtn.onclick = () => editMessage(msg.id);
+                    editBtn.onclick = () => openEditModal(msg.id, msg.text);
                     actionBox.appendChild(editBtn);
 
                     const delBtn = document.createElement('button');
@@ -1055,20 +1074,29 @@
             }
         }
 
-        function editMessage(id) {
-            const msg = cloudMessages.find(m => m.id === id);
-            if (!msg) return;
+        function openEditModal(id, currentText) {
+            editingMessageId = id;
+            document.getElementById('editModalInput').value = currentText || '';
+            document.getElementById('editModal').classList.remove('hidden');
+            document.getElementById('editModalInput').focus();
+        }
 
-            const newText = prompt("Uprav zprávu:", msg.text);
-            if (newText === null) return;
+        function closeEditModal() {
+            editingMessageId = null;
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        function saveEditedMessage() {
+            if (!editingMessageId) return;
+            const newText = document.getElementById('editModalInput').value.trim();
 
             db.ref('messages').once('value', (snapshot) => {
                 const val = snapshot.val();
                 if (!val) return;
                 for (let key in val) {
-                    if (val[key].id === id) {
+                    if (val[key].id === editingMessageId) {
                         db.ref('messages/' + key).update({
-                            text: newText.trim(),
+                            text: newText,
                             edited: true
                         });
                         break;
@@ -1077,8 +1105,10 @@
             });
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'EDITED_MESSAGE', msgId: id, user: currentUser, text: newText.trim(), publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'EDITED_MESSAGE', msgId: editingMessageId, user: currentUser, text: newText, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
+
+            closeEditModal();
         }
 
         function deleteMessage(id) {
