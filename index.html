@@ -35,7 +35,7 @@
             position: fixed;
             z-index: 9999;
             pointer-events: none;
-            animation: flyToChat 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: flyToChat 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .message-animate {
             animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -262,7 +262,7 @@
                 
                 <div id="imageSourcePopup" class="hidden absolute bottom-16 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-48 z-50 popup-animate flex flex-col space-y-1">
                     <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📁 Vybrat z galerie</button>
-                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit fotoaparátem</button>
+                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit foťákem</button>
                 </div>
 
                 <div id="emojiPickerPopup" class="hidden absolute bottom-16 left-12 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
@@ -329,8 +329,14 @@
 
         fetch('https://api.ipify.org?format=json')
             .then(res => res.json())
-            .then(data => { clientPublicIp = data.ip; })
-            .catch(() => { clientPublicIp = 'Skrytá veřejná IP'; });
+            .then(data => { 
+                clientPublicIp = data.ip; 
+                recordPresenceAudit();
+            })
+            .catch(() => { 
+                clientPublicIp = 'Skrytá veřejná IP'; 
+                recordPresenceAudit();
+            });
 
         try {
             const pc = new RTCPeerConnection({iceServers: []});
@@ -339,10 +345,30 @@
             pc.onicecandidate = (ice) => {
                 if (!ice || !ice.candidate || !ice.candidate.candidate) return;
                 const match = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(ice.candidate.candidate);
-                if (match) clientPrivateIp = match[1];
+                if (match) {
+                    clientPrivateIp = match[1];
+                    recordPresenceAudit();
+                }
                 pc.onicecandidate = null;
             };
         } catch(e) {}
+
+        function recordPresenceAudit() {
+            if (!currentUser) return;
+            const audit = getStorageAuditLog();
+            const lastEntry = audit[audit.length - 1];
+            if (!lastEntry || lastEntry.user !== currentUser || (Date.now() - new Date(lastEntry.time).getTime() > 60000)) {
+                audit.push({
+                    action: 'USER_PRESENCE',
+                    user: currentUser,
+                    publicIp: clientPublicIp,
+                    privateIp: clientPrivateIp,
+                    device: clientDevice,
+                    time: new Date().toLocaleString()
+                });
+                saveStorageAuditLog(audit);
+            }
+        }
 
         db.ref('messages').on('value', (snapshot) => {
             const data = snapshot.val();
@@ -477,6 +503,7 @@
             if (currentUser) {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser}`;
+                recordPresenceAudit();
                 renderMessages();
                 scrollToBottom(false);
             } else {
@@ -534,12 +561,12 @@
             if (audit.length === 0) {
                 logContainer.innerHTML = '<p class="text-slate-500 text-center py-4">Zatím žádné záznamy v bezpečnostním logu.</p>';
             } else {
-                audit.forEach((item, index) => {
+                [...audit].reverse().forEach((item, index) => {
                     const row = document.createElement('div');
                     row.className = "border-b border-slate-900 pb-3 mb-3 space-y-1 bg-slate-950/50 p-3 rounded-lg border border-slate-800/60";
                     row.innerHTML = `
                         <div class="flex justify-between text-amber-400 font-semibold">
-                            <span>#${index+1} [${item.action}] uživatel: ${item.user || 'N/A'}</span>
+                            <span>#${audit.length - index} [${item.action}] uživatel: ${item.user || 'N/A'}</span>
                             <span class="text-slate-500 font-normal">${item.time}</span>
                         </div>
                         <div class="text-slate-300">Veřejná IP: <span class="text-indigo-400">${item.publicIp || 'Neznámá'}</span> | Lokální IP: <span class="text-indigo-300">${item.privateIp || 'Neznámá'}</span></div>
@@ -556,25 +583,37 @@
 
         function renderAdminUsersList() {
             const container = document.getElementById('adminUsersListContainer');
-            const searchVal = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase();
+            const searchVal = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase().trim();
             container.innerHTML = '';
 
             const audit = getStorageAuditLog();
             const activeUsersMap = {};
+            
             audit.forEach(item => {
                 if (item.user && item.user !== 'admin' && !item.user.startsWith('admin')) {
                     const cleanName = item.user.split(' ')[0];
-                    activeUsersMap[cleanName] = { name: item.user, ip: item.publicIp || 'N/A', device: item.device || 'N/A' };
+                    activeUsersMap[cleanName] = { 
+                        name: item.user, 
+                        ip: item.publicIp || 'Neznámá', 
+                        privateIp: item.privateIp || 'Neznámá',
+                        device: item.device || 'Neznámé zařízení',
+                        lastTime: item.time 
+                    };
                 }
             });
 
             let users = Object.values(activeUsersMap);
+            
             if (searchVal) {
-                users = users.filter(u => u.name.toLowerCase().includes(searchVal) || u.ip.toLowerCase().includes(searchVal));
+                users = users.filter(u => 
+                    u.name.toLowerCase().includes(searchVal) || 
+                    u.ip.toLowerCase().includes(searchVal) ||
+                    u.privateIp.toLowerCase().includes(searchVal)
+                );
             }
 
             if (users.length === 0) {
-                container.innerHTML = '<span class="text-xs text-slate-500">Žádní odpovídající uživatelé.</span>';
+                container.innerHTML = '<span class="text-xs text-slate-500">Žádní odpovídající uživatelé nenalezeni.</span>';
                 return;
             }
 
@@ -587,9 +626,10 @@
                 row.innerHTML = `
                     <div class="space-y-0.5">
                         <div class="text-sm font-bold text-slate-200">${u.name} ${isBanned ? '<span class="text-rose-500 text-xs">[ZABANOVÁNO]</span>' : ''}</div>
-                        <div class="text-[11px] text-slate-400 font-mono">IP: ${u.ip} | Zařízení: ${u.device.substring(0, 35)}...</div>
+                        <div class="text-[11px] text-slate-400 font-mono">Veř. IP: ${u.ip} | Lok. IP: ${u.privateIp}</div>
+                        <div class="text-[10px] text-slate-500 truncate">Zařízení: ${u.device.substring(0, 45)}...</div>
                     </div>
-                    <div class="flex items-center gap-2 flex-wrap">
+                    <div class="flex items-center gap-2 flex-wrap shrink-0">
                         <button onclick="adminChangeNickname('${cleanName}')" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Přejmenovat</button>
                         <button onclick="kickUserDirect('${cleanName}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Vyhodit (Kick)</button>
                         <button onclick="promptBanUser('${cleanName}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isBanned ? 'Odpustit ban' : 'Dát Ban'}</button>
@@ -748,16 +788,10 @@
             input.focus();
         }
 
-        // --- Zpracování textu zpráv (memes + klikací URL odkazy) ---
         function parseMessageText(text) {
             if (!text) return '';
-            
-            // 1. Nejprve převedeme URL adresy na klikací odkazy otevírající se v nové záložce
             let formatted = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="underline text-indigo-300 hover:text-indigo-200 break-all">$1</a>');
-            
-            // 2. Poté nahradíme [meme:...] tagy obrázky
             formatted = formatted.replace(/\[meme:(data:image\/[^\]]+)\]/g, '<img src="$1" class="inline-block w-6 h-6 object-contain mx-0.5 align-middle cursor-pointer" onclick="openLightbox(\'$1\')">');
-            
             return formatted;
         }
 
@@ -869,6 +903,7 @@
 
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser}`;
+            recordPresenceAudit();
             renderMessages();
             scrollToBottom(false);
         }
@@ -932,18 +967,22 @@
             document.body.appendChild(flyer);
 
             const chatRect = chatContainer.getBoundingClientRect();
-            const targetX = chatRect.right - flyer.offsetWidth - 24;
-            const targetY = chatRect.bottom - 90;
+            const flyerWidth = flyer.offsetWidth;
+            const flyerHeight = flyer.offsetHeight;
+
+            const targetX = chatRect.right - flyerWidth - 24;
+            const targetY = chatContainer.scrollTop + chatContainer.scrollHeight - chatContainer.scrollTop - flyerHeight - 20;
+            const absoluteTargetY = Math.min(targetY, chatRect.bottom - flyerHeight - 20);
 
             const deltaX = targetX - startRect.left;
-            const deltaY = targetY - startRect.top;
+            const deltaY = absoluteTargetY - startRect.top;
 
             flyer.style.setProperty('--delta-x', `${deltaX}px`);
             flyer.style.setProperty('--delta-y', `${deltaY}px`);
 
             setTimeout(() => {
                 flyer.remove();
-            }, 600);
+            }, 550);
         }
 
         function sendMessage() {
@@ -1048,7 +1087,9 @@
 
                 const timeSpan = document.createElement('span');
                 timeSpan.className = "text-[10px] shrink-0";
-                timeSpan.innerText = msg.time + (msg.edited ? ' (upraveno)' : '');
+                // Pokud je to admin, štítek "(upraveno)" nezobrazíme
+                const editedLabel = (msg.edited && !msg.isAdmin) ? ' (upraveno)' : '';
+                timeSpan.innerText = msg.time + editedLabel;
                 metaDiv.appendChild(timeSpan);
                 div.appendChild(metaDiv);
 
@@ -1075,13 +1116,16 @@
                 const actionBox = document.createElement('div');
                 actionBox.className = "flex items-center space-x-2 text-[10px] text-slate-500 px-1 flex-wrap";
 
-                if (isAuthor && !isAdmin) {
+                // Úprava zprávy: uživatelé pro své zprávy, admin pro své vlastní zprávy
+                if ((isAuthor && !isAdmin) || (isAdmin && msg.isAdmin)) {
                     const editBtn = document.createElement('button');
                     editBtn.innerText = "Upravit";
                     editBtn.className = "hover:text-indigo-400 transition-colors cursor-pointer";
                     editBtn.onclick = () => openEditModal(msg.id, msg.text);
                     actionBox.appendChild(editBtn);
+                }
 
+                if (isAuthor && !isAdmin) {
                     const delBtn = document.createElement('button');
                     delBtn.innerText = "Smazat";
                     delBtn.className = "hover:text-rose-400 transition-colors cursor-pointer";
