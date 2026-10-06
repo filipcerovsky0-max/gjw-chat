@@ -97,6 +97,7 @@
             
             <div class="flex items-center gap-2 flex-wrap">
                 <button id="profileKickBtn" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer font-semibold">Vyhodit (Kick)</button>
+                <button id="profileMuteBtn" class="bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer font-semibold">Ztlumit (Mute)</button>
                 <button id="profileBanBtn" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer font-semibold">Dát Ban / Omezit</button>
                 <button id="profileRenameBtn" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer font-semibold">Přejmenovat</button>
             </div>
@@ -215,7 +216,7 @@
 
                     <div id="usersCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                            <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Seznam aktuálních uživatelů a správa (Ban / Kick)</h3>
+                            <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Seznam aktuálních uživatelů a správa (Kick / Mute / Ban)</h3>
                             <div class="flex items-center gap-2 w-full sm:w-auto">
                                 <input type="text" id="adminUserSearchInput" placeholder="Vyhledat uživatele..." oninput="renderAdminUsersList()" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1 text-xs text-slate-100 focus:outline-none focus:border-amber-500 w-full sm:w-48">
                                 <button onclick="toggleFullscreen('usersCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition shrink-0 cursor-pointer">⤢</button>
@@ -288,43 +289,50 @@
         <footer id="chatFooter" class="bg-slate-900 border-t border-slate-800 p-3 sm:p-4 shrink-0 fixed bottom-0 left-0 right-0 z-40 shadow-2xl">
             <div class="max-w-3xl mx-auto flex flex-col space-y-2 relative">
                 
-                <div id="imageSourcePopup" class="hidden absolute bottom-16 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-48 z-50 popup-animate flex flex-col space-y-1">
-                    <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📁 Vybrat z galerie</button>
-                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit fotoaparátem</button>
+                <!-- Box zobrazený při ztlumení -->
+                <div id="mutedNoticeBox" class="hidden w-full bg-rose-600/20 border border-rose-500/40 rounded-xl p-4 text-center text-rose-400 text-sm font-semibold">
+                    <span id="mutedNoticeText">Byl jsi ztlumen adminem.</span>
                 </div>
 
-                <div id="emojiPickerPopup" class="hidden absolute bottom-16 left-12 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
-                    <div class="text-xs text-slate-400 font-semibold mb-2">Vyber meme emotikon:</div>
-                    <div id="emojiPickerContent" class="flex flex-wrap gap-2"></div>
-                </div>
-
-                <input type="file" id="imageInputGallery" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-                <input type="file" id="imageInputCamera" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
-
-                <div id="imagePreviewContainer" class="hidden p-2 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between popup-animate">
-                    <div class="flex items-center gap-2">
-                        <img id="imagePreview" src="" class="h-12 w-12 rounded-lg object-cover border border-slate-800">
-                        <span class="text-xs text-slate-300">Obrázek připraven k odeslání</span>
+                <div id="activeInputControls" class="space-y-2">
+                    <div id="imageSourcePopup" class="hidden absolute bottom-16 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-48 z-50 popup-animate flex flex-col space-y-1">
+                        <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📁 Vybrat z galerie</button>
+                        <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit foťákem</button>
                     </div>
-                    <button onclick="clearImagePreview()" ontouchend="clearImagePreview()" class="text-slate-400 hover:text-rose-400 text-xs font-semibold px-2 py-1 cursor-pointer">&times; Zrušit</button>
-                </div>
 
-                <div class="flex items-end space-x-2">
-                    <button onclick="toggleImageSourceMenu()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center select-none active:scale-95 cursor-pointer" title="Připojit obrázek nebo fotku">
-                        <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    </button>
-
-                    <button onclick="toggleMemePicker()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center text-xs font-bold select-none active:scale-95 cursor-pointer" title="Meme emotikony">
-                        [MEME]
-                    </button>
-
-                    <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl focus-within:border-indigo-500 transition-colors flex flex-col">
-                        <textarea id="messageInput" placeholder="Napiš zprávu..." rows="1" class="w-full bg-transparent px-4 py-3 text-slate-100 focus:outline-none resize-none max-h-32 text-base" onkeydown="handleKeydown(event)"></textarea>
+                    <div id="emojiPickerPopup" class="hidden absolute bottom-16 left-12 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
+                        <div class="text-xs text-slate-400 font-semibold mb-2">Vyber meme emotikon:</div>
+                        <div id="emojiPickerContent" class="flex flex-wrap gap-2"></div>
                     </div>
-                    
-                    <button id="sendBtn" onclick="sendMessage()" ontouchend="sendMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl transition-all shrink-0 flex items-center justify-center shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer">
-                        <svg class="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                    </button>
+
+                    <input type="file" id="imageInputGallery" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                    <input type="file" id="imageInputCamera" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
+
+                    <div id="imagePreviewContainer" class="hidden p-2 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between popup-animate">
+                        <div class="flex items-center gap-2">
+                            <img id="imagePreview" src="" class="h-12 w-12 rounded-lg object-cover border border-slate-800">
+                            <span class="text-xs text-slate-300">Obrázek připraven k odeslání</span>
+                        </div>
+                        <button onclick="clearImagePreview()" ontouchend="clearImagePreview()" class="text-slate-400 hover:text-rose-400 text-xs font-semibold px-2 py-1 cursor-pointer">&times; Zrušit</button>
+                    </div>
+
+                    <div class="flex items-end space-x-2">
+                        <button onclick="toggleImageSourceMenu()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center select-none active:scale-95 cursor-pointer" title="Připojit obrázek nebo fotku">
+                            <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </button>
+
+                        <button onclick="toggleMemePicker()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center text-xs font-bold select-none active:scale-95 cursor-pointer" title="Meme emotikony">
+                            [MEME]
+                        </button>
+
+                        <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl focus-within:border-indigo-500 transition-colors flex flex-col">
+                            <textarea id="messageInput" placeholder="Napiš zprávu..." rows="1" class="w-full bg-transparent px-4 py-3 text-slate-100 focus:outline-none resize-none max-h-32 text-base" onkeydown="handleKeydown(event)"></textarea>
+                        </div>
+                        
+                        <button id="sendBtn" onclick="sendMessage()" ontouchend="sendMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl transition-all shrink-0 flex items-center justify-center shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer">
+                            <svg class="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </footer>
@@ -404,8 +412,10 @@
         db.ref('messages').on('value', (snapshot) => {
             const data = snapshot.val();
             cloudMessages = data ? Object.values(data) : [];
+            
+            checkLiveRestrictions();
+
             renderMessages();
-            checkKickStatus();
             if (!document.getElementById('userProfileModal').classList.contains('hidden') && activeProfileUserId) {
                 renderUserProfileModalContent(activeProfileUserId);
             }
@@ -430,24 +440,65 @@
             localStorage.setItem('gjw_chat_bans', JSON.stringify(bans));
         }
 
-        function checkUserBanned(uid, username) {
-            const bans = getStorageBans();
-            const banInfo = bans[uid] || (username ? bans[username.split(' ')[0].toLowerCase()] : null);
-            if (!banInfo) return false;
-            if (banInfo.permanent) return true;
-            if (Date.now() < banInfo.expiresAt) return true;
-            delete bans[uid];
-            if (username) delete bans[username.split(' ')[0].toLowerCase()];
-            saveStorageBans(bans);
-            return false;
+        function getStorageMutes() {
+            try { return JSON.parse(localStorage.getItem('gjw_chat_mutes') || '{}'); } catch(e) { return {}; }
+        }
+        function saveStorageMutes(mutes) {
+            localStorage.setItem('gjw_chat_mutes', JSON.stringify(mutes));
         }
 
-        function checkKickStatus() {
+        function checkLiveRestrictions() {
             if (!currentUserId || isAdmin) return;
+
+            // 1. Kontrola banu
+            const bans = getStorageBans();
+            const banInfo = bans[currentUserId];
+            if (banInfo) {
+                if (banInfo.permanent || Date.now() < banInfo.expiresAt) {
+                    alert("Tento účet obdržel ban!");
+                    handleLogout();
+                    return;
+                }
+            }
+
+            // 2. Kontrola kicku
             const kickedUsers = JSON.parse(localStorage.getItem('gjw_kicked_users') || '[]');
             if (kickedUsers.includes(currentUserId) || (currentUser && kickedUsers.includes(currentUser.split(' ')[0]))) {
                 alert("Byl jsi vyhozen adminem!");
                 handleLogout();
+                return;
+            }
+
+            // 3. Kontrola ztlumení (Mute)
+            const mutes = getStorageMutes();
+            const muteInfo = mutes[currentUserId];
+            const noticeBox = document.getElementById('mutedNoticeBox');
+            const noticeText = document.getElementById('mutedNoticeText');
+            const activeControls = document.getElementById('activeInputControls');
+
+            if (muteInfo) {
+                if (muteInfo.permanent) {
+                    noticeText.innerText = `Byl jsi ztlumen adminem natrvalo.`;
+                    noticeBox.classList.remove('hidden');
+                    activeControls.classList.add('hidden');
+                } else if (Date.now() < muteInfo.expiresAt) {
+                    const remainingSec = Math.ceil((muteInfo.expiresAt - Date.now()) / 1000);
+                    const minutes = Math.floor(remainingSec / 60);
+                    const seconds = remainingSec % 60;
+                    const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                    
+                    noticeText.innerText = `Byl jsi ztlumen adminem na dobu: ${timeStr}`;
+                    noticeBox.classList.remove('hidden');
+                    activeControls.classList.add('hidden');
+                } else {
+                    delete mutes[currentUserId];
+                    saveStorageMutes(mutes);
+                    noticeBox.classList.add('hidden');
+                    activeControls.classList.remove('hidden');
+                }
+            } else {
+                noticeBox.classList.add('hidden');
+                activeControls.classList.remove('hidden');
             }
         }
 
@@ -652,21 +703,29 @@
                 return;
             }
 
+            const bans = getStorageBans();
+            const mutes = getStorageMutes();
+
             users.forEach(u => {
-                const isBanned = checkUserBanned(u.userId, u.name);
+                const banInfo = bans[u.userId];
+                const isBanned = banInfo && (banInfo.permanent || Date.now() < banInfo.expiresAt);
+
+                const muteInfo = mutes[u.userId];
+                const isMuted = muteInfo && (muteInfo.permanent || Date.now() < muteInfo.expiresAt);
 
                 const row = document.createElement('div');
                 row.className = "flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-800 gap-3";
                 row.innerHTML = `
                     <div class="space-y-0.5">
-                        <div class="text-sm font-bold text-slate-200">${u.name} ${isBanned ? '<span class="text-rose-500 text-xs">[ZABANOVÁNO]</span>' : ''}</div>
+                        <div class="text-sm font-bold text-slate-200">${u.name} ${isBanned ? '<span class="text-rose-500 text-xs">[BANOVÁNO]</span>' : ''} ${isMuted ? '<span class="text-orange-400 text-xs">[ZTLUMENO]</span>' : ''}</div>
                         <div class="text-[10px] text-slate-400 font-mono">ID: ${u.userId} | Veř. IP: ${u.ip}</div>
                         <div class="text-[10px] text-slate-500 truncate">Zařízení: ${u.device.substring(0, 40)}...</div>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap shrink-0">
                         <button onclick="adminChangeNickname('${u.userId}', '${u.name}')" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Přejmenovat</button>
-                        <button onclick="kickUserDirect('${u.userId}', '${u.name}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Vyhodit (Kick)</button>
-                        <button onclick="promptBanUser('${u.userId}', '${u.name}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isBanned ? 'Odpustit ban' : 'Dát Ban'}</button>
+                        <button onclick="kickUserDirect('${u.userId}', '${u.name}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Kick</button>
+                        <button onclick="promptMuteUser('${u.userId}', '${u.name}')" class="bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isMuted ? 'Odpustit Mute' : 'Ztlumit'}</button>
+                        <button onclick="promptBanUser('${u.userId}', '${u.name}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isBanned ? 'Odpustit Ban' : 'Dát Ban'}</button>
                     </div>
                 `;
                 container.appendChild(row);
@@ -756,6 +815,63 @@
             if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
                 closeUserProfileModal();
             }
+            if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                showAdminDashboard();
+            }
+        }
+
+        function promptMuteUser(targetUid, username) {
+            const type = prompt(`Zadej typ ztlumení (Mute) pro ${username}:\n1 = sekundy\n2 = minuty\n3 = hodiny\n4 = dny\n5 = natrvalo\n(Nebo zadej 0 pro zrušení ztlumení)`);
+            if (type === null) return;
+
+            const mutes = getStorageMutes();
+
+            if (type === '0') {
+                delete mutes[targetUid];
+                saveStorageMutes(mutes);
+                alert(`Ztlumení pro uživatele ${username} bylo zrušeno.`);
+                if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
+                    closeUserProfileModal();
+                }
+                if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                    showAdminDashboard();
+                }
+                return;
+            }
+
+            let durationMs = 0;
+            let isPerm = false;
+
+            if (type === '5') {
+                isPerm = true;
+            } else {
+                const amount = parseInt(prompt("Zadej číselnou hodnotu trvání ztlumení:"));
+                if (isNaN(amount) || amount <= 0) return;
+
+                if (type === '1') durationMs = amount * 1000;
+                else if (type === '2') durationMs = amount * 60 * 1000;
+                else if (type === '3') durationMs = amount * 60 * 60 * 1000;
+                else if (type === '4') durationMs = amount * 24 * 60 * 60 * 1000;
+                else return;
+            }
+
+            mutes[targetUid] = {
+                permanent: isPerm,
+                expiresAt: isPerm ? 0 : Date.now() + durationMs
+            };
+            saveStorageMutes(mutes);
+
+            const audit = getStorageAuditLog();
+            audit.push({ action: isPerm ? 'MUTE_PERM' : 'MUTE_TEMPORARY', userId: targetUid, user: username, admin: 'admin', time: new Date().toLocaleString() });
+            saveStorageAuditLog(audit);
+
+            alert(`Uživatel ${username} byl ztlumen.`);
+            if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
+                closeUserProfileModal();
+            }
+            if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                showAdminDashboard();
+            }
         }
 
         function promptBanUser(targetUid, username) {
@@ -766,10 +882,13 @@
 
             if (type === '0') {
                 delete bans[targetUid];
-                saveStorageAuditLog(bans);
+                saveStorageBans(bans);
                 alert(`Ban pro uživatele ${username} byl zrušen.`);
                 if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
                     closeUserProfileModal();
+                }
+                if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                    showAdminDashboard();
                 }
                 return;
             }
@@ -804,6 +923,9 @@
             if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
                 closeUserProfileModal();
             }
+            if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                showAdminDashboard();
+            }
         }
 
         // --- Interaktivní rozklikávání profilů uživatelů z chatu pro admina podle ID ---
@@ -816,6 +938,9 @@
             
             document.getElementById('profileKickBtn').onclick = () => {
                 kickUserDirect(uid, username);
+            };
+            document.getElementById('profileMuteBtn').onclick = () => {
+                promptMuteUser(uid, username);
             };
             document.getElementById('profileBanBtn').onclick = () => {
                 promptBanUser(uid, username);
@@ -989,23 +1114,24 @@
 
             if (nickInput.toLowerCase() === 'admin') {
                 errDiv.innerText = "Jméno admin je vyhrazené!";
-                errDiv.classList.remove('hidden');
+                errDiv.classList.add('hidden');
                 return;
             }
 
-            // Vygenerovat unikátní userId pokud ještě nemá
             if (!currentUserId) {
                 currentUserId = 'user_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
             }
 
-            const potentialUser = nickInput + (classSelect ? ' ('+classSelect+')' : '');
-            if (checkUserBanned(currentUserId, potentialUser)) {
+            currentUser = nickInput + (classSelect ? ' ('+classSelect+')' : '');
+            
+            const bans = getStorageBans();
+            const banInfo = bans[currentUserId];
+            if (banInfo && (banInfo.permanent || Date.now() < banInfo.expiresAt)) {
                 errDiv.innerText = "Tento uživatel má aktivní ban!";
                 errDiv.classList.remove('hidden');
                 return;
             }
 
-            currentUser = potentialUser;
             isAdmin = false;
             localStorage.setItem('gjw_saved_user', currentUser);
             localStorage.setItem('gjw_saved_user_id', currentUserId);
@@ -1126,10 +1252,21 @@
         }
 
         function sendMessage() {
-            if (!isAdmin && checkUserBanned(currentUserId, currentUser)) {
-                alert("Máš ban!");
-                handleLogout();
-                return;
+            if (!isAdmin) {
+                const bans = getStorageBans();
+                const banInfo = bans[currentUserId];
+                if (banInfo && (banInfo.permanent || Date.now() < banInfo.expiresAt)) {
+                    alert("Máš ban!");
+                    handleLogout();
+                    return;
+                }
+
+                const mutes = getStorageMutes();
+                const muteInfo = mutes[currentUserId];
+                if (muteInfo && (muteInfo.permanent || Date.now() < muteInfo.expiresAt)) {
+                    alert("Jsi ztlumen a nemůžeš psát!");
+                    return;
+                }
             }
 
             const input = document.getElementById('messageInput');
@@ -1346,7 +1483,7 @@
             });
 
             const audit = getStorageAuditLog();
-            audit.path({ action: 'DELETED_MESSAGE', msgId: id, userId: currentUserId, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'DELETED_MESSAGE', msgId: id, userId: currentUserId, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
             
             if (isAdmin) renderAdminImageLog();
