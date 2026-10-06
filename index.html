@@ -69,7 +69,7 @@
 </head>
 <body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans overflow-hidden">
 
-    <!-- Stylový modální dialog pro úpravu zprávy (náhrada za hnusný prompt) -->
+    <!-- Stylový modální dialog pro úpravu zprávy -->
     <div id="editModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-lg space-y-4 popup-animate">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
@@ -87,8 +87,8 @@
     </div>
 
     <!-- Regular User Login Screen -->
-    <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-between p-4 overflow-y-auto">
-        <div class="flex-1 flex items-center justify-center w-full py-8">
+    <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col justify-between p-4 overflow-y-auto">
+        <div class="flex-1 flex items-center justify-center w-full py-6">
             <div class="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate flex flex-col items-center">
                 <div class="text-center space-y-3 w-full flex flex-col items-center">
                     <div id="logoTrigger" onclick="handleLogoClick()" ontouchend="handleLogoClick()" class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-750 flex items-center justify-center mx-auto" title="GJW Logo">
@@ -122,13 +122,13 @@
                             <option value="4.A">4.A</option><option value="4.B">4.B</option>
                         </select>
                     </div>
-                    <button onclick="handleLogin()" ontouchend="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.99]">Vstoupit do chatu</button>
+                    <button onclick="handleLogin()" ontouchend="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.99] cursor-pointer">Vstoupit do chatu</button>
                     <div id="loginError" class="text-rose-500 text-sm text-center hidden"></div>
                 </div>
             </div>
         </div>
         
-        <footer class="w-full max-w-md py-3 flex flex-col sm:flex-row justify-between items-center text-center gap-1 shrink-0">
+        <footer class="w-full max-w-md mx-auto py-3 flex flex-col sm:flex-row justify-between items-center text-center gap-1 shrink-0">
             <a href="mailto:anonym.gjw@proton.me" class="text-[11px] text-slate-400 hover:text-slate-200 underline transition-colors">Nápady / Stížnosti</a>
             <span class="text-[11px] text-slate-500">Tato stránka nikoho nezastupuje, je to pouze studentský projekt.</span>
         </footer>
@@ -144,7 +144,7 @@
                 </div>
                 <div class="space-y-4 max-w-md mx-auto">
                     <input type="password" id="adminPasswordInput" placeholder="Zadejte administratorske heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
-                    <button onclick="verifyAdminPassword()" ontouchend="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20">Ověřit heslo a otevřít panel</button>
+                    <button onclick="verifyAdminPassword()" ontouchend="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20 cursor-pointer">Ověřit heslo a otevřít panel</button>
                     <div id="adminLoginError" class="text-rose-500 text-sm text-center hidden">Nesprávné heslo!</div>
                     <div class="text-center pt-2">
                         <a href="./" class="text-xs text-slate-400 hover:text-white underline">Zpět na hlavní stránku</a>
@@ -170,7 +170,7 @@
                                 <option value="hidden">Nepozorovaně / Ghost mode (zcela skrytý v roomce)</option>
                             </select>
                         </div>
-                        <button onclick="openChatFromAdmin()" ontouchend="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0">Vstoupit do chatu</button>
+                        <button onclick="openChatFromAdmin()" ontouchend="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0 cursor-pointer">Vstoupit do chatu</button>
                     </div>
 
                     <div id="usersCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all">
@@ -193,7 +193,7 @@
                         <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Správa PNG emotikonů (Memů) pro chat</h3>
                         <div class="flex items-center gap-3">
                             <input type="file" id="adminEmojiUploadInput" accept="image/png, image/jpeg" class="hidden" onchange="handleAdminUploadEmoji(event)">
-                            <button onclick="document.getElementById('adminEmojiUploadInput').click()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-4 py-2 rounded-lg transition-colors">Nahrát nový PNG emotikon</button>
+                            <button onclick="document.getElementById('adminEmojiUploadInput').click()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-4 py-2 rounded-lg transition-colors cursor-pointer">Nahrát nový PNG emotikon</button>
                             <span class="text-xs text-slate-400">Nahrané emotikony se automaticky zpřístupní všem uživatelům v chatu.</span>
                         </div>
                         <div id="adminEmojiList" class="flex flex-wrap gap-2 pt-2"></div>
@@ -225,8 +225,8 @@
             </div>
         </div>
         <div class="flex items-center space-x-2">
-            <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" ontouchend="openAdminModalFromChat()" class="hidden bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 text-xs font-semibold px-3 py-2 rounded-xl transition-all">Control Room</button>
-            <button onclick="handleLogout()" ontouchend="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">Odhlásit</button>
+            <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" ontouchend="openAdminModalFromChat()" class="hidden bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 text-xs font-semibold px-3 py-2 rounded-xl transition-all cursor-pointer">Control Room</button>
+            <button onclick="handleLogout()" ontouchend="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer">Odhlásit</button>
         </div>
     </header>
 
@@ -239,7 +239,7 @@
             <div id="messagesList" class="space-y-4 max-w-3xl mx-auto pb-4"></div>
         </div>
 
-        <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" ontouchend="scrollToBottom(true)" class="fixed bottom-28 right-6 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-30 text-xs font-semibold">
+        <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" ontouchend="scrollToBottom(true)" class="fixed bottom-28 right-6 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-30 text-xs font-semibold cursor-pointer">
             <span>Nové zprávy</span>
             <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
         </button>
@@ -249,8 +249,8 @@
             <div class="max-w-3xl mx-auto flex flex-col space-y-2 relative">
                 
                 <div id="imageSourcePopup" class="hidden absolute bottom-16 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-48 z-50 popup-animate flex flex-col space-y-1">
-                    <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition">📁 Vybrat z galerie</button>
-                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition">📷 Vyfotit fotoaparátem</button>
+                    <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📁 Vybrat z galerie</button>
+                    <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit fotoaparátem</button>
                 </div>
 
                 <div id="emojiPickerPopup" class="hidden absolute bottom-16 left-12 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
@@ -266,15 +266,15 @@
                         <img id="imagePreview" src="" class="h-12 w-12 rounded-lg object-cover border border-slate-800">
                         <span class="text-xs text-slate-300">Obrázek připraven k odeslání</span>
                     </div>
-                    <button onclick="clearImagePreview()" ontouchend="clearImagePreview()" class="text-slate-400 hover:text-rose-400 text-xs font-semibold px-2 py-1">&times; Zrušit</button>
+                    <button onclick="clearImagePreview()" ontouchend="clearImagePreview()" class="text-slate-400 hover:text-rose-400 text-xs font-semibold px-2 py-1 cursor-pointer">&times; Zrušit</button>
                 </div>
 
                 <div class="flex items-end space-x-2">
-                    <button onclick="toggleImageSourceMenu()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center select-none active:scale-95" title="Připojit obrázek nebo fotku">
+                    <button onclick="toggleImageSourceMenu()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center select-none active:scale-95 cursor-pointer" title="Připojit obrázek nebo fotku">
                         <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     </button>
 
-                    <button onclick="toggleMemePicker()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center text-xs font-bold select-none active:scale-95" title="Meme emotikony">
+                    <button onclick="toggleMemePicker()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center text-xs font-bold select-none active:scale-95 cursor-pointer" title="Meme emotikony">
                         [MEME]
                     </button>
 
@@ -282,7 +282,7 @@
                         <textarea id="messageInput" placeholder="Napiš zprávu..." rows="1" class="w-full bg-transparent px-4 py-3 text-slate-100 focus:outline-none resize-none max-h-32 text-base" onkeydown="handleKeydown(event)"></textarea>
                     </div>
                     
-                    <button id="sendBtn" onclick="sendMessage()" ontouchend="sendMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl transition-all shrink-0 flex items-center justify-center shadow-md shadow-indigo-600/20 active:scale-95">
+                    <button id="sendBtn" onclick="sendMessage()" ontouchend="sendMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl transition-all shrink-0 flex items-center justify-center shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer">
                         <svg class="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                     </button>
                 </div>
@@ -574,13 +574,13 @@
                 row.className = "flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-800 gap-3";
                 row.innerHTML = `
                     <div class="space-y-0.5">
-                        <div class="text-sm font-bold text-slate-200">${u.name}${isBanned ? '<span class="text-rose-500 text-xs">[ZABANOVÁNO]</span>' : ''}</div>
-                        <div class="text-[11px] text-slate-400 font-mono">IP: ${u.ip} \vert{} Zařízení: ${u.device.substring(0, 35)}...</div>
+                        <div class="text-sm font-bold text-slate-200">${u.name} ${isBanned ? '<span class="text-rose-500 text-xs">[ZABANOVÁNO]</span>' : ''}</div>
+                        <div class="text-[11px] text-slate-400 font-mono">IP: ${u.ip} | Zařízení: ${u.device.substring(0, 35)}...</div>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
-                        <button onclick="adminChangeNickname('${cleanName}')" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-2.5 py-1 rounded text-xs">Přejmenovat</button>
-                        <button onclick="kickUserDirect('${cleanName}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs">Vyhodit (Kick)</button>
-                        <button onclick="promptBanUser('${cleanName}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs">${isBanned ? 'Odpustit ban' : 'Dát Ban'}</button>
+                        <button onclick="adminChangeNickname('${cleanName}')" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Přejmenovat</button>
+                        <button onclick="kickUserDirect('${cleanName}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Vyhodit (Kick)</button>
+                        <button onclick="promptBanUser('${cleanName}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isBanned ? 'Odpustit ban' : 'Dát Ban'}</button>
                     </div>
                 `;
                 container.appendChild(row);
@@ -608,7 +608,7 @@
                             <div class="text-[10px] text-slate-400">Čas: ${msg.time}</div>
                         </div>
                     </div>
-                    <button onclick="deleteMessage('${msg.id}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs">Smazat zprávu</button>
+                    <button onclick="deleteMessage('${msg.id}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Smazat zprávu</button>
                 `;
                 container.appendChild(row);
             });
@@ -631,7 +631,7 @@
             if (!newName || !newName.trim()) return;
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'ADMIN_CHANGE_NICKNAME', user: `${oldName} ->${newName.trim()}`, admin: 'admin', time: new Date().toLocaleString() });
+            audit.push({ action: 'ADMIN_CHANGE_NICKNAME', user: `${oldName} -> ${newName.trim()}`, admin: 'admin', time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             alert(`Uživatel ${oldName} byl přejmenován na ${newName.trim()}`);
@@ -713,7 +713,7 @@
                 wrap.className = "relative group bg-slate-900 p-1 rounded-lg border border-slate-800";
                 wrap.innerHTML = `
                     <img src="${imgSrc}" class="w-10 h-10 object-contain">
-                    <button onclick="deleteAdminEmoji(${idx})" class="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">&times;</button>
+                    <button onclick="deleteAdminEmoji(${idx})" class="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center cursor-pointer">&times;</button>
                 `;
                 listContainer.appendChild(wrap);
             });
@@ -876,7 +876,6 @@
             document.getElementById('imagePreviewContainer').classList.add('hidden');
         }
 
-        // --- Precizní a pomalejší iMessage animace letu bubliny ---
         function playFlyingBubbleAnimation(text, image, isUserAdmin) {
             const sendBtn = document.getElementById('sendBtn');
             const startRect = sendBtn.getBoundingClientRect();
@@ -906,7 +905,7 @@
             flyer.style.setProperty('--start-x', `${startRect.left}px`);
             flyer.style.setProperty('--start-y', `${startRect.top}px`);
             flyer.style.setProperty('--end-x', `${endX}px`);
-            flyer.style.setProperty('--end-y`, `${endY}px`);
+            flyer.style.setProperty('--end-y', `${endY}px`);
 
             setTimeout(() => {
                 flyer.remove();
@@ -924,7 +923,6 @@
             const text = input.value.trim();
             if (!text && !selectedImageBase64) return;
 
-            // Okamžité vyčištění a fokus inputu (Instagram styl - lze psát hned dál)
             const capturedText = text;
             const capturedImage = selectedImageBase64;
             
@@ -989,7 +987,7 @@
                     if (isAdmin) {
                         const adminDelBtn = document.createElement('button');
                         adminDelBtn.innerText = " [×]";
-                        adminDelBtn.className = "text-rose-400 hover:text-rose-300 font-bold ml-1 align-middle";
+                        adminDelBtn.className = "text-rose-400 hover:text-rose-300 font-bold ml-1 align-middle cursor-pointer";
                         adminDelBtn.onclick = () => deleteMessage(msg.id);
                         span.appendChild(adminDelBtn);
                     }
@@ -1046,13 +1044,13 @@
                 if (isAuthor && !isAdmin) {
                     const editBtn = document.createElement('button');
                     editBtn.innerText = "Upravit";
-                    editBtn.className = "hover:text-indigo-400 transition-colors";
+                    editBtn.className = "hover:text-indigo-400 transition-colors cursor-pointer";
                     editBtn.onclick = () => openEditModal(msg.id, msg.text);
                     actionBox.appendChild(editBtn);
 
                     const delBtn = document.createElement('button');
                     delBtn.innerText = "Smazat";
-                    delBtn.className = "hover:text-rose-400 transition-colors";
+                    delBtn.className = "hover:text-rose-400 transition-colors cursor-pointer";
                     delBtn.onclick = () => deleteMessage(msg.id);
                     actionBox.appendChild(delBtn);
                 }
@@ -1060,7 +1058,7 @@
                 if (isAdmin) {
                     const adminDelBtn = document.createElement('button');
                     adminDelBtn.innerText = "[Admin Smazat]";
-                    adminDelBtn.className = "text-rose-400 hover:text-rose-300 transition-colors";
+                    adminDelBtn.className = "text-rose-400 hover:text-rose-300 transition-colors cursor-pointer";
                     adminDelBtn.onclick = () => deleteMessage(msg.id);
                     actionBox.appendChild(adminDelBtn);
                 }
