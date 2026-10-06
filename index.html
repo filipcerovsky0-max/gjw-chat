@@ -27,7 +27,7 @@
                 <p>Trvání: <span id="bannedDurationText" class="text-white">-</span></p>
                 <p id="bannedCountdownContainer" class="pt-1 text-yellow-400 hidden">Zpět za: <span id="bannedCountdownTimer">-</span></p>
             </div>
-            <p class="text-[9px] text-zinc-500">Trest je vázán na hardwarový otisk tohoto zařízení bez ohledu na síť.</p>
+            <p class="text-[9px] text-zinc-500">Po uplynutí trestu za to že jsi zlobil můžeš zpátky do chatu</p>
         </div>
     </div>
 
@@ -277,7 +277,6 @@
         let currentUser = localStorage.getItem('gjw_saved_user') || null;
         let currentUserId = localStorage.getItem('gjw_saved_user_id') || null;
 
-        // Pokud uživatel nemá ID, vygenerujeme ho hned při startu, aby nikdy nebylo undefined
         if (!currentUserId || currentUserId === 'undefined' || currentUserId === 'null') {
             currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
             localStorage.setItem('gjw_saved_user_id', currentUserId);
@@ -326,7 +325,7 @@
                 
                 const heartbeatInterval = setInterval(() => {
                     if (currentUserId && currentUser) {
-                        myPresenceRef.update({ timestamp: firebase.database.ServerValue.TIMESTAMP });
+                        myPresenceRef.update({ timestamp: firebase.database.ServerValue.TIMESTAMP, user: currentUser });
                     }
                 }, 10000);
 
@@ -346,10 +345,17 @@
             if (data) {
                 for (let uid in data) {
                     const val = data[uid];
-                    // Ignorujeme záznamy, kde chybí uživatel nebo ID
                     if (val && val.userId && val.user && val.userId !== 'undefined' && val.timestamp && (now - val.timestamp < 20000)) {
                         activeCount++;
                         activePresenceList[uid] = val;
+
+                        // Pokud se jedná o mě a moje jméno v presence se liší od aktuálního currentUser, aktualizujeme ho
+                        if (uid === currentUserId && val.user !== currentUser) {
+                            currentUser = val.user;
+                            localStorage.setItem('gjw_saved_user', currentUser);
+                            const subtitle = document.getElementById('userSubtitle');
+                            if (subtitle) subtitle.innerText = currentUser;
+                        }
                     } else {
                         presenceRef.child(uid).remove();
                     }
@@ -379,12 +385,27 @@
             if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
                 renderAdminEmojis();
             }
-            // Rovnou aktualizujeme i picker v chatu, pokud je otevřený
             renderEmojiPickerList();
         });
 
         db.ref('restrictions').on('value', (snapshot) => {
-            cloudRestrictions = snapshot.val() || {};
+            const restrictionsData = snapshot.val() || {};
+            cloudRestrictions = restrictionsData;
+            
+            // Sledování změny jména přes restrikce/profil (pokud admin změní jméno)
+            if (currentUserId && restrictionsData[currentUserId] && restrictionsData[currentUserId].newName) {
+                const updatedName = restrictionsData[currentUserId].newName;
+                if (updatedName !== currentUser) {
+                    currentUser = updatedName;
+                    localStorage.setItem('gjw_saved_user', currentUser);
+                    const subtitle = document.getElementById('userSubtitle');
+                    if (subtitle) subtitle.innerText = currentUser;
+                    
+                    // Aktualizujeme i v presence
+                    presenceRef.child(currentUserId).update({ user: currentUser });
+                }
+            }
+
             checkLiveRestrictions();
             if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
                 renderAdminUsersList();
@@ -729,17 +750,30 @@
             });
         }
 
+        // Změna přezdívky s okamžitým propsáním v chatu, zprávách i přítomnosti
         function adminChangeNickname(targetUid, oldName) {
             const newName = prompt("Zadej nové jméno uživatele:", oldName);
             if (!newName || !newName.trim()) return;
+            const trimmedNewName = newName.trim();
+
+            // 1. Aktualizace jména u všech jeho předchozích zpráv v databázi
             db.ref('messages').once('value', (snapshot) => {
                 const val = snapshot.val();
                 if (!val) return;
                 for (let key in val) {
-                    if (val[key].userId === targetUid) db.ref('messages/' + key).update({ user: newName.trim() });
+                    if (val[key].userId === targetUid) {
+                        db.ref('messages/' + key).update({ user: trimmedNewName });
+                    }
                 }
             });
-            alert("Přezdívka byla změněna.");
+
+            // 2. Aktualizace v tabulce přítomnosti (presence), pokud je online
+            db.ref('presence/' + targetUid).update({ user: trimmedNewName });
+
+            // 3. Uložení požadavku na změnu do restrikcí/profilu, aby si to klientský skript daného uživatele hned všimnul
+            db.ref('restrictions/' + targetUid).update({ newName: trimmedNewName });
+
+            alert("Přezdívka byla úspěšně změněna.");
             if (isAdmin) showAdminDashboard();
         }
 
