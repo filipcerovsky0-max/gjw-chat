@@ -133,6 +133,12 @@
                     <button onclick="openChatFromAdmin()" ontouchend="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0">Vstoupit do chatu s bočním panelem</button>
                 </div>
 
+                <!-- Admin Active Users Manager Section -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Seznam aktuálních uživatelů a správa (Ban / Kick / Změna přezdívky)</h3>
+                    <div id="adminUsersListContainer" class="space-y-2 max-h-40 overflow-y-auto"></div>
+                </div>
+
                 <!-- Admin PNG Emoticon Uploader Section -->
                 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
                     <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Správa PNG emotikonů (Memů) pro chat</h3>
@@ -144,7 +150,7 @@
                     <div id="adminEmojiList" class="flex flex-wrap gap-2 pt-2"></div>
                 </div>
 
-                <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů (Veřejná IP, Lokální IP, Wi-Fi hinty, Zařízení, Kick/Ban)</div>
+                <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů (Veřejná IP, Lokální IP, Wi-Fi hinty, Zařízení)</div>
                 <div id="adminLogContainer" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-y-auto space-y-3 text-xs font-mono"></div>
             </div>
         </div>
@@ -235,7 +241,6 @@
     </div>
 
     <script>
-        // --- YOUR FIREBASE REALTIME DATABASE ---
         const firebaseConfig = {
             databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app"
         };
@@ -283,6 +288,7 @@
             const data = snapshot.val();
             cloudMessages = data ? Object.values(data) : [];
             renderMessages();
+            checkKickStatus();
         });
 
         db.ref('emojis').on('value', (snapshot) => {
@@ -315,7 +321,15 @@
             return false;
         }
 
-        // Instagram-style scroll detection
+        function checkKickStatus() {
+            if (!currentUser || isAdmin) return;
+            const kickedUsers = JSON.parse(localStorage.getItem('gjw_kicked_users') || '[]');
+            if (kickedUsers.includes(currentUser)) {
+                alert("Byl jsi vyhozen adminem!");
+                handleLogout();
+            }
+        }
+
         chatContainer.addEventListener('scroll', () => {
             const threshold = 80;
             const position = chatContainer.scrollTop + chatContainer.clientHeight;
@@ -415,18 +429,115 @@
                         </div>
                         <div class="text-slate-300">Veřejná IP: <span class="text-indigo-400">${item.publicIp || 'Neznámá'}</span> | Lokální IP: <span class="text-indigo-300">${item.privateIp || 'Neznámá'}</span></div>
                         <div class="text-slate-400 text-[11px] truncate">Zařízení/Wi-Fi: ${item.device || 'Neznámé zařízení'}</div>
-                        ${item.user && item.user !== 'admin' && !item.user.startsWith('admin') ? `
-                            <div class="mt-2 flex gap-2">
-                                <button onclick="kickUserDirect('${item.user.split(' ')[0]}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2 py-1 rounded text-[10px]">Vyhodit (Kick)</button>
-                                <button onclick="promptBanUser('${item.user.split(' ')[0]}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2 py-1 rounded text-[10px]">Dát Ban</button>
-                            </div>
-                        ` : ''}
                     `;
                     logContainer.appendChild(row);
                 });
             }
 
+            renderAdminUsersList();
             renderAdminEmojis();
+        }
+
+        function renderAdminUsersList() {
+            const container = document.getElementById('adminUsersListContainer');
+            container.innerHTML = '';
+
+            // Extract unique active users from audit/messages
+            const audit = getStorageAuditLog();
+            const activeUsersMap = {};
+            audit.forEach(item => {
+                if (item.user && item.user !== 'admin' && !item.user.startsWith('admin')) {
+                    const cleanName = item.user.split(' ')[0];
+                    activeUsersMap[cleanName] = { name: item.user, ip: item.publicIp || 'N/A', device: item.device || 'N/A' };
+                }
+            });
+
+            const users = Object.values(activeUsersMap);
+            if (users.length === 0) {
+                container.innerHTML = '<span class="text-xs text-slate-500">Žádní aktivní uživatelé v záznamech.</span>';
+                return;
+            }
+
+            users.forEach(u => {
+                const cleanName = u.name.split(' ')[0];
+                const isBanned = checkUserBanned(cleanName);
+
+                const row = document.createElement('div');
+                row.className = "flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-800 gap-3";
+                row.innerHTML = `
+                    <div class="space-y-0.5">
+                        <div class="text-sm font-bold text-slate-200">${u.name} ${isBanned ? '<span class="text-rose-500 text-xs">[ZABANOVÁNO]</span>' : ''}</div>
+                        <div class="text-[11px] text-slate-400 font-mono">IP: ${u.ip} | Zařízení: ${u.device.substring(0, 35)}...</div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="adminChangeNickname('${cleanName}')" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-2.5 py-1 rounded text-xs">Přejmenovat</button>
+                        <button onclick="kickUserDirect('${cleanName}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs">Vyhodit (Kick)</button>
+                        <button onclick="promptBanUser('${cleanName}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs">${isBanned ? 'O odpustit ban' : 'Dát Ban'}</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function adminChangeNickname(oldName) {
+            const newName = prompt(`Zadej novou přezdívku pro uživatele ${oldName}:`);
+            if (!newName || !newName.trim()) return;
+
+            const audit = getStorageAuditLog();
+            audit.push({ action: 'ADMIN_CHANGE_NICKNAME', user: `${oldName} -> ${newName.trim()}`, admin: 'admin', time: new Date().toLocaleString() });
+            saveStorageAuditLog(audit);
+
+            alert(`Uživatel ${oldName} byl přejmenován na ${newName.trim()}`);
+            showAdminDashboard();
+        }
+
+        function kickUserDirect(username) {
+            if (!confirm(`Opravdu chceš vyhodit uživatele ${username}?`)) return;
+            const kicked = JSON.parse(localStorage.getItem('gjw_kicked_users') || '[]');
+            kicked.push(username);
+            localStorage.setItem('gjw_kicked_users', JSON.stringify(kicked));
+
+            const audit = getStorageAuditLog();
+            audit.push({ action: 'KICK_USER', user: username, admin: 'admin', time: new Date().toLocaleString() });
+            saveStorageAuditLog(audit);
+
+            alert(`Uživatel ${username} byl vyhozen.`);
+            showAdminDashboard();
+        }
+
+        function promptBanUser(username) {
+            const type = prompt(`Zadej typ banu pro ${username}:\n1 = sekundy\n2 = minuty\n3 = hodiny\n4 = dny\n5 = navždy`);
+            if (!type) return;
+
+            let durationMs = 0;
+            let isPerm = false;
+
+            if (type === '5') {
+                isPerm = true;
+            } else {
+                const amount = parseInt(prompt("Zadej číselnou hodnotu trvání:"));
+                if (isNaN(amount) || amount <= 0) return;
+
+                if (type === '1') durationMs = amount * 1000;
+                else if (type === '2') durationMs = amount * 60 * 1000;
+                else if (type === '3') durationMs = amount * 60 * 60 * 1000;
+                else if (type === '4') durationMs = amount * 24 * 60 * 60 * 1000;
+                else return;
+            }
+
+            const bans = getStorageBans();
+            bans[username.toLowerCase()] = {
+                permanent: isPerm,
+                expiresAt: isPerm ? 0 : Date.now() + durationMs
+            };
+            saveStorageBans(bans);
+
+            const audit = getStorageAuditLog();
+            audit.push({ action: isPerm ? 'BAN_PERM' : 'BAN_TEMPORARY', user: username, admin: 'admin', time: new Date().toLocaleString() });
+            saveStorageAuditLog(audit);
+
+            alert(`Uživatel ${username} dostal ban.`);
+            showAdminDashboard();
         }
 
         function handleAdminUploadEmoji(e) {
@@ -569,50 +680,6 @@
             updateSidebarLog();
             renderMessages();
             scrollToBottom(false);
-        }
-
-        function kickUserDirect(username) {
-            if (!confirm(`Opravdu chceš vyhodit uživatele ${username}?`)) return;
-            const audit = getStorageAuditLog();
-            audit.push({ action: 'KICK_USER', user: username, admin: 'admin', time: new Date().toLocaleString() });
-            saveStorageAuditLog(audit);
-            alert(`Uživatel ${username} byl vyhozen.`);
-            showAdminDashboard();
-        }
-
-        function promptBanUser(username) {
-            const type = prompt(`Zadej typ banu pro ${username}:\n1 = sekundy\n2 = minuty\n3 = hodiny\n4 = dny\n5 = navždy`);
-            if (!type) return;
-
-            let durationMs = 0;
-            let isPerm = false;
-
-            if (type === '5') {
-                isPerm = true;
-            } else {
-                const amount = parseInt(prompt("Zadej číselnou hodnotu trvání:"));
-                if (isNaN(amount) || amount <= 0) return;
-
-                if (type === '1') durationMs = amount * 1000;
-                else if (type === '2') durationMs = amount * 60 * 1000;
-                else if (type === '3') durationMs = amount * 60 * 60 * 1000;
-                else if (type === '4') durationMs = amount * 24 * 60 * 60 * 1000;
-                else return;
-            }
-
-            const bans = getStorageBans();
-            bans[username.toLowerCase()] = {
-                permanent: isPerm,
-                expiresAt: isPerm ? 0 : Date.now() + durationMs
-            };
-            saveStorageBans(bans);
-
-            const audit = getStorageAuditLog();
-            audit.push({ action: isPerm ? 'BAN_PERM' : 'BAN_TEMPORARY', user: username, admin: 'admin', time: new Date().toLocaleString() });
-            saveStorageAuditLog(audit);
-
-            alert(`Uživatel ${username} dostal ban.`);
-            showAdminDashboard();
         }
 
         function handleLogin() {
