@@ -21,7 +21,6 @@
             from { opacity: 0; transform: translateY(15px) scale(0.9); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        /* iMessage-style fly animation */
         @keyframes flyToChat {
             0% {
                 opacity: 1;
@@ -34,9 +33,11 @@
         }
         .flying-bubble {
             position: fixed;
+            left: 0;
+            top: 0;
             z-index: 9999;
             pointer-events: none;
-            animation: flyToChat 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            animation: flyToChat 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .message-animate {
             animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -110,7 +111,6 @@
             </div>
         </div>
         
-        <!-- Opravený spodní panel na přihlašovací obrazovce (neandrtálské křížení textů vyřešeno) -->
         <footer class="w-full max-w-md py-3 flex flex-col sm:flex-row justify-between items-center text-center gap-1 shrink-0">
             <a href="mailto:anonym.gjw@proton.me" class="text-[11px] text-slate-400 hover:text-slate-200 underline transition-colors">Nápady / Stížnosti</a>
             <span class="text-[11px] text-slate-500">Tato stránka nikoho nezastupuje, je to pouze studentský projekt.</span>
@@ -156,12 +156,22 @@
                         <button onclick="openChatFromAdmin()" ontouchend="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0">Vstoupit do chatu</button>
                     </div>
 
+                    <!-- Uživatelé s vyhledáváním -->
                     <div id="usersCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Seznam aktuálních uživatelů a správa (Ban / Kick / Změna přezdívky)</h3>
-                            <button onclick="toggleFullscreen('usersCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition">Celá obrazovka ⤢</button>
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                            <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Seznam aktuálních uživatelů a správa (Ban / Kick)</h3>
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <input type="text" id="adminUserSearchInput" placeholder="Vyhledat uživatele..." oninput="renderAdminUsersList()" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1 text-xs text-slate-100 focus:outline-none focus:border-amber-500 w-full sm:w-48">
+                                <button onclick="toggleFullscreen('usersCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition shrink-0">⤢</button>
+                            </div>
                         </div>
                         <div id="adminUsersListContainer" class="space-y-2 max-h-40 overflow-y-auto"></div>
+                    </div>
+
+                    <!-- Log odeslaných obrázků -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Log odeslaných obrázků a fotek</h3>
+                        <div id="adminImageLogContainer" class="space-y-2 max-h-48 overflow-y-auto bg-slate-900 border border-slate-800 p-3 rounded-xl"></div>
                     </div>
 
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
@@ -177,7 +187,7 @@
                     <div id="logsCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all flex flex-col">
                         <div class="flex items-center justify-between">
                             <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů</div>
-                            <button onclick="toggleFullscreen('logsCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition">Celá obrazovka ⤢</button>
+                            <button onclick="toggleFullscreen('logsCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition">⤢</button>
                         </div>
                         <div id="adminLogContainer" class="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-y-auto max-h-72 space-y-3 text-xs font-mono"></div>
                     </div>
@@ -214,7 +224,6 @@
             <div id="messagesList" class="space-y-4 max-w-3xl mx-auto pb-4"></div>
         </div>
 
-        <!-- Instagram-Style Floating Scroll-to-Bottom Button -->
         <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" ontouchend="scrollToBottom(true)" class="fixed bottom-28 right-6 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-30 text-xs font-semibold">
             <span>Nové zprávy</span>
             <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
@@ -513,11 +522,14 @@
             }
 
             renderAdminUsersList();
+            renderAdminImageLog();
             renderAdminEmojis();
         }
 
+        // --- Vyhledávání uživatelů v admin panelu ---
         function renderAdminUsersList() {
             const container = document.getElementById('adminUsersListContainer');
+            const searchVal = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase();
             container.innerHTML = '';
 
             const audit = getStorageAuditLog();
@@ -529,9 +541,13 @@
                 }
             });
 
-            const users = Object.values(activeUsersMap);
+            let users = Object.values(activeUsersMap);
+            if (searchVal) {
+                users = users.filter(u => u.name.toLowerCase().includes(searchVal) || u.ip.toLowerCase().includes(searchVal));
+            }
+
             if (users.length === 0) {
-                container.innerHTML = '<span class="text-xs text-slate-500">Žádní aktivní uživatelé v záznamech.</span>';
+                container.innerHTML = '<span class="text-xs text-slate-500">Žádní odpovídající uživatelé.</span>';
                 return;
             }
 
@@ -551,6 +567,34 @@
                         <button onclick="kickUserDirect('${cleanName}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs">Vyhodit (Kick)</button>
                         <button onclick="promptBanUser('${cleanName}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs">${isBanned ? 'Odpustit ban' : 'Dát Ban'}</button>
                     </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // --- Log odeslaných obrázků v admin panelu ---
+        function renderAdminImageLog() {
+            const container = document.getElementById('adminImageLogContainer');
+            container.innerHTML = '';
+
+            const imageMsgs = cloudMessages.filter(m => m.image);
+            if (imageMsgs.length === 0) {
+                container.innerHTML = '<span class="text-xs text-slate-500">Zatím nebyly odeslány žádné obrázky.</span>';
+                return;
+            }
+
+            imageMsgs.reverse().forEach(msg => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between bg-slate-950 p-2.5 rounded-lg border border-slate-800 gap-3";
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <img src="${msg.image}" class="w-12 h-12 rounded object-cover cursor-pointer border border-slate-800" onclick="window.open('${msg.image}')">
+                        <div class="space-y-0.5">
+                            <div class="text-xs font-bold text-slate-200">Uživatel: <span class="text-indigo-400">${msg.user}</span></div>
+                            <div class="text-[10px] text-slate-400">Čas: ${msg.time}</div>
+                        </div>
+                    </div>
+                    <button onclick="deleteMessage('${msg.id}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs">Smazat zprávu</button>
                 `;
                 container.appendChild(row);
             });
@@ -818,7 +862,7 @@
             document.getElementById('imagePreviewContainer').classList.add('hidden');
         }
 
-        // --- iMessage-style Flying Bubble Animation ---
+        // --- Opravená iMessage animace letu bubliny pro PC i mobily ---
         function playFlyingBubbleAnimation(text, image, isUserAdmin) {
             const sendBtn = document.getElementById('sendBtn');
             const startRect = sendBtn.getBoundingClientRect();
@@ -841,19 +885,19 @@
 
             document.body.appendChild(flyer);
 
-            // Cílová pozice (dole v chat containeru)
             const chatRect = chatContainer.getBoundingClientRect();
-            const endX = chatRect.left + (chatRect.width / 2) - (flyer.offsetWidth / 2) + 60;
-            const endY = chatRect.bottom - 100 - startRect.top;
+            // Přesný výpočet cílové pozice v chatu
+            const endX = chatRect.right - 120 - flyer.offsetWidth;
+            const endY = chatRect.bottom - 80;
 
             flyer.style.setProperty('--start-x', `${startRect.left}px`);
             flyer.style.setProperty('--start-y', `${startRect.top}px`);
             flyer.style.setProperty('--end-x', `${endX}px`);
-            flyer.style.setProperty('--end-y', `${chatRect.top}px`);
+            flyer.style.setProperty('--end-y', `${endY}px`);
 
             setTimeout(() => {
                 flyer.remove();
-            }, 500);
+            }, 450);
         }
 
         function sendMessage() {
@@ -867,7 +911,6 @@
             const text = input.value.trim();
             if (!text && !selectedImageBase64) return;
 
-            // Spuštění iMessage animace letu bubliny
             playFlyingBubbleAnimation(text, selectedImageBase64, isAdmin);
 
             const audit = getStorageAuditLog();
@@ -1055,6 +1098,8 @@
             const audit = getStorageAuditLog();
             audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
+            
+            if (isAdmin) renderAdminImageLog();
         }
 
         function clearChatData() {
