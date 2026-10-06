@@ -404,14 +404,21 @@
                 return;
             }
 
-            // KICK: pouze vyhodí uživatele (ihned smaže záznam v DB, aby se mohl znovu přihlásit)
+            // KICK: Zkontrolujeme, zda uživatel tento kick na této session už viděl
             if (matchedRest.kicked) {
-                if (currentUserId) {
-                    db.ref('restrictions/' + currentUserId + '/kicked').remove();
+                const kickKey = 'gjw_kicked_notified_' + (matchedRest.userId || currentUserId);
+                if (sessionStorage.getItem(kickKey) !== 'true') {
+                    sessionStorage.setItem(kickKey, 'true');
+                    
+                    // Okamžitě smažeme flag v databázi, aby příště nebyl zablokovaný
+                    if (currentUserId) {
+                        db.ref('restrictions/' + currentUserId + '/kicked').remove();
+                    }
+
+                    alert("Byl jsi vyhozen správcem!");
+                    handleLogout();
+                    return;
                 }
-                alert("Byl jsi vyhozen správcem!");
-                handleLogout();
-                return;
             }
 
             if (matchedRest.ban) {
@@ -711,8 +718,9 @@
         }
 
         function kickUserDirect(targetUid, username, userFp) {
-            // Kick nastaví flag, který uživatele ihned odhlásí, ale hned se smaže, takže se může znovu připojit
-            db.ref('restrictions/' + targetUid).update({ kicked: true, fingerprint: userFp || deviceFingerprint });
+            // Smažeme případný předchozí sessionStorage záznam pro tento účet, aby ho to při novém kiku správně vyhodilo
+            sessionStorage.removeItem('gjw_kicked_notified_' + targetUid);
+            db.ref('restrictions/' + targetUid).update({ kicked: true, fingerprint: userFp || deviceFingerprint, userId: targetUid });
             alert("Uživatel byl vyhozen.");
             if (isAdmin) showAdminDashboard();
         }
