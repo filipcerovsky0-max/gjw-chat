@@ -21,12 +21,13 @@
     <!-- Ban obrazovka -->
     <div id="bannedScreen" class="fixed inset-0 bg-black z-[9999] hidden flex flex-col items-center justify-center p-4 text-center space-y-3">
         <div class="border border-red-600 p-4 max-w-xs w-full space-y-2 bg-zinc-950">
-            <h1 class="text-sm font-bold text-red-500">BAN</h1>
+            <h1 class="text-sm font-bold text-red-500">MÁŠ AKTIVNÍ BAN</h1>
             <div class="text-left space-y-1 text-gray-400">
                 <p>Důvod: <span id="bannedReasonText" class="text-white">-</span></p>
                 <p>Trvání: <span id="bannedDurationText" class="text-white">-</span></p>
                 <p id="bannedCountdownContainer" class="pt-1 text-yellow-400 hidden">Zpět za: <span id="bannedCountdownTimer">-</span></p>
             </div>
+            <p class="text-[9px] text-zinc-500">Trest je vázán na hardwarový otisk tohoto zařízení bez ohledu na síť.</p>
         </div>
     </div>
 
@@ -34,13 +35,13 @@
     <div id="editModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
         <div class="border border-zinc-800 bg-zinc-950 p-3 w-full max-w-sm space-y-2">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-1">
-                <span class="font-bold">Upravit zprávu</span>
-                <button onclick="closeEditModal()" class="cursor-pointer">X</button>
+                <span class="font-bold text-zinc-300">Upravit zprávu</span>
+                <button onclick="closeEditModal()" class="text-zinc-500 hover:text-white cursor-pointer">X</button>
             </div>
             <textarea id="editModalInput" rows="3" class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none"></textarea>
             <div class="flex justify-end gap-2">
-                <button onclick="closeEditModal()" class="border border-zinc-700 px-2 py-1 cursor-pointer">Zrušit</button>
-                <button onclick="saveEditedMessage()" class="border border-zinc-500 bg-zinc-900 px-2 py-1 cursor-pointer">Uložit</button>
+                <button onclick="closeEditModal()" class="border border-zinc-700 px-2 py-1 text-zinc-400 cursor-pointer">Zrušit</button>
+                <button onclick="saveEditedMessage()" class="border border-zinc-500 bg-zinc-900 px-2 py-1 text-white cursor-pointer">Uložit</button>
             </div>
         </div>
     </div>
@@ -50,47 +51,49 @@
         <div class="border border-zinc-800 bg-zinc-950 p-3 w-full max-w-sm max-h-[80vh] flex flex-col space-y-2">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-1">
                 <div>
-                    <span id="profileUsernameTitle" class="font-bold">Uživatel</span>
+                    <span id="profileUsernameTitle" class="font-bold text-zinc-200">Uživatel</span>
                     <p id="profileUserIdSub" class="text-[9px] text-zinc-500">-</p>
                 </div>
-                <button onclick="closeUserProfileModal()" class="cursor-pointer">X</button>
+                <button onclick="closeUserProfileModal()" class="text-zinc-500 hover:text-white cursor-pointer">X</button>
             </div>
+            <p class="text-[10px] text-zinc-500">Správa uživatele a jeho aktivit v systému.</p>
             <div class="flex gap-1 flex-wrap">
-                <button id="profileKickBtn" class="border border-yellow-700 text-yellow-400 px-2 py-0.5 cursor-pointer">Kick</button>
-                <button id="profileMuteBtn" class="border border-orange-700 text-orange-400 px-2 py-0.5 cursor-pointer">Mute</button>
-                <button id="profileBanBtn" class="border border-red-700 text-red-400 px-2 py-0.5 cursor-pointer">Ban</button>
-                <button id="profileRenameBtn" class="border border-blue-700 text-blue-400 px-2 py-0.5 cursor-pointer">Jméno</button>
+                <button id="profileKickBtn" class="border border-yellow-800 text-yellow-400 px-2 py-0.5 cursor-pointer">Kick</button>
+                <button id="profileMuteBtn" class="border border-orange-800 text-orange-400 px-2 py-0.5 cursor-pointer">Mute</button>
+                <button id="profileBanBtn" class="border border-red-800 text-red-400 px-2 py-0.5 cursor-pointer">Ban</button>
+                <button id="profileRenameBtn" class="border border-blue-800 text-blue-400 px-2 py-0.5 cursor-pointer">Jméno</button>
             </div>
             <div id="profileUserMessagesList" class="flex-1 overflow-y-auto border border-zinc-900 p-2 space-y-2 bg-black"></div>
             <div class="flex justify-end">
-                <button onclick="closeUserProfileModal()" class="border border-zinc-700 px-2 py-1 cursor-pointer">Zavřít</button>
+                <button onclick="closeUserProfileModal()" class="border border-zinc-700 px-2 py-1 text-zinc-400 cursor-pointer">Zavřít</button>
             </div>
         </div>
     </div>
 
     <!-- Lightbox -->
     <div id="imageLightbox" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-center p-4">
-        <button onclick="closeLightbox()" class="absolute top-3 right-3 border border-zinc-700 px-2 py-1 cursor-pointer">Zavřít</button>
+        <button onclick="closeLightbox()" class="absolute top-3 right-3 border border-zinc-700 px-2 py-1 text-zinc-400 cursor-pointer">Zavřít</button>
         <img id="lightboxImg" class="max-w-full max-h-[85vh] object-contain border border-zinc-800">
     </div>
 
-    <!-- Přihlášení -->
+    <!-- Přihlášení (Homepage) -->
     <div id="loginScreen" class="fixed inset-0 bg-black z-50 flex flex-col justify-between p-4 overflow-y-auto">
-        <div class="flex-1 flex items-center justify-center w-full">
+        <div class="flex-1 flex items-center justify-center w-full py-6">
             <div class="border border-zinc-800 bg-zinc-950 p-5 w-full max-w-xs space-y-3">
-                <div class="text-center">
-                    <div id="logoTrigger" onclick="handleLogoClick()" class="font-bold tracking-widest cursor-pointer py-1 text-sm">GJW CHAT</div>
-                    <p class="text-[10px] text-zinc-500">studentský projekt</p>
+                <div class="text-center space-y-1">
+                    <div id="logoTrigger" onclick="handleLogoClick()" class="font-bold tracking-widest cursor-pointer py-1 text-sm text-zinc-100">GJW CHAT</div>
+                    <p class="text-[10px] text-zinc-500">chat pro všechny z GJW</p>
                 </div>
-                <div class="space-y-2">
+                <div class="space-y-2.5">
                     <div>
                         <label class="block text-[10px] text-zinc-400 mb-0.5">Přezdívka</label>
-                        <input type="text" id="loginNickname" placeholder="jméno..." class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none" maxlength="20" autocomplete="off">
+                        <input type="text" id="loginNickname" placeholder="Zadej svou přezdívku..." class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none focus:border-zinc-600" maxlength="20" autocomplete="off">
+                        <p class="text-[9px] text-zinc-600 mt-0.5">Max. 20 znaků, slovo "admin" je blokováno.</p>
                     </div>
                     <div>
                         <label class="block text-[10px] text-zinc-400 mb-0.5">Třída</label>
                         <select id="loginClass" class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none">
-                            <option value="">(bez třídy)</option>
+                            <option value="">(bez třídy / učitel)</option>
                             <option value="01.A">01.A</option><option value="01.B">01.B</option>
                             <option value="02.A">02.A</option><option value="02.B">02.B</option>
                             <option value="03.A">03.A</option><option value="03.B">03.B</option>
@@ -100,9 +103,13 @@
                             <option value="07.A">07.A</option><option value="07.B">07.B</option>
                             <option value="08.A">08.A</option><option value="08.B">08.B</option>
                         </select>
+                        <p class="text-[9px] text-zinc-600 mt-0.5">Vyber svou kmenovou třídu pro lepší přehled.</p>
                     </div>
-                    <button onclick="handleLogin()" class="w-full border border-zinc-700 bg-zinc-900 py-2 hover:bg-zinc-800 cursor-pointer">Vstoupit do chatu</button>
+                    <button onclick="handleLogin()" class="w-full border border-zinc-700 bg-zinc-900 py-2 hover:bg-zinc-800 text-zinc-200 cursor-pointer">Vstoupit do chatu</button>
                     <div id="loginError" class="text-red-500 text-[10px] text-center hidden"></div>
+                </div>
+                <div class="pt-2 border-t border-zinc-900 text-[9px] text-zinc-600 text-center space-y-0.5">
+                    <p>Gymnázium Jiřího Wolkera, Prostějov</p>
                 </div>
             </div>
         </div>
@@ -112,58 +119,72 @@
     <div id="adminPageScreen" class="fixed inset-0 bg-black z-50 hidden flex items-center justify-center p-4">
         <div class="border border-zinc-800 bg-zinc-950 p-4 w-full max-w-3xl max-h-[90vh] flex flex-col space-y-3">
             <div id="adminAuthBox" class="space-y-3 my-auto max-w-xs mx-auto text-center">
-                <h1 class="font-bold">Admin Login</h1>
+                <h1 class="font-bold text-zinc-200">Admin Control Room</h1>
+                <p class="text-[10px] text-zinc-500">Zadej administrátorské heslo pro přístup k moderaci</p>
                 <input type="password" id="adminPasswordInput" placeholder="heslo..." class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none">
-                <button onclick="verifyAdminPassword()" class="w-full border border-zinc-700 bg-zinc-900 py-1.5 cursor-pointer">Ověřit</button>
+                <button onclick="verifyAdminPassword()" class="w-full border border-zinc-700 bg-zinc-900 py-1.5 text-zinc-200 cursor-pointer">Ověřit</button>
                 <div id="adminLoginError" class="text-red-500 text-[10px] hidden">Špatné heslo</div>
-                <a href="./" class="block text-[10px] text-zinc-500 underline pt-1">Zpět</a>
+                <a href="./" class="block text-[10px] text-zinc-500 underline pt-1">Zpět na hlavní stránku</a>
             </div>
 
             <div id="adminDashboardBox" class="hidden flex-1 overflow-y-auto space-y-3 pr-1">
                 <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
-                    <span class="font-bold">Admin Panel</span>
+                    <div>
+                        <span class="font-bold text-zinc-200">Admin Dashboard</span>
+                        <p class="text-[9px] text-zinc-500">Správa uživatelů, banů a systémových logů</p>
+                    </div>
                     <div class="flex gap-2">
                         <button onclick="clearChatData()" class="border border-red-800 text-red-400 px-2 py-0.5 cursor-pointer">Clear</button>
-                        <a href="./" class="border border-zinc-700 px-2 py-0.5">Odhlásit</a>
+                        <a href="./" class="border border-zinc-700 px-2 py-0.5 text-zinc-400">Odhlásit</a>
                     </div>
                 </div>
 
                 <div class="border border-zinc-900 p-2.5 bg-black flex flex-col sm:flex-row justify-between items-center gap-2">
-                    <select id="adminModeSelect" class="bg-black border border-zinc-800 p-1.5 text-white w-full sm:w-auto">
-                        <option value="observed">Viditelný admin</option>
-                        <option value="hidden">Ghost admin</option>
-                    </select>
-                    <button onclick="openChatFromAdmin()" class="border border-zinc-700 bg-zinc-900 px-3 py-1.5 cursor-pointer w-full sm:w-auto">Vstoupit</button>
+                    <div>
+                        <span class="text-[10px] text-zinc-400 block mb-0.5">Režim vstupu</span>
+                        <select id="adminModeSelect" class="bg-black border border-zinc-800 p-1.5 text-white w-full sm:w-auto">
+                            <option value="observed">Viditelný admin (s duhovým nickem)</option>
+                            <option value="hidden">Ghost admin (zcela skrytý)</option>
+                        </select>
+                    </div>
+                    <button onclick="openChatFromAdmin()" class="border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-zinc-200 cursor-pointer w-full sm:w-auto mt-2 sm:mt-0">Vstoupit do chatu</button>
                 </div>
 
                 <div class="border border-zinc-900 p-2.5 bg-black space-y-2">
                     <div class="flex justify-between items-center">
-                        <span class="text-yellow-400 font-bold">Uživatelé</span>
-                        <input type="text" id="adminUserSearchInput" placeholder="hledat..." oninput="renderAdminUsersList()" class="bg-black border border-zinc-800 p-1 w-32">
+                        <div>
+                            <span class="text-yellow-400 font-bold">Připojení uživatelé</span>
+                            <p class="text-[9px] text-zinc-600">Seznam aktivních sessions a hardwarových otisků</p>
+                        </div>
+                        <input type="text" id="adminUserSearchInput" placeholder="hledat..." oninput="renderAdminUsersList()" class="bg-black border border-zinc-800 p-1 w-32 text-white">
                     </div>
                     <div id="adminUsersListContainer" class="space-y-1 max-h-32 overflow-y-auto"></div>
                 </div>
 
                 <div class="border border-zinc-900 p-2.5 bg-black space-y-1">
-                    <span class="text-red-400 font-bold">Bany</span>
+                    <span class="text-red-400 font-bold block">Aktivní bany a restrikce</span>
+                    <p class="text-[9px] text-zinc-600">Přehled blokovaných zařízení a důvodů</p>
                     <div id="adminBansLogContainer" class="space-y-1 max-h-24 overflow-y-auto bg-zinc-950 p-1.5"></div>
                 </div>
 
                 <div class="border border-zinc-900 p-2.5 bg-black space-y-1">
-                    <span class="text-yellow-400 font-bold">Obrázky</span>
+                    <span class="text-yellow-400 font-bold block">Odeslané obrázky</span>
+                    <p class="text-[9px] text-zinc-600">Kontrola mediálního obsahu v chatu</p>
                     <div id="adminImageLogContainer" class="space-y-1 max-h-24 overflow-y-auto bg-zinc-950 p-1.5"></div>
                 </div>
 
                 <div class="border border-zinc-900 p-2.5 bg-black space-y-1">
-                    <span class="text-yellow-400 font-bold">Memy (emotikony)</span>
+                    <span class="text-yellow-400 font-bold block">Memy (Custom emotikony)</span>
+                    <p class="text-[9px] text-zinc-600">Nahrávání a správa obrázků do rychlého výběru</p>
                     <input type="file" id="adminEmojiUploadInput" accept="image/*" class="hidden" onchange="handleAdminUploadEmoji(event)">
-                    <button onclick="document.getElementById('adminEmojiUploadInput').click()" class="border border-zinc-700 bg-zinc-900 px-2 py-1 cursor-pointer">Nahrát obrázek</button>
+                    <button onclick="document.getElementById('adminEmojiUploadInput').click()" class="border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-300 cursor-pointer mt-1">Nahrát nový obrázek</button>
                     <div id="adminEmojiList" class="flex flex-wrap gap-1 pt-1"></div>
                 </div>
 
                 <div class="border border-zinc-900 p-2.5 bg-black space-y-1">
-                    <span class="text-zinc-400 font-bold">Logy připojení</span>
-                    <div id="adminLogContainer" class="bg-zinc-950 p-1.5 max-h-24 overflow-y-auto text-[10px]"></div>
+                    <span class="text-zinc-400 font-bold block">Systémové logy</span>
+                    <p class="text-[9px] text-zinc-600">Záznamy přihlášení a síťové aktivity</p>
+                    <div id="adminLogContainer" class="bg-zinc-950 p-1.5 max-h-24 overflow-y-auto text-[10px] text-zinc-500"></div>
                 </div>
             </div>
         </div>
@@ -172,27 +193,27 @@
     <!-- Hlavní hlavička -->
     <header class="border-b border-zinc-900 bg-black px-3 py-2 flex justify-between items-center shrink-0">
         <div class="flex items-center space-x-2">
-            <span id="headerLogoTrigger" onclick="handleLogoClick()" class="font-bold cursor-pointer">GJW</span>
+            <span id="headerLogoTrigger" onclick="handleLogoClick()" class="font-bold cursor-pointer text-zinc-100">GJW</span>
             <span id="userSubtitle" class="text-zinc-500">-</span>
         </div>
         <div class="flex items-center space-x-2">
-            <div class="border border-zinc-800 px-2 py-0.5 text-[10px] flex items-center gap-1">
+            <div class="border border-zinc-800 px-2 py-0.5 text-[10px] flex items-center gap-1 text-zinc-400">
                 <span class="w-1.5 h-1.5 bg-green-500"></span>
                 <span>Online: <span id="onlineCountBadge" class="text-green-400 font-mono">1</span></span>
             </div>
             <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" class="hidden border border-amber-800 text-amber-400 px-2 py-0.5 cursor-pointer">Admin</button>
-            <button onclick="handleLogout()" class="border border-zinc-700 px-2 py-0.5 cursor-pointer">Odhlásit</button>
+            <button onclick="handleLogout()" class="border border-zinc-700 px-2 py-0.5 text-zinc-400 cursor-pointer">Odhlásit</button>
         </div>
     </header>
 
     <!-- Chat tělo -->
     <div class="flex-1 flex flex-col overflow-hidden relative">
         <div id="chatContainer" class="flex-1 overflow-y-auto p-3 space-y-2 pb-28">
-            <div id="emptyState" class="hidden h-full flex items-center justify-center text-zinc-600">Žádné zprávy</div>
+            <div id="emptyState" class="hidden h-full flex items-center justify-center text-zinc-600">Zatím žádné zprávy v této místnosti</div>
             <div id="messagesList" class="space-y-2 max-w-xl mx-auto"></div>
         </div>
 
-        <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" class="fixed bottom-16 right-3 border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] opacity-0 pointer-events-none cursor-pointer">Nové zprávy</button>
+        <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" class="fixed bottom-16 right-3 border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] text-zinc-300 opacity-0 pointer-events-none cursor-pointer">Nové zprávy</button>
 
         <!-- Footer -->
         <footer class="border-t border-zinc-900 bg-black p-2.5 shrink-0 fixed bottom-0 left-0 right-0 z-40">
@@ -201,15 +222,17 @@
                 <div id="mutedNoticeBox" class="hidden w-full border border-red-900 bg-red-950/30 p-2 text-center text-red-400 space-y-0.5">
                     <span id="mutedNoticeText">Jsi ztlumen.</span>
                     <div id="mutedCountdownContainer" class="text-yellow-400 hidden">Zbývá: <span id="mutedCountdownTimer">-</span></div>
+                    <p class="text-[9px] text-zinc-500">Nemůžeš posílat zprávy do vypršení trestu.</p>
                 </div>
 
                 <div id="activeInputControls" class="space-y-1.5">
                     <div id="imageSourcePopup" class="hidden absolute bottom-12 left-0 border border-zinc-800 bg-zinc-950 p-1 shadow-lg w-28 z-50 flex flex-col space-y-1">
-                        <button onclick="triggerFileInput(false)" class="text-left p-1 hover:bg-zinc-900 cursor-pointer">Galerie</button>
-                        <button onclick="triggerFileInput(true)" class="text-left p-1 hover:bg-zinc-900 cursor-pointer">Fotoaparát</button>
+                        <button onclick="triggerFileInput(false)" class="text-left p-1 text-zinc-300 hover:bg-zinc-900 cursor-pointer">Galerie</button>
+                        <button onclick="triggerFileInput(true)" class="text-left p-1 text-zinc-300 hover:bg-zinc-900 cursor-pointer">Fotoaparát</button>
                     </div>
 
                     <div id="emojiPickerPopup" class="hidden absolute bottom-12 left-10 border border-zinc-800 bg-zinc-950 p-2 shadow-lg w-48 max-h-36 overflow-y-auto z-50">
+                        <div class="text-[9px] text-zinc-500 pb-1 border-b border-zinc-800 mb-1">Rychlé memy</div>
                         <div id="emojiPickerContent" class="flex flex-wrap gap-1"></div>
                     </div>
 
@@ -217,15 +240,18 @@
                     <input type="file" id="imageInputCamera" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
 
                     <div id="imagePreviewContainer" class="hidden p-1.5 border border-zinc-800 bg-zinc-950 flex items-center justify-between">
-                        <img id="imagePreview" class="h-8 w-8 object-cover border border-zinc-800">
-                        <button onclick="clearImagePreview()" class="text-zinc-500 cursor-pointer">Zrušit</button>
+                        <div class="flex items-center gap-2">
+                            <img id="imagePreview" class="h-8 w-8 object-cover border border-zinc-800">
+                            <span class="text-[10px] text-zinc-400">Připojeno k odeslání</span>
+                        </div>
+                        <button onclick="clearImagePreview()" class="text-zinc-500 hover:text-white cursor-pointer">Zrušit</button>
                     </div>
 
                     <div class="flex items-end space-x-1.5">
-                        <button onclick="toggleImageSourceMenu()" class="border border-zinc-800 bg-zinc-900 p-2 cursor-pointer" title="Foto">📷</button>
-                        <button onclick="toggleMemePicker()" class="border border-zinc-800 bg-zinc-900 px-2 py-2 font-bold cursor-pointer">MEME</button>
-                        <textarea id="messageInput" placeholder="Napiš zprávu..." rows="1" class="flex-1 bg-black border border-zinc-800 p-2 text-white focus:outline-none resize-none max-h-20" onkeydown="handleKeydown(event)"></textarea>
-                        <button onclick="sendMessage()" class="border border-zinc-700 bg-zinc-900 px-3 py-2 cursor-pointer">Odeslat</button>
+                        <button onclick="toggleImageSourceMenu()" class="border border-zinc-800 bg-zinc-900 p-2 text-zinc-300 cursor-pointer" title="Přiložit obrázek">📷</button>
+                        <button onclick="toggleMemePicker()" class="border border-zinc-800 bg-zinc-900 px-2 py-2 font-bold text-zinc-300 cursor-pointer" title="Memy">MEME</button>
+                        <textarea id="messageInput" placeholder="Napiš zprávu... (Enter pro odeslání)" rows="1" class="flex-1 bg-black border border-zinc-800 p-2 text-white focus:outline-none resize-none max-h-20" onkeydown="handleKeydown(event)"></textarea>
+                        <button onclick="sendMessage()" class="border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-200 cursor-pointer">Odeslat</button>
                     </div>
                 </div>
             </div>
@@ -277,19 +303,45 @@
         const connectedRef = db.ref('.info/connected');
         const presenceRef = db.ref('presence');
 
+        // Správa online statusu – počítá se POUZE tehdy, když uživatel reálně kouká na chat / je připojen na stránce chatu
         connectedRef.on('value', (snap) => {
             if (snap.val() === true) {
                 const myPresenceRef = presenceRef.push();
                 myPresenceRef.onDisconnect().remove();
-                myPresenceRef.set({ fingerprint: deviceFingerprint, user: currentUser || 'Anonym' });
+                myPresenceRef.set({ fingerprint: deviceFingerprint, user: currentUser || 'Anonym', timestamp: firebase.database.ServerValue.TIMESTAMP });
+                
+                // Keepalive heartbeat každých 10 sekund pro zajištění okamžitého odebrání při zavření okna
+                const heartbeatInterval = setInterval(() => {
+                    myPresenceRef.update({ timestamp: firebase.database.ServerValue.TIMESTAMP });
+                }, 10000);
+
+                window.addEventListener('beforeunload', () => {
+                    clearInterval(heartbeatInterval);
+                    myPresenceRef.remove();
+                });
             }
         });
 
+        // Offline timeout detekce (pokud nepošle heartbeat do 20 sekund, vypadne z počítadla)
         presenceRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            const count = data ? Object.keys(data).length : 1;
+            let activeCount = 0;
+            const now = Date.now();
+            if (data) {
+                for (let key in data) {
+                    const val = data[key];
+                    // Pokud má heartbeat mladší než 20 sekund, počítá se
+                    if (val.timestamp && (now - val.timestamp < 20000)) {
+                        activeCount++;
+                    } else {
+                        // Staré záznamy hned promažeme
+                        presenceRef.child(key).remove();
+                    }
+                }
+            }
+            if (activeCount < 1) activeCount = 1;
             const badge = document.getElementById('onlineCountBadge');
-            if (badge) badge.innerText = count;
+            if (badge) badge.innerText = activeCount;
         });
 
         db.ref('messages').on('value', (snapshot) => {
@@ -356,7 +408,7 @@
             }
 
             if (matchedRest.kicked) {
-                alert("Byl jsi vyhozen!");
+                alert("Byl jsi vyhozen správcem!");
                 handleLogout();
                 return;
             }
@@ -364,7 +416,7 @@
             if (matchedRest.ban) {
                 const ban = matchedRest.ban;
                 if (ban.permanent || Date.now() < ban.expiresAt) {
-                    document.getElementById('bannedReasonText').innerText = ban.reason || 'Bez důvodu';
+                    document.getElementById('bannedReasonText').innerText = ban.reason || 'Bez udaného důvodu';
                     document.getElementById('bannedDurationText').innerText = ban.permanent ? 'Natrvalo' : `Do ${new Date(ban.expiresAt).toLocaleString()}`;
                     
                     const countdownContainer = document.getElementById('bannedCountdownContainer');
@@ -400,12 +452,12 @@
 
             if (matchedRest.mute) {
                 if (matchedRest.mute.permanent) {
-                    noticeText.innerText = `Ztlumen natrvalo.`;
+                    noticeText.innerText = `Jsi ztlumen natrvalo.`;
                     mutedCountdownContainer.classList.add('hidden');
                     noticeBox.classList.remove('hidden');
                     activeControls.classList.add('hidden');
                 } else if (Date.now() < matchedRest.mute.expiresAt) {
-                    noticeText.innerText = `Jsi ztlumen.`;
+                    noticeText.innerText = `Jsi ztlumen správcem.`;
                     mutedCountdownContainer.classList.remove('hidden');
 
                     restrictionCountdownInterval = setInterval(() => {
@@ -458,13 +510,13 @@
             const content = document.getElementById('emojiPickerContent');
             content.innerHTML = '';
             if (cloudEmojis.length === 0) {
-                content.innerHTML = '<span class="text-zinc-600">Žádné memy</span>';
+                content.innerHTML = '<span class="text-zinc-600 text-[9px]">Žádné vlastní memy</span>';
                 return;
             }
             cloudEmojis.forEach(imgSrc => {
                 const img = document.createElement('img');
                 img.src = imgSrc;
-                img.className = "w-6 h-6 object-contain cursor-pointer border border-zinc-800 bg-black p-0.5";
+                img.className = "w-6 h-6 object-contain cursor-pointer border border-zinc-800 bg-black p-0.5 hover:border-zinc-500";
                 img.onclick = () => {
                     insertEmojiIntoMessage(imgSrc);
                     emojiPopup.classList.add('hidden');
@@ -560,7 +612,7 @@
             if (searchVal) users = users.filter(u => u.name.toLowerCase().includes(searchVal) || u.userId.toLowerCase().includes(searchVal));
 
             if (users.length === 0) {
-                container.innerHTML = '<span class="text-zinc-600">Žádní uživatelé</span>';
+                container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádní aktivní uživatelé v záznamech</span>';
                 return;
             }
 
@@ -573,11 +625,11 @@
                 row.className = "flex justify-between items-center bg-zinc-950 border border-zinc-900 p-1.5 gap-1";
                 row.innerHTML = `
                     <div>
-                        <div>${u.name} ${isBanned ? '<span class="text-red-500">[BAN]</span>' : ''} ${isMuted ? '<span class="text-orange-500">[MUTE]</span>' : ''}</div>
+                        <div class="text-zinc-200">${u.name} ${isBanned ? '<span class="text-red-500 font-bold">[BAN]</span>' : ''} ${isMuted ? '<span class="text-orange-500 font-bold">[MUTE]</span>' : ''}</div>
                         <div class="text-[9px] text-zinc-600">ID: ${u.userId} | IP: ${u.ip}</div>
                     </div>
                     <div class="flex gap-1">
-                        <button onclick="adminChangeNickname('${u.userId}', '${u.name}')" class="border border-zinc-700 px-1 cursor-pointer">Jméno</button>
+                        <button onclick="adminChangeNickname('${u.userId}', '${u.name}')" class="border border-zinc-700 px-1 text-zinc-400 cursor-pointer">Jméno</button>
                         <button onclick="kickUserDirect('${u.userId}', '${u.name}', '${u.fingerprint}')" class="border border-yellow-800 text-yellow-400 px-1 cursor-pointer">Kick</button>
                         <button onclick="promptMuteUser('${u.userId}', '${u.name}', '${u.fingerprint}')" class="border border-orange-800 text-orange-400 px-1 cursor-pointer">Mute</button>
                         <button onclick="promptBanUser('${u.userId}', '${u.name}', '${u.fingerprint}')" class="border border-red-800 text-red-400 px-1 cursor-pointer">Ban</button>
@@ -597,12 +649,12 @@
                     count++;
                     const ban = rest.ban;
                     const row = document.createElement('div');
-                    row.className = "border border-zinc-900 p-1 bg-black";
-                    row.innerHTML = `<span class="text-red-400">${ban.username}</span>: ${ban.reason || 'Bez důvodu'}`;
+                    row.className = "border border-zinc-900 p-1 bg-black text-[10px]";
+                    row.innerHTML = `<span class="text-red-400 font-bold">${ban.username}</span>: ${ban.reason || 'Bez důvodu'}`;
                     container.appendChild(row);
                 }
             }
-            if (count === 0) container.innerHTML = '<span class="text-zinc-600">Žádné bany</span>';
+            if (count === 0) container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádné aktivní bany</span>';
         }
 
         function renderAdminImageLog() {
@@ -610,16 +662,16 @@
             container.innerHTML = '';
             const imgs = cloudMessages.filter(m => m.image);
             if (imgs.length === 0) {
-                container.innerHTML = '<span class="text-zinc-600">Žádné obrázky</span>';
+                container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádné odeslané obrázky</span>';
                 return;
             }
             imgs.reverse().forEach(msg => {
                 const row = document.createElement('div');
-                row.className = "flex items-center justify-between border border-zinc-900 p-1 bg-black";
+                row.className = "flex items-center justify-between border border-zinc-900 p-1 bg-black text-[10px]";
                 row.innerHTML = `
                     <div class="flex items-center gap-2">
                         <img src="${msg.image}" class="w-6 h-6 object-cover border border-zinc-800 cursor-pointer" onclick="openLightbox('${msg.image}')">
-                        <span>${msg.user}</span>
+                        <span class="text-zinc-300">${msg.user}</span>
                     </div>
                     <button onclick="deleteMessage('${msg.id}')" class="text-red-400 cursor-pointer">Smazat</button>
                 `;
@@ -632,7 +684,7 @@
             const audit = getStorageAuditLog();
             container.innerHTML = '';
             if (audit.length === 0) {
-                container.innerHTML = 'Žádné logy';
+                container.innerHTML = 'Žádné systémové záznamy';
                 return;
             }
             [...audit].reverse().forEach(item => {
@@ -644,7 +696,7 @@
         }
 
         function adminChangeNickname(targetUid, oldName) {
-            const newName = prompt("Nové jméno:", oldName);
+            const newName = prompt("Zadej nové jméno uživatele:", oldName);
             if (!newName || !newName.trim()) return;
             db.ref('messages').once('value', (snapshot) => {
                 const val = snapshot.val();
@@ -653,18 +705,18 @@
                     if (val[key].userId === targetUid) db.ref('messages/' + key).update({ user: newName.trim() });
                 }
             });
-            alert("Změněno");
+            alert("Přezdívka byla změněna.");
             showAdminDashboard();
         }
 
         function kickUserDirect(targetUid, username, userFp) {
             db.ref('restrictions/' + targetUid).update({ kicked: true, fingerprint: userFp });
-            alert("Vyhozen");
+            alert("Uživatel byl vyhozen.");
             showAdminDashboard();
         }
 
         function promptMuteUser(targetUid, username, userFp) {
-            const mins = prompt("Mute v minutách (0 pro zrušení):");
+            const mins = prompt("Zadej délku mute v minutách (0 pro zrušení):");
             if (mins === null) return;
             if (mins === '0') {
                 db.ref('restrictions/' + targetUid + '/mute').remove();
@@ -673,22 +725,22 @@
             }
             const ms = parseInt(mins) * 60 * 1000;
             db.ref('restrictions/' + targetUid).update({ mute: { permanent: false, expiresAt: Date.now() + ms }, fingerprint: userFp, userId: targetUid });
-            alert("Ztlumen");
+            alert("Uživatel byl ztlumen.");
             showAdminDashboard();
         }
 
         function promptBanUser(targetUid, username, userFp) {
-            const mins = prompt("Ban v minutách (0 pro zrušení):");
+            const mins = prompt("Zadej délku banu v minutách (0 pro zrušení):");
             if (mins === null) return;
             if (mins === '0') {
                 db.ref('restrictions/' + targetUid + '/ban').remove();
                 showAdminDashboard();
                 return;
             }
-            const reason = prompt("Důvod:") || "Porušení pravidel";
+            const reason = prompt("Zadej důvod banu:") || "Porušení pravidel chatu";
             const ms = parseInt(mins) * 60 * 1000;
             db.ref('restrictions/' + targetUid).update({ ban: { permanent: false, expiresAt: Date.now() + ms, reason, username }, fingerprint: userFp, userId: targetUid });
-            alert("Zabanován");
+            alert("Uživatel byl zabanován.");
             showAdminDashboard();
         }
 
@@ -696,7 +748,7 @@
             if (!isAdmin) return;
             activeProfileUserId = uid;
             document.getElementById('profileUsernameTitle').innerText = username;
-            document.getElementById('profileUserIdSub').innerText = uid;
+            document.getElementById('profileUserIdSub').innerText = 'ID: ' + uid;
             renderUserProfileModalContent(uid);
             document.getElementById('userProfileModal').classList.remove('hidden');
         }
@@ -712,8 +764,8 @@
             const userMsgs = cloudMessages.filter(m => m.userId === uid && !m.isSystem);
             userMsgs.reverse().forEach(msg => {
                 const row = document.createElement('div');
-                row.className = "border border-zinc-900 p-1 bg-black space-y-1";
-                row.innerHTML = `<div class="flex justify-between text-[9px] text-zinc-500"><span>${msg.time}</span><button onclick="deleteMessage('${msg.id}')" class="text-red-400 cursor-pointer">Smazat</button></div><div>${msg.text || ''}</div>`;
+                row.className = "border border-zinc-900 p-1 bg-black space-y-1 text-[10px]";
+                row.innerHTML = `<div class="flex justify-between text-[9px] text-zinc-500"><span>${msg.time}</span><button onclick="deleteMessage('${msg.id}')" class="text-red-400 cursor-pointer">Smazat</button></div><div class="text-zinc-300">${msg.text || ''}</div>`;
                 container.appendChild(row);
             });
         }
@@ -722,7 +774,7 @@
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) { db.ref('emojis').push(e.target.result); alert("Nahráno"); showAdminDashboard(); };
+            reader.onload = function(e) { db.ref('emojis').push(e.target.result); alert("Obrázek nahrán."); showAdminDashboard(); };
             reader.readAsDataURL(file);
         }
 
@@ -786,8 +838,8 @@
             const cls = document.getElementById('loginClass').value;
             const err = document.getElementById('loginError');
 
-            if (!nick) { err.innerText = "Zadej přezdívku"; err.classList.remove('hidden'); return; }
-            if (nick.toLowerCase() === 'admin') { err.innerText = "Zakázané jméno"; err.classList.remove('hidden'); return; }
+            if (!nick) { err.innerText = "Zadej svou přezdívku!"; err.classList.remove('hidden'); return; }
+            if (nick.toLowerCase() === 'admin') { err.innerText = "Tato přezdívka je zakázaná!"; err.classList.remove('hidden'); return; }
 
             if (!currentUserId) currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
             currentUser = nick + (cls ? ' (' + cls + ')' : '');
@@ -798,7 +850,7 @@
 
             if (isBanned) {
                 document.getElementById('bannedReasonText').innerText = userRest.ban.reason || '-';
-                document.getElementById('bannedDurationText').innerText = 'Aktivní ban';
+                document.getElementById('bannedDurationText').innerText = 'Aktivní ban na zařízení';
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('bannedScreen').classList.remove('hidden');
                 document.getElementById('bannedScreen').classList.add('flex');
@@ -817,7 +869,7 @@
                 id: 'msg_' + Date.now(),
                 userId: currentUserId,
                 user: 'Systém',
-                text: `${currentUser} se připojil`,
+                text: `${currentUser} se připojil do místnosti`,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 isSystem: true
             });
@@ -945,6 +997,13 @@
 
                 const actions = document.createElement('div');
                 actions.className = "text-[9px] text-zinc-600 px-0.5 flex gap-2";
+                if (isAuthor || (isAdmin && msg.isAdmin)) {
+                    const editBtn = document.createElement('button');
+                    editBtn.innerText = "Upravit";
+                    editBtn.className = "hover:text-yellow-400 cursor-pointer";
+                    editBtn.onclick = () => openEditModal(msg.id, msg.text || '');
+                    actions.appendChild(editBtn);
+                }
                 if (isAuthor || isAdmin) {
                     const del = document.createElement('button');
                     del.innerText = "Smazat";
@@ -960,6 +1019,34 @@
             if (isUserAtBottom) scrollToBottom(false);
         }
 
+        function openEditModal(id, currentText) {
+            editingMessageId = id;
+            document.getElementById('editModalInput').value = currentText;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            editingMessageId = null;
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        function saveEditedMessage() {
+            const newText = document.getElementById('editModalInput').value.trim();
+            if (!editingMessageId || !newText) return;
+
+            db.ref('messages').once('value', s => {
+                const val = s.val();
+                if (!val) return;
+                for (let key in val) {
+                    if (val[key].id === editingMessageId) {
+                        db.ref('messages/' + key).update({ text: newText, edited: true });
+                        break;
+                    }
+                }
+                closeEditModal();
+            });
+        }
+
         function deleteMessage(id) {
             db.ref('messages').once('value', s => {
                 const val = s.val();
@@ -971,7 +1058,7 @@
         }
 
         function clearChatData() {
-            if (!confirm("Smazat celou historii a restrikce?")) return;
+            if (!confirm("Opravdu smazat celou historii zpráv a restrikce?")) return;
             db.ref('messages').remove();
             db.ref('restrictions').remove();
             showAdminDashboard();
