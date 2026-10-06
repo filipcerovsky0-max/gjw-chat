@@ -3,166 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GJW Chat - Gymnázium Jiřího Wolkera</title>
+    <title>GJW Chat</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDK (Realtime Cloud Database) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        @keyframes fadeInSlide {
-            from { opacity: 0; transform: translateY(20px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes waveText {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-3px) rotate(0.3deg); }
-        }
-        @keyframes popUp {
-            from { opacity: 0; transform: translateY(15px) scale(0.9); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes flyToChat {
-            0% {
-                opacity: 1;
-                transform: translate(0px, 0px) scale(0.85);
-            }
-            100% {
-                opacity: 1;
-                transform: translate(var(--delta-x), var(--delta-y)) scale(1);
-            }
-        }
-        .flying-bubble {
-            position: fixed;
-            z-index: 9999;
-            pointer-events: none;
-            animation: flyToChat 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .message-animate {
-            animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .wave-animation {
-            display: inline-block;
-            animation: waveText 2s ease-in-out infinite;
-        }
-        .popup-animate {
-            animation: popUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
         .rainbow-admin {
             background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: bold;
         }
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 3px;
-        }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans overflow-hidden">
+<body class="bg-black text-gray-200 h-full flex flex-col font-mono text-xs">
 
-    <!-- Celoobrazovková obrazovka pro zabanované uživatele s odpočtem -->
-    <div id="bannedScreen" class="fixed inset-0 bg-slate-950 z-[9999] hidden flex flex-col items-center justify-center p-6 text-center space-y-4">
-        <div class="bg-slate-900 border border-rose-500/40 p-8 rounded-2xl shadow-2xl max-w-md w-full space-y-4 message-animate">
-            <div class="text-rose-500 text-4xl font-bold">⛔</div>
-            <h1 class="text-xl font-bold text-slate-100">Máš aktivní ban!</h1>
-            <div id="bannedReasonBox" class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-2">
-                <p><strong>Důvod:</strong> <span id="bannedReasonText" class="text-rose-400">-</span></p>
-                <p><strong>Trvání:</strong> <span id="bannedDurationText" class="text-amber-400">-</span></p>
-                <p id="bannedCountdownContainer" class="pt-2 text-indigo-400 font-mono font-semibold hidden">Zbývající čas: <span id="bannedCountdownTimer">-</span></p>
-            </div>
-            <p class="text-[11px] text-slate-500">Tento ban je vázán výhradně na toto konkrétní zařízení.</p>
-        </div>
-    </div>
-
-    <!-- Modální dialog pro úpravu zprávy -->
-    <div id="editModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-lg space-y-4 popup-animate">
-            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                <h3 class="text-base font-bold text-slate-200">Upravit zprávu</h3>
-                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-200 text-lg font-bold cursor-pointer">&times;</button>
-            </div>
-            <div>
-                <textarea id="editModalInput" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100 focus:outline-none focus:border-indigo-500 text-base resize-none" placeholder="Napište upravenou zprávu..."></textarea>
-            </div>
-            <div class="flex justify-end gap-3 pt-2">
-                <button onclick="closeEditModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer">Zrušit</button>
-                <button onclick="saveEditedMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition shadow-lg shadow-indigo-600/25 cursor-pointer">Uložit změny</button>
+    <!-- Ban obrazovka -->
+    <div id="bannedScreen" class="fixed inset-0 bg-black z-[9999] hidden flex flex-col items-center justify-center p-4 text-center space-y-3">
+        <div class="border border-red-600 p-4 max-w-xs w-full space-y-2 bg-zinc-950">
+            <h1 class="text-sm font-bold text-red-500">BAN</h1>
+            <div class="text-left space-y-1 text-gray-400">
+                <p>Důvod: <span id="bannedReasonText" class="text-white">-</span></p>
+                <p>Trvání: <span id="bannedDurationText" class="text-white">-</span></p>
+                <p id="bannedCountdownContainer" class="pt-1 text-yellow-400 hidden">Zpět za: <span id="bannedCountdownTimer">-</span></p>
             </div>
         </div>
     </div>
 
-    <!-- Admin Profilový Dialog uživatele přímo z chatu -->
-    <div id="userProfileModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col space-y-4 popup-animate">
-            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+    <!-- Úprava zprávy -->
+    <div id="editModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="border border-zinc-800 bg-zinc-950 p-3 w-full max-w-sm space-y-2">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-1">
+                <span class="font-bold">Upravit zprávu</span>
+                <button onclick="closeEditModal()" class="cursor-pointer">X</button>
+            </div>
+            <textarea id="editModalInput" rows="3" class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none"></textarea>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeEditModal()" class="border border-zinc-700 px-2 py-1 cursor-pointer">Zrušit</button>
+                <button onclick="saveEditedMessage()" class="border border-zinc-500 bg-zinc-900 px-2 py-1 cursor-pointer">Uložit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Uživatelský profil (pro admina) -->
+    <div id="userProfileModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="border border-zinc-800 bg-zinc-950 p-3 w-full max-w-sm max-h-[80vh] flex flex-col space-y-2">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-1">
                 <div>
-                    <h3 id="profileUsernameTitle" class="text-lg font-bold text-slate-100">Profil uživatele</h3>
-                    <p class="text-xs text-slate-400 font-mono" id="profileUserIdSub">ID: -</p>
+                    <span id="profileUsernameTitle" class="font-bold">Uživatel</span>
+                    <p id="profileUserIdSub" class="text-[9px] text-zinc-500">-</p>
                 </div>
-                <button onclick="closeUserProfileModal()" class="text-slate-400 hover:text-slate-200 text-lg font-bold cursor-pointer">&times;</button>
+                <button onclick="closeUserProfileModal()" class="cursor-pointer">X</button>
             </div>
-            
-            <div class="flex items-center gap-2 flex-wrap">
-                <button id="profileKickBtn" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer font-semibold">Vyhodit (Kick)</button>
-                <button id="profileMuteBtn" class="bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer font-semibold">Ztlumit (Mute)</button>
-                <button id="profileBanBtn" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer font-semibold">Dát Ban / Omezit</button>
-                <button id="profileRenameBtn" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer font-semibold">Přejmenovat</button>
+            <div class="flex gap-1 flex-wrap">
+                <button id="profileKickBtn" class="border border-yellow-700 text-yellow-400 px-2 py-0.5 cursor-pointer">Kick</button>
+                <button id="profileMuteBtn" class="border border-orange-700 text-orange-400 px-2 py-0.5 cursor-pointer">Mute</button>
+                <button id="profileBanBtn" class="border border-red-700 text-red-400 px-2 py-0.5 cursor-pointer">Ban</button>
+                <button id="profileRenameBtn" class="border border-blue-700 text-blue-400 px-2 py-0.5 cursor-pointer">Jméno</button>
             </div>
-
-            <div class="space-y-2 flex-1 overflow-hidden flex flex-col">
-                <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Historie zpráv a obrázků uživatele:</h4>
-                <div id="profileUserMessagesList" class="flex-1 overflow-y-auto bg-slate-950 border border-slate-800 p-3 rounded-xl space-y-2.5 text-xs"></div>
-            </div>
-
-            <div class="flex justify-end pt-2">
-                <button onclick="closeUserProfileModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer">Zavřít</button>
+            <div id="profileUserMessagesList" class="flex-1 overflow-y-auto border border-zinc-900 p-2 space-y-2 bg-black"></div>
+            <div class="flex justify-end">
+                <button onclick="closeUserProfileModal()" class="border border-zinc-700 px-2 py-1 cursor-pointer">Zavřít</button>
             </div>
         </div>
     </div>
 
-    <!-- Lightbox pro obrázky a memy -->
-    <div id="imageLightbox" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4">
-        <div class="absolute top-4 right-4 flex items-center gap-3">
-            <a id="lightboxDownloadBtn" href="#" download="gjw-chat-image.png" class="bg-slate-800 hover:bg-slate-700 text-slate-100 p-3 rounded-xl transition flex items-center gap-2 text-xs font-semibold cursor-pointer shadow-lg" title="Stáhnout obrázek">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                <span>Stáhnout</span>
-            </a>
-            <button onclick="closeLightbox()" class="bg-slate-800 hover:bg-slate-700 text-slate-100 p-3 rounded-xl transition text-lg font-bold cursor-pointer shadow-lg">&times;</button>
-        </div>
-        <div class="max-w-4xl max-h-[85vh] flex items-center justify-center">
-            <img id="lightboxImg" src="" class="max-w-full max-h-[85vh] object-contain rounded-2xl border border-slate-800 shadow-2xl">
-        </div>
+    <!-- Lightbox -->
+    <div id="imageLightbox" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-center p-4">
+        <button onclick="closeLightbox()" class="absolute top-3 right-3 border border-zinc-700 px-2 py-1 cursor-pointer">Zavřít</button>
+        <img id="lightboxImg" class="max-w-full max-h-[85vh] object-contain border border-zinc-800">
     </div>
 
-    <!-- Regular User Login Screen -->
-    <div id="loginScreen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col justify-between p-4 overflow-y-auto">
-        <div class="flex-1 flex items-center justify-center w-full py-6">
-            <div class="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-6 message-animate flex flex-col items-center">
-                <div class="text-center space-y-3 w-full flex flex-col items-center">
-                    <div id="logoTrigger" onclick="handleLogoClick()" ontouchend="handleLogoClick()" class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 shadow-lg cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-750 flex items-center justify-center mx-auto" title="GJW Logo">
-                        <svg viewBox="0 0 160 80" class="h-14 w-32 text-slate-100 fill-current block">
-                            <text x="80" y="58" font-family="Georgia, serif" font-size="70" font-weight="bold" letter-spacing="-3" text-anchor="middle">GJW</text>
-                        </svg>
-                    </div>
-                    <h1 class="text-2xl font-bold tracking-tight">GJW Komunitní Chat</h1>
-                    <p class="text-sm text-slate-400">Vstup do studentské konverzace</p>
+    <!-- Přihlášení -->
+    <div id="loginScreen" class="fixed inset-0 bg-black z-50 flex flex-col justify-between p-4 overflow-y-auto">
+        <div class="flex-1 flex items-center justify-center w-full">
+            <div class="border border-zinc-800 bg-zinc-950 p-5 w-full max-w-xs space-y-3">
+                <div class="text-center">
+                    <div id="logoTrigger" onclick="handleLogoClick()" class="font-bold tracking-widest cursor-pointer py-1 text-sm">GJW CHAT</div>
+                    <p class="text-[10px] text-zinc-500">studentský projekt</p>
                 </div>
-                <div class="space-y-4 w-full">
+                <div class="space-y-2">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Přezdívka</label>
-                        <input type="text" id="loginNickname" placeholder="Sem zadejte svou přezdívku" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors text-base" maxlength="20" autocomplete="off">
+                        <label class="block text-[10px] text-zinc-400 mb-0.5">Přezdívka</label>
+                        <input type="text" id="loginNickname" placeholder="jméno..." class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none" maxlength="20" autocomplete="off">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Třída (volitelně)</label>
-                        <select id="loginClass" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors text-base">
-                            <option value="">Bez třídy / Učitel</option>
+                        <label class="block text-[10px] text-zinc-400 mb-0.5">Třída</label>
+                        <select id="loginClass" class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none">
+                            <option value="">(bez třídy)</option>
                             <option value="01.A">01.A</option><option value="01.B">01.B</option>
                             <option value="02.A">02.A</option><option value="02.B">02.B</option>
                             <option value="03.A">03.A</option><option value="03.B">03.B</option>
@@ -171,195 +99,133 @@
                             <option value="06.A">06.A</option><option value="06.B">06.B</option>
                             <option value="07.A">07.A</option><option value="07.B">07.B</option>
                             <option value="08.A">08.A</option><option value="08.B">08.B</option>
-                            <option value="1.A">1.A</option><option value="1.B">1.B</option>
-                            <option value="2.A">2.A</option><option value="2.B">2.B</option>
-                            <option value="3.A">3.A</option><option value="3.B">3.B</option>
-                            <option value="4.A">4.A</option><option value="4.B">4.B</option>
                         </select>
                     </div>
-                    <button onclick="handleLogin()" ontouchend="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.99] cursor-pointer">Vstoupit do chatu</button>
-                    <div id="loginError" class="text-rose-500 text-sm text-center hidden"></div>
-                </div>
-            </div>
-        </div>
-        
-        <footer class="w-full max-w-md mx-auto py-3 flex flex-col sm:flex-row justify-between items-center text-center gap-1 shrink-0">
-            <a href="mailto:anonym.gjw@proton.me" class="text-[11px] text-slate-400 hover:text-slate-200 underline transition-colors">Nápady / Stížnosti</a>
-            <span class="text-[11px] text-slate-500">Tato stránka nikoho nezastupuje, je to pouze studentský projekt.</span>
-        </footer>
-    </div>
-
-    <!-- Admin Control Room Screen -->
-    <div id="adminPageScreen" class="fixed inset-0 bg-slate-950 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col message-animate">
-            <div id="adminAuthBox" class="space-y-6 my-auto">
-                <div class="text-center space-y-2">
-                    <h1 class="text-2xl font-bold tracking-tight">Admin Control Room</h1>
-                    <p class="text-sm text-slate-400">Pro vstup do control room je nutne zadat administratorske heslo</p>
-                </div>
-                <div class="space-y-4 max-w-md mx-auto">
-                    <input type="password" id="adminPasswordInput" placeholder="Zadejte administratorske heslo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-500 transition-colors">
-                    <button onclick="verifyAdminPassword()" ontouchend="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 rounded-xl transition-all shadow-lg shadow-amber-600/20 cursor-pointer">Ověřit heslo a otevřít panel</button>
-                    <div id="adminLoginError" class="text-rose-500 text-sm text-center hidden">Nesprávné heslo!</div>
-                    <div class="text-center pt-2">
-                        <a href="./" class="text-xs text-slate-400 hover:text-white underline">Zpět na hlavní stránku</a>
-                    </div>
-                </div>
-            </div>
-
-            <div id="adminDashboardBox" class="hidden flex-1 overflow-hidden flex flex-col space-y-4">
-                <div class="flex justify-between items-center pb-4 border-b border-slate-800 shrink-0">
-                    <h2 class="text-xl font-bold">Admin Control Room - Správa a logy</h2>
-                    <div class="flex items-center gap-3">
-                        <button onclick="clearChatData()" class="bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer">Vymazat historii</button>
-                        <a href="./" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3.5 py-1.5 rounded-lg transition-colors">Odhlásit</a>
-                    </div>
-                </div>
-
-                <div class="flex-1 overflow-y-auto space-y-4 pr-1">
-                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div class="w-full sm:w-auto flex-1">
-                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Režim připojení admina do chatu</label>
-                            <select id="adminModeSelect" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-amber-500">
-                                <option value="observed">Pozorovaně (s duhovým nickem a oznámením v chatu)</option>
-                                <option value="hidden">Nepozorovaně / Ghost mode (zcela skrytý v roomce)</option>
-                            </select>
-                        </div>
-                        <button onclick="openChatFromAdmin()" ontouchend="openChatFromAdmin()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition-all shadow-md shrink-0 cursor-pointer">Vstoupit do chatu</button>
-                    </div>
-
-                    <div id="usersCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all">
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                            <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Seznam aktuálních uživatelů a správa (Kick / Mute / Ban)</h3>
-                            <div class="flex items-center gap-2 w-full sm:w-auto">
-                                <input type="text" id="adminUserSearchInput" placeholder="Vyhledat uživatele..." oninput="renderAdminUsersList()" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1 text-xs text-slate-100 focus:outline-none focus:border-amber-500 w-full sm:w-48">
-                                <button onclick="toggleFullscreen('usersCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition shrink-0 cursor-pointer">⤢</button>
-                            </div>
-                        </div>
-                        <div id="adminUsersListContainer" class="space-y-2 max-h-40 overflow-y-auto"></div>
-                    </div>
-
-                    <!-- Log zabanovaných uživatelů -->
-                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                        <h3 class="text-xs uppercase tracking-wider text-rose-400 font-semibold">Log zabanovaných uživatelů (včetně důvodů)</h3>
-                        <div id="adminBansLogContainer" class="space-y-2 max-h-48 overflow-y-auto bg-slate-900 border border-slate-800 p-3 rounded-xl"></div>
-                    </div>
-
-                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                        <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Log odeslaných obrázků a fotek</h3>
-                        <div id="adminImageLogContainer" class="space-y-2 max-h-48 overflow-y-auto bg-slate-900 border border-slate-800 p-3 rounded-xl"></div>
-                    </div>
-
-                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                        <h3 class="text-xs uppercase tracking-wider text-amber-400 font-semibold">Správa PNG emotikonů (Memů) pro chat</h3>
-                        <div class="flex items-center gap-3">
-                            <input type="file" id="adminEmojiUploadInput" accept="image/png, image/jpeg" class="hidden" onchange="handleAdminUploadEmoji(event)">
-                            <button onclick="document.getElementById('adminEmojiUploadInput').click()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-4 py-2 rounded-lg transition-colors cursor-pointer">Nahrát nový PNG emotikon</button>
-                            <span class="text-xs text-slate-400">Nahrané emotikony se automaticky zpřístupní všem uživatelům v chatu.</span>
-                        </div>
-                        <div id="adminEmojiList" class="flex flex-wrap gap-2 pt-2"></div>
-                    </div>
-
-                    <div id="logsCard" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 transition-all flex flex-col">
-                        <div class="flex items-center justify-between">
-                            <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Živá diagnostika připojení uživatelů</div>
-                            <button onclick="toggleFullscreen('logsCard')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 text-[11px] px-2.5 py-1 rounded border border-slate-800 transition cursor-pointer">⤢</button>
-                        </div>
-                        <div id="adminLogContainer" class="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-y-auto max-h-72 space-y-3 text-xs font-mono"></div>
-                    </div>
+                    <button onclick="handleLogin()" class="w-full border border-zinc-700 bg-zinc-900 py-2 hover:bg-zinc-800 cursor-pointer">Vstoupit do chatu</button>
+                    <div id="loginError" class="text-red-500 text-[10px] text-center hidden"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main App Header -->
-    <header class="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-3 flex justify-between items-center z-10 shrink-0">
-        <div class="flex items-center space-x-3">
-            <div id="headerLogoTrigger" onclick="handleLogoClick()" ontouchend="handleLogoClick()" class="p-1.5 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer select-none active:scale-95 transition-transform hover:border-slate-750 flex items-center justify-center" title="GJW Logo">
-                <svg viewBox="0 0 160 80" class="h-6 w-16 text-slate-100 fill-current block">
-                    <text x="80" y="58" font-family="Georgia, serif" font-size="70" font-weight="bold" letter-spacing="-3" text-anchor="middle">GJW</text>
-                </svg>
-            </div>
-            <div>
-                <h2 class="font-bold text-sm sm:text-base leading-tight">GJW Hlavní Chat</h2>
-                <p class="text-xs text-slate-400" id="userSubtitle">Přihlášen: -</p>
-            </div>
-        </div>
-        
-        <div class="flex items-center space-x-3">
-            <!-- Counter aktivních lidí online -->
-            <div class="bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-inner" title="Počet lidí s otevřeným chatem">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span class="text-xs text-slate-300 font-semibold">Online: <span id="onlineCountBadge" class="text-emerald-400 font-mono">1</span></span>
+    <!-- Admin Panel -->
+    <div id="adminPageScreen" class="fixed inset-0 bg-black z-50 hidden flex items-center justify-center p-4">
+        <div class="border border-zinc-800 bg-zinc-950 p-4 w-full max-w-3xl max-h-[90vh] flex flex-col space-y-3">
+            <div id="adminAuthBox" class="space-y-3 my-auto max-w-xs mx-auto text-center">
+                <h1 class="font-bold">Admin Login</h1>
+                <input type="password" id="adminPasswordInput" placeholder="heslo..." class="w-full bg-black border border-zinc-800 p-2 text-white focus:outline-none">
+                <button onclick="verifyAdminPassword()" class="w-full border border-zinc-700 bg-zinc-900 py-1.5 cursor-pointer">Ověřit</button>
+                <div id="adminLoginError" class="text-red-500 text-[10px] hidden">Špatné heslo</div>
+                <a href="./" class="block text-[10px] text-zinc-500 underline pt-1">Zpět</a>
             </div>
 
-            <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" ontouchend="openAdminModalFromChat()" class="hidden bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 text-xs font-semibold px-3 py-2 rounded-xl transition-all cursor-pointer">Control Room</button>
-            <button onclick="handleLogout()" ontouchend="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer">Odhlásit</button>
+            <div id="adminDashboardBox" class="hidden flex-1 overflow-y-auto space-y-3 pr-1">
+                <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
+                    <span class="font-bold">Admin Panel</span>
+                    <div class="flex gap-2">
+                        <button onclick="clearChatData()" class="border border-red-800 text-red-400 px-2 py-0.5 cursor-pointer">Clear</button>
+                        <a href="./" class="border border-zinc-700 px-2 py-0.5">Odhlásit</a>
+                    </div>
+                </div>
+
+                <div class="border border-zinc-900 p-2.5 bg-black flex flex-col sm:flex-row justify-between items-center gap-2">
+                    <select id="adminModeSelect" class="bg-black border border-zinc-800 p-1.5 text-white w-full sm:w-auto">
+                        <option value="observed">Viditelný admin</option>
+                        <option value="hidden">Ghost admin</option>
+                    </select>
+                    <button onclick="openChatFromAdmin()" class="border border-zinc-700 bg-zinc-900 px-3 py-1.5 cursor-pointer w-full sm:w-auto">Vstoupit</button>
+                </div>
+
+                <div class="border border-zinc-900 p-2.5 bg-black space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-yellow-400 font-bold">Uživatelé</span>
+                        <input type="text" id="adminUserSearchInput" placeholder="hledat..." oninput="renderAdminUsersList()" class="bg-black border border-zinc-800 p-1 w-32">
+                    </div>
+                    <div id="adminUsersListContainer" class="space-y-1 max-h-32 overflow-y-auto"></div>
+                </div>
+
+                <div class="border border-zinc-900 p-2.5 bg-black space-y-1">
+                    <span class="text-red-400 font-bold">Bany</span>
+                    <div id="adminBansLogContainer" class="space-y-1 max-h-24 overflow-y-auto bg-zinc-950 p-1.5"></div>
+                </div>
+
+                <div class="border border-zinc-900 p-2.5 bg-black space-y-1">
+                    <span class="text-yellow-400 font-bold">Obrázky</span>
+                    <div id="adminImageLogContainer" class="space-y-1 max-h-24 overflow-y-auto bg-zinc-950 p-1.5"></div>
+                </div>
+
+                <div class="border border-zinc-900 p-2.5 bg-black space-y-1">
+                    <span class="text-yellow-400 font-bold">Memy (emotikony)</span>
+                    <input type="file" id="adminEmojiUploadInput" accept="image/*" class="hidden" onchange="handleAdminUploadEmoji(event)">
+                    <button onclick="document.getElementById('adminEmojiUploadInput').click()" class="border border-zinc-700 bg-zinc-900 px-2 py-1 cursor-pointer">Nahrát obrázek</button>
+                    <div id="adminEmojiList" class="flex flex-wrap gap-1 pt-1"></div>
+                </div>
+
+                <div class="border border-zinc-900 p-2.5 bg-black space-y-1">
+                    <span class="text-zinc-400 font-bold">Logy připojení</span>
+                    <div id="adminLogContainer" class="bg-zinc-950 p-1.5 max-h-24 overflow-y-auto text-[10px]"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hlavní hlavička -->
+    <header class="border-b border-zinc-900 bg-black px-3 py-2 flex justify-between items-center shrink-0">
+        <div class="flex items-center space-x-2">
+            <span id="headerLogoTrigger" onclick="handleLogoClick()" class="font-bold cursor-pointer">GJW</span>
+            <span id="userSubtitle" class="text-zinc-500">-</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <div class="border border-zinc-800 px-2 py-0.5 text-[10px] flex items-center gap-1">
+                <span class="w-1.5 h-1.5 bg-green-500"></span>
+                <span>Online: <span id="onlineCountBadge" class="text-green-400 font-mono">1</span></span>
+            </div>
+            <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" class="hidden border border-amber-800 text-amber-400 px-2 py-0.5 cursor-pointer">Admin</button>
+            <button onclick="handleLogout()" class="border border-zinc-700 px-2 py-0.5 cursor-pointer">Odhlásit</button>
         </div>
     </header>
 
-    <!-- App Body -->
+    <!-- Chat tělo -->
     <div class="flex-1 flex flex-col overflow-hidden relative">
-        <div id="chatContainer" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative pb-40 sm:pb-44">
-            <div id="emptyState" class="hidden h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
-                <p class="text-sm">Zatím žádné zprávy. Napiš první!</p>
-            </div>
-            <div id="messagesList" class="space-y-4 max-w-3xl mx-auto pb-4"></div>
+        <div id="chatContainer" class="flex-1 overflow-y-auto p-3 space-y-2 pb-28">
+            <div id="emptyState" class="hidden h-full flex items-center justify-center text-zinc-600">Žádné zprávy</div>
+            <div id="messagesList" class="space-y-2 max-w-xl mx-auto"></div>
         </div>
 
-        <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" ontouchend="scrollToBottom(true)" class="fixed bottom-28 right-6 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-30 text-xs font-semibold cursor-pointer">
-            <span>Nové zprávy</span>
-            <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-        </button>
+        <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" class="fixed bottom-16 right-3 border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] opacity-0 pointer-events-none cursor-pointer">Nové zprávy</button>
 
-        <!-- Message Input Footer -->
-        <footer id="chatFooter" class="bg-slate-900 border-t border-slate-800 p-3 sm:p-4 shrink-0 fixed bottom-0 left-0 right-0 z-40 shadow-2xl">
-            <div class="max-w-3xl mx-auto flex flex-col space-y-2 relative">
+        <!-- Footer -->
+        <footer class="border-t border-zinc-900 bg-black p-2.5 shrink-0 fixed bottom-0 left-0 right-0 z-40">
+            <div class="max-w-xl mx-auto flex flex-col space-y-2">
                 
-                <!-- Box zobrazený při ztlumení (včetně živého odpočtu) -->
-                <div id="mutedNoticeBox" class="hidden w-full bg-rose-600/20 border border-rose-500/40 rounded-xl p-4 text-center text-rose-400 text-sm font-semibold space-y-1">
-                    <span id="mutedNoticeText">Byl jsi ztlumen adminem.</span>
-                    <div id="mutedCountdownContainer" class="text-xs text-amber-300 font-mono hidden">Zbývá: <span id="mutedCountdownTimer">-</span></div>
+                <div id="mutedNoticeBox" class="hidden w-full border border-red-900 bg-red-950/30 p-2 text-center text-red-400 space-y-0.5">
+                    <span id="mutedNoticeText">Jsi ztlumen.</span>
+                    <div id="mutedCountdownContainer" class="text-yellow-400 hidden">Zbývá: <span id="mutedCountdownTimer">-</span></div>
                 </div>
 
-                <div id="activeInputControls" class="space-y-2">
-                    <div id="imageSourcePopup" class="hidden absolute bottom-16 left-0 bg-slate-900 border border-slate-800 rounded-xl p-2 shadow-2xl w-48 z-50 popup-animate flex flex-col space-y-1">
-                        <button onclick="triggerFileInput(false)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📁 Vybrat z galerie</button>
-                        <button onclick="triggerFileInput(true)" class="text-left text-xs text-slate-200 hover:bg-slate-800 p-2 rounded-lg transition cursor-pointer">📷 Vyfotit fotoaparátem</button>
+                <div id="activeInputControls" class="space-y-1.5">
+                    <div id="imageSourcePopup" class="hidden absolute bottom-12 left-0 border border-zinc-800 bg-zinc-950 p-1 shadow-lg w-28 z-50 flex flex-col space-y-1">
+                        <button onclick="triggerFileInput(false)" class="text-left p-1 hover:bg-zinc-900 cursor-pointer">Galerie</button>
+                        <button onclick="triggerFileInput(true)" class="text-left p-1 hover:bg-zinc-900 cursor-pointer">Fotoaparát</button>
                     </div>
 
-                    <div id="emojiPickerPopup" class="hidden absolute bottom-16 left-12 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl w-64 max-h-48 overflow-y-auto z-50 popup-animate">
-                        <div class="text-xs text-slate-400 font-semibold mb-2">Vyber meme emotikon:</div>
-                        <div id="emojiPickerContent" class="flex flex-wrap gap-2"></div>
+                    <div id="emojiPickerPopup" class="hidden absolute bottom-12 left-10 border border-zinc-800 bg-zinc-950 p-2 shadow-lg w-48 max-h-36 overflow-y-auto z-50">
+                        <div id="emojiPickerContent" class="flex flex-wrap gap-1"></div>
                     </div>
 
                     <input type="file" id="imageInputGallery" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
                     <input type="file" id="imageInputCamera" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
 
-                    <div id="imagePreviewContainer" class="hidden p-2 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between popup-animate">
-                        <div class="flex items-center gap-2">
-                            <img id="imagePreview" src="" class="h-12 w-12 rounded-lg object-cover border border-slate-800">
-                            <span class="text-xs text-slate-300">Obrázek připraven k odeslání</span>
-                        </div>
-                        <button onclick="clearImagePreview()" ontouchend="clearImagePreview()" class="text-slate-400 hover:text-rose-400 text-xs font-semibold px-2 py-1 cursor-pointer">&times; Zrušit</button>
+                    <div id="imagePreviewContainer" class="hidden p-1.5 border border-zinc-800 bg-zinc-950 flex items-center justify-between">
+                        <img id="imagePreview" class="h-8 w-8 object-cover border border-zinc-800">
+                        <button onclick="clearImagePreview()" class="text-zinc-500 cursor-pointer">Zrušit</button>
                     </div>
 
-                    <div class="flex items-end space-x-2">
-                        <button onclick="toggleImageSourceMenu()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center select-none active:scale-95 cursor-pointer" title="Připojit obrázek nebo fotku">
-                            <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        </button>
-
-                        <button onclick="toggleMemePicker()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all shrink-0 flex items-center justify-center text-xs font-bold select-none active:scale-95 cursor-pointer" title="Meme emotikony">
-                            [MEME]
-                        </button>
-
-                        <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl focus-within:border-indigo-500 transition-colors flex flex-col">
-                            <textarea id="messageInput" placeholder="Napiš zprávu..." rows="1" class="w-full bg-transparent px-4 py-3 text-slate-100 focus:outline-none resize-none max-h-32 text-base" onkeydown="handleKeydown(event)"></textarea>
-                        </div>
-                        
-                        <button id="sendBtn" onclick="sendMessage()" ontouchend="sendMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl transition-all shrink-0 flex items-center justify-center shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer">
-                            <svg class="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                        </button>
+                    <div class="flex items-end space-x-1.5">
+                        <button onclick="toggleImageSourceMenu()" class="border border-zinc-800 bg-zinc-900 p-2 cursor-pointer" title="Foto">📷</button>
+                        <button onclick="toggleMemePicker()" class="border border-zinc-800 bg-zinc-900 px-2 py-2 font-bold cursor-pointer">MEME</button>
+                        <textarea id="messageInput" placeholder="Napiš zprávu..." rows="1" class="flex-1 bg-black border border-zinc-800 p-2 text-white focus:outline-none resize-none max-h-20" onkeydown="handleKeydown(event)"></textarea>
+                        <button onclick="sendMessage()" class="border border-zinc-700 bg-zinc-900 px-3 py-2 cursor-pointer">Odeslat</button>
                     </div>
                 </div>
             </div>
@@ -373,11 +239,10 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Absolutně unikátní hardwarový otisk zařízení (nezávislý na Wi-Fi síti)
         function getDeviceFingerprint() {
             let fp = localStorage.getItem('gjw_device_fingerprint');
             if (!fp) {
-                fp = 'device_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now() + '_' + screen.width + 'x' + screen.height + '_' + (navigator.hardwareConcurrency || 4);
+                fp = 'device_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now() + '_' + screen.width + 'x' + screen.height;
                 localStorage.setItem('gjw_device_fingerprint', fp);
             }
             return fp;
@@ -389,9 +254,7 @@
         let isAdmin = false;
         let selectedImageBase64 = null;
         let isUserAtBottom = true;
-        let clientPublicIp = 'Neznámá veřejná IP';
-        let clientPrivateIp = 'Neznámá lokální IP';
-        let clientDevice = navigator.userAgent;
+        let clientPublicIp = 'Neznámá IP';
         let logoClicks = 0;
         let logoClickTimer = null;
         let cloudMessages = [];
@@ -406,81 +269,29 @@
         const emptyState = document.getElementById('emptyState');
         const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
 
-        // --- FIREBASE PRESENCE (Sledování aktivních lidí online) ---
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => { clientPublicIp = data.ip; })
+            .catch(() => {});
+
         const connectedRef = db.ref('.info/connected');
         const presenceRef = db.ref('presence');
 
         connectedRef.on('value', (snap) => {
             if (snap.val() === true) {
                 const myPresenceRef = presenceRef.push();
-                // Jakmile uživatel zavře stránku nebo ztratí spojení, Firebase automaticky záznam smaže
                 myPresenceRef.onDisconnect().remove();
-                myPresenceRef.set({
-                    fingerprint: deviceFingerprint,
-                    user: currentUser || 'Anonym',
-                    joinedAt: Date.now()
-                });
+                myPresenceRef.set({ fingerprint: deviceFingerprint, user: currentUser || 'Anonym' });
             }
         });
 
-        // Posluchač počtu online uživatelů
         presenceRef.on('value', (snapshot) => {
             const data = snapshot.val();
             const count = data ? Object.keys(data).length : 1;
             const badge = document.getElementById('onlineCountBadge');
-            if (badge) {
-                badge.innerText = count;
-            }
+            if (badge) badge.innerText = count;
         });
 
-        fetch('https://api.ipify.org?format=json')
-            .then(res => res.json())
-            .then(data => { 
-                clientPublicIp = data.ip; 
-                recordPresenceAudit();
-                checkLiveRestrictions();
-            })
-            .catch(() => { 
-                clientPublicIp = 'Skrytá veřejná IP'; 
-                recordPresenceAudit();
-                checkLiveRestrictions();
-            });
-
-        try {
-            const pc = new RTCPeerConnection({iceServers: []});
-            pc.createDataChannel('');
-            pc.createOffer().then(offer => pc.setLocalDescription(offer));
-            pc.onicecandidate = (ice) => {
-                if (!ice || !ice.candidate || !ice.candidate.candidate) return;
-                const match = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(ice.candidate.candidate);
-                if (match) {
-                    clientPrivateIp = match[1];
-                    recordPresenceAudit();
-                }
-                pc.onicecandidate = null;
-            };
-        } catch(e) {}
-
-        function recordPresenceAudit() {
-            if (!currentUser) return;
-            const audit = getStorageAuditLog();
-            const lastEntry = audit[audit.length - 1];
-            if (!lastEntry || lastEntry.userId !== currentUserId || (Date.now() - new Date(lastEntry.time).getTime() > 60000)) {
-                audit.push({
-                    action: 'USER_PRESENCE',
-                    userId: currentUserId,
-                    fingerprint: deviceFingerprint,
-                    user: currentUser,
-                    publicIp: clientPublicIp,
-                    privateIp: clientPrivateIp,
-                    device: clientDevice,
-                    time: new Date().toLocaleString()
-                });
-                saveStorageAuditLog(audit);
-            }
-        }
-
-        // Posluchač zpráv z Firebase
         db.ref('messages').on('value', (snapshot) => {
             const data = snapshot.val();
             cloudMessages = data ? Object.values(data) : [];
@@ -490,19 +301,19 @@
             }
         });
 
-        // Posluchač emotikonů z Firebase
         db.ref('emojis').on('value', (snapshot) => {
             const data = snapshot.val();
             cloudEmojis = data ? Object.values(data) : [];
         });
 
-        // Posluchač restrikcí v reálném čase z cloudu
         db.ref('restrictions').on('value', (snapshot) => {
             cloudRestrictions = snapshot.val() || {};
             checkLiveRestrictions();
-            if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+            if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
                 renderAdminUsersList();
                 renderAdminBansLog();
+                renderAdminImageLog();
+                renderAdminLogs();
             }
         });
 
@@ -545,7 +356,7 @@
             }
 
             if (matchedRest.kicked) {
-                alert("Byl jsi vyhozen adminem!");
+                alert("Byl jsi vyhozen!");
                 handleLogout();
                 return;
             }
@@ -553,7 +364,7 @@
             if (matchedRest.ban) {
                 const ban = matchedRest.ban;
                 if (ban.permanent || Date.now() < ban.expiresAt) {
-                    document.getElementById('bannedReasonText').innerText = ban.reason || 'Bez udání důvodu';
+                    document.getElementById('bannedReasonText').innerText = ban.reason || 'Bez důvodu';
                     document.getElementById('bannedDurationText').innerText = ban.permanent ? 'Natrvalo' : `Do ${new Date(ban.expiresAt).toLocaleString()}`;
                     
                     const countdownContainer = document.getElementById('bannedCountdownContainer');
@@ -579,12 +390,9 @@
                     bannedScreen.classList.remove('hidden');
                     bannedScreen.classList.add('flex');
                     return;
-                } else {
-                    bannedScreen.classList.add('hidden');
                 }
-            } else {
-                bannedScreen.classList.add('hidden');
             }
+            bannedScreen.classList.add('hidden');
 
             const noticeText = document.getElementById('mutedNoticeText');
             const mutedCountdownContainer = document.getElementById('mutedCountdownContainer');
@@ -592,12 +400,12 @@
 
             if (matchedRest.mute) {
                 if (matchedRest.mute.permanent) {
-                    noticeText.innerText = `Byl jsi ztlumen adminem natrvalo.`;
+                    noticeText.innerText = `Ztlumen natrvalo.`;
                     mutedCountdownContainer.classList.add('hidden');
                     noticeBox.classList.remove('hidden');
                     activeControls.classList.add('hidden');
                 } else if (Date.now() < matchedRest.mute.expiresAt) {
-                    noticeText.innerText = `Byl jsi ztlumen adminem.`;
+                    noticeText.innerText = `Jsi ztlumen.`;
                     mutedCountdownContainer.classList.remove('hidden');
 
                     restrictionCountdownInterval = setInterval(() => {
@@ -632,9 +440,7 @@
         function toggleMemePicker() {
             imageSourcePopup.classList.add('hidden');
             emojiPopup.classList.toggle('hidden');
-            if (!emojiPopup.classList.contains('hidden')) {
-                renderEmojiPickerList();
-            }
+            if (!emojiPopup.classList.contains('hidden')) renderEmojiPickerList();
         }
 
         function toggleImageSourceMenu() {
@@ -644,26 +450,21 @@
 
         function triggerFileInput(isCamera) {
             imageSourcePopup.classList.add('hidden');
-            if (isCamera) {
-                document.getElementById('imageInputCamera').click();
-            } else {
-                document.getElementById('imageInputGallery').click();
-            }
+            if (isCamera) document.getElementById('imageInputCamera').click();
+            else document.getElementById('imageInputGallery').click();
         }
 
         function renderEmojiPickerList() {
             const content = document.getElementById('emojiPickerContent');
             content.innerHTML = '';
-
             if (cloudEmojis.length === 0) {
-                content.innerHTML = '<span class="text-xs text-slate-400 p-1">sorryyyy na emotikonech jeste makam</span>';
+                content.innerHTML = '<span class="text-zinc-600">Žádné memy</span>';
                 return;
             }
-
             cloudEmojis.forEach(imgSrc => {
                 const img = document.createElement('img');
                 img.src = imgSrc;
-                img.className = "w-8 h-8 object-contain cursor-pointer hover:scale-110 transition-transform bg-slate-950 p-1 rounded border border-slate-800";
+                img.className = "w-6 h-6 object-contain cursor-pointer border border-zinc-800 bg-black p-0.5";
                 img.onclick = () => {
                     insertEmojiIntoMessage(imgSrc);
                     emojiPopup.classList.add('hidden');
@@ -674,28 +475,18 @@
 
         chatContainer.addEventListener('scroll', () => {
             const threshold = 80;
-            const position = chatContainer.scrollTop + chatContainer.clientHeight;
-            const height = chatContainer.scrollHeight;
-            isUserAtBottom = height - position <= threshold;
-
-            if (!isUserAtBottom) {
-                scrollToBottomBtn.classList.remove('opacity-0', 'pointer-events-none');
-                scrollToBottomBtn.classList.add('opacity-100');
-            } else {
-                scrollToBottomBtn.classList.remove('opacity-100');
-                scrollToBottomBtn.classList.add('opacity-0', 'pointer-events-none');
-            }
+            isUserAtBottom = chatContainer.scrollHeight - (chatContainer.scrollTop + chatContainer.clientHeight) <= threshold;
+            if (!isUserAtBottom) scrollToBottomBtn.classList.remove('opacity-0', 'pointer-events-none');
+            else scrollToBottomBtn.classList.add('opacity-0', 'pointer-events-none');
         });
 
         function scrollToBottom(smooth = false) {
             chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
-            scrollToBottomBtn.classList.remove('opacity-100');
             scrollToBottomBtn.classList.add('opacity-0', 'pointer-events-none');
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             const path = window.location.pathname;
-            
             if (path.includes('admin')) {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('adminPageScreen').classList.remove('hidden');
@@ -710,8 +501,7 @@
 
             if (currentUser && currentUserId) {
                 document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser}`;
-                recordPresenceAudit();
+                document.getElementById('userSubtitle').innerText = currentUser;
                 renderMessages();
                 scrollToBottom(false);
             } else {
@@ -735,61 +525,22 @@
         }
 
         function verifyAdminPassword() {
-            const pass = document.getElementById('adminPasswordInput').value;
-            const err = document.getElementById('adminLoginError');
-
-            if (pass === '69_atillo_69') {
+            if (document.getElementById('adminPasswordInput').value === '69_atillo_69') {
                 sessionStorage.setItem('gjw_admin_logged', 'true');
-                err.classList.add('hidden');
-
-                const audit = getStorageAuditLog();
-                audit.push({
-                    action: 'ADMIN_PANEL_ACCESS',
-                    userId: 'admin_uid',
-                    fingerprint: 'admin_fp',
-                    user: 'admin',
-                    publicIp: clientPublicIp,
-                    privateIp: clientPrivateIp,
-                    device: clientDevice,
-                    time: new Date().toLocaleString()
-                });
-                saveStorageAuditLog(audit);
-
                 document.getElementById('adminAuthBox').classList.add('hidden');
                 document.getElementById('adminDashboardBox').classList.remove('hidden');
                 showAdminDashboard();
             } else {
-                err.classList.remove('hidden');
+                document.getElementById('adminLoginError').classList.remove('hidden');
             }
         }
 
         function showAdminDashboard() {
-            const logContainer = document.getElementById('adminLogContainer');
-            const audit = getStorageAuditLog();
-            logContainer.innerHTML = '';
-
-            if (audit.length === 0) {
-                logContainer.innerHTML = '<p class="text-slate-500 text-center py-4">Zatím žádné záznamy v bezpečnostním logu.</p>';
-            } else {
-                [...audit].reverse().forEach((item, index) => {
-                    const row = document.createElement('div');
-                    row.className = "border-b border-slate-900 pb-3 mb-3 space-y-1 bg-slate-950/50 p-3 rounded-lg border border-slate-800/60";
-                    row.innerHTML = `
-                        <div class="flex justify-between text-amber-400 font-semibold">
-                            <span>#${audit.length - index} [${item.action}] uživatel: ${item.user || 'N/A'} (ID: ${item.userId || 'N/A'})</span>
-                            <span class="text-slate-500 font-normal">${item.time}</span>
-                        </div>
-                        <div class="text-slate-300">Veřejná IP: <span class="text-indigo-400">${item.publicIp || 'Neznámá'}</span> | Lokální IP: <span class="text-indigo-300">${item.privateIp || 'Neznámá'}</span></div>
-                        <div class="text-slate-400 text-[11px] truncate">Zařízení/Wi-Fi: ${item.device || 'Neznámé zařízení'}</div>
-                    `;
-                    logContainer.appendChild(row);
-                });
-            }
-
             renderAdminUsersList();
             renderAdminBansLog();
             renderAdminImageLog();
             renderAdminEmojis();
+            renderAdminLogs();
         }
 
         function renderAdminUsersList() {
@@ -799,34 +550,17 @@
 
             const audit = getStorageAuditLog();
             const activeUsersMap = {};
-            
             audit.forEach(item => {
-                if (item.userId && item.user && item.user !== 'admin' && !item.user.startsWith('admin')) {
-                    activeUsersMap[item.userId] = { 
-                        userId: item.userId,
-                        fingerprint: item.fingerprint || deviceFingerprint,
-                        name: item.user, 
-                        ip: item.publicIp || 'Neznámá', 
-                        privateIp: item.privateIp || 'Neznámá',
-                        device: item.device || 'Neznámé zařízení',
-                        lastTime: item.time 
-                    };
+                if (item.userId && item.user && item.user !== 'admin') {
+                    activeUsersMap[item.userId] = { userId: item.userId, fingerprint: item.fingerprint || deviceFingerprint, name: item.user, ip: item.publicIp || 'N/A' };
                 }
             });
 
             let users = Object.values(activeUsersMap);
-            
-            if (searchVal) {
-                users = users.filter(u => 
-                    u.name.toLowerCase().includes(searchVal) || 
-                    u.userId.toLowerCase().includes(searchVal) ||
-                    u.ip.toLowerCase().includes(searchVal) || 
-                    u.privateIp.toLowerCase().includes(searchVal)
-                );
-            }
+            if (searchVal) users = users.filter(u => u.name.toLowerCase().includes(searchVal) || u.userId.toLowerCase().includes(searchVal));
 
             if (users.length === 0) {
-                container.innerHTML = '<span class="text-xs text-slate-500">Žádní odpovídající uživatelé nenalezeni.</span>';
+                container.innerHTML = '<span class="text-zinc-600">Žádní uživatelé</span>';
                 return;
             }
 
@@ -836,18 +570,17 @@
                 const isMuted = rest.mute && (rest.mute.permanent || Date.now() < rest.mute.expiresAt);
 
                 const row = document.createElement('div');
-                row.className = "flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-800 gap-3";
+                row.className = "flex justify-between items-center bg-zinc-950 border border-zinc-900 p-1.5 gap-1";
                 row.innerHTML = `
-                    <div class="space-y-0.5">
-                        <div class="text-sm font-bold text-slate-200">${u.name} ${isBanned ? '<span class="text-rose-500 text-xs">[BANOVÁNO]</span>' : ''} ${isMuted ? '<span class="text-orange-400 text-xs">[ZTLUMENO]</span>' : ''}</div>
-                        <div class="text-[10px] text-slate-400 font-mono">ID: ${u.userId} | Veř. IP: ${u.ip}</div>
-                        <div class="text-[10px] text-slate-500 truncate">Zařízení: ${u.device.substring(0, 40)}...</div>
+                    <div>
+                        <div>${u.name} ${isBanned ? '<span class="text-red-500">[BAN]</span>' : ''} ${isMuted ? '<span class="text-orange-500">[MUTE]</span>' : ''}</div>
+                        <div class="text-[9px] text-zinc-600">ID: ${u.userId} | IP: ${u.ip}</div>
                     </div>
-                    <div class="flex items-center gap-2 flex-wrap shrink-0">
-                        <button onclick="adminChangeNickname('${u.userId}', '${u.name}')" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Přejmenovat</button>
-                        <button onclick="kickUserDirect('${u.userId}', '${u.name}', '${u.fingerprint}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Kick</button>
-                        <button onclick="promptMuteUser('${u.userId}', '${u.name}', '${u.fingerprint}')" class="bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isMuted ? 'Odpustit Mute' : 'Ztlumit'}</button>
-                        <button onclick="promptBanUser('${u.userId}', '${u.name}', '${u.fingerprint}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isBanned ? 'Odpustit Ban' : 'Dát Ban'}</button>
+                    <div class="flex gap-1">
+                        <button onclick="adminChangeNickname('${u.userId}', '${u.name}')" class="border border-zinc-700 px-1 cursor-pointer">Jméno</button>
+                        <button onclick="kickUserDirect('${u.userId}', '${u.name}', '${u.fingerprint}')" class="border border-yellow-800 text-yellow-400 px-1 cursor-pointer">Kick</button>
+                        <button onclick="promptMuteUser('${u.userId}', '${u.name}', '${u.fingerprint}')" class="border border-orange-800 text-orange-400 px-1 cursor-pointer">Mute</button>
+                        <button onclick="promptBanUser('${u.userId}', '${u.name}', '${u.fingerprint}')" class="border border-red-800 text-red-400 px-1 cursor-pointer">Ban</button>
                     </div>
                 `;
                 container.appendChild(row);
@@ -857,252 +590,113 @@
         function renderAdminBansLog() {
             const container = document.getElementById('adminBansLogContainer');
             container.innerHTML = '';
-
-            let bannedCount = 0;
+            let count = 0;
             for (let uid in cloudRestrictions) {
                 const rest = cloudRestrictions[uid];
                 if (rest.ban && (rest.ban.permanent || Date.now() < rest.ban.expiresAt)) {
-                    bannedCount++;
+                    count++;
                     const ban = rest.ban;
-                    const durationStr = ban.permanent ? 'Natrvalo' : `Do ${new Date(ban.expiresAt).toLocaleString()}`;
-                    
                     const row = document.createElement('div');
-                    row.className = "bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1 text-xs";
-                    row.innerHTML = `
-                        <div class="flex justify-between font-bold text-rose-400">
-                            <span>Uživatel: ${ban.username || 'Neznámý'} (ID: ${uid})</span>
-                            <span class="text-slate-400 font-normal">Zabanován: ${ban.bannedAt || 'N/A'}</span>
-                        </div>
-                        <div class="text-slate-300"><strong>Důvod:</strong> ${ban.reason || 'Bez udání důvodu'}</div>
-                        <div class="text-slate-400 font-mono text-[11px]">Trvání: <span class="text-amber-400">${durationStr}</span></div>
-                    `;
+                    row.className = "border border-zinc-900 p-1 bg-black";
+                    row.innerHTML = `<span class="text-red-400">${ban.username}</span>: ${ban.reason || 'Bez důvodu'}`;
                     container.appendChild(row);
                 }
             }
-
-            if (bannedCount === 0) {
-                container.innerHTML = '<span class="text-xs text-slate-500">Zatím žádní zabanovaní uživatelé.</span>';
-            }
+            if (count === 0) container.innerHTML = '<span class="text-zinc-600">Žádné bany</span>';
         }
 
         function renderAdminImageLog() {
             const container = document.getElementById('adminImageLogContainer');
             container.innerHTML = '';
-
-            const imageMsgs = cloudMessages.filter(m => m.image);
-            if (imageMsgs.length === 0) {
-                container.innerHTML = '<span class="text-xs text-slate-500">Zatím nebyly odeslány žádné obrázky.</span>';
+            const imgs = cloudMessages.filter(m => m.image);
+            if (imgs.length === 0) {
+                container.innerHTML = '<span class="text-zinc-600">Žádné obrázky</span>';
                 return;
             }
-
-            imageMsgs.reverse().forEach(msg => {
+            imgs.reverse().forEach(msg => {
                 const row = document.createElement('div');
-                row.className = "flex items-center justify-between bg-slate-950 p-2.5 rounded-lg border border-slate-800 gap-3";
+                row.className = "flex items-center justify-between border border-zinc-900 p-1 bg-black";
                 row.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <img src="${msg.image}" class="w-12 h-12 rounded object-cover cursor-pointer border border-slate-800" onclick="openLightbox('${msg.image}')">
-                        <div class="space-y-0.5">
-                            <div class="text-xs font-bold text-slate-200">Uživatel: <span class="text-indigo-400">${msg.user}</span></div>
-                            <div class="text-[10px] text-slate-400">Čas: ${msg.time}</div>
-                        </div>
+                    <div class="flex items-center gap-2">
+                        <img src="${msg.image}" class="w-6 h-6 object-cover border border-zinc-800 cursor-pointer" onclick="openLightbox('${msg.image}')">
+                        <span>${msg.user}</span>
                     </div>
-                    <button onclick="deleteMessage('${msg.id}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Smazat zprávu</button>
+                    <button onclick="deleteMessage('${msg.id}')" class="text-red-400 cursor-pointer">Smazat</button>
                 `;
                 container.appendChild(row);
             });
         }
 
-        function toggleFullscreen(elementId) {
-            const el = document.getElementById(elementId);
-            if (!el) return;
-            if (!document.fullscreenElement) {
-                el.requestFullscreen().catch(err => {
-                    alert(`Chyba fullscreen: ${err.message}`);
-                });
-            } else {
-                document.exitFullscreen();
+        function renderAdminLogs() {
+            const container = document.getElementById('adminLogContainer');
+            const audit = getStorageAuditLog();
+            container.innerHTML = '';
+            if (audit.length === 0) {
+                container.innerHTML = 'Žádné logy';
+                return;
             }
+            [...audit].reverse().forEach(item => {
+                const div = document.createElement('div');
+                div.className = "border-b border-zinc-900 pb-0.5 mb-0.5 text-zinc-500";
+                div.innerHTML = `[${item.action}] ${item.user || 'N/A'} - IP: ${item.publicIp || 'N/A'}`;
+                container.appendChild(div);
+            });
         }
 
         function adminChangeNickname(targetUid, oldName) {
-            const newName = prompt(`Zadej novou přezdívku (včetně třídy) pro uživatele ${oldName}:`);
+            const newName = prompt("Nové jméno:", oldName);
             if (!newName || !newName.trim()) return;
-
-            const trimmedNew = newName.trim();
-
             db.ref('messages').once('value', (snapshot) => {
                 const val = snapshot.val();
                 if (!val) return;
                 for (let key in val) {
-                    if (val[key].userId === targetUid || val[key].user === oldName) {
-                        db.ref('messages/' + key).update({ user: trimmedNew });
-                    }
+                    if (val[key].userId === targetUid) db.ref('messages/' + key).update({ user: newName.trim() });
                 }
             });
-
-            const audit = getStorageAuditLog();
-            audit.push({ action: 'ADMIN_CHANGE_NICKNAME', userId: targetUid, user: `${oldName} -> ${trimmedNew}`, admin: 'admin', time: new Date().toLocaleString() });
-            saveStorageAuditLog(audit);
-
-            alert(`Uživatel byl přejmenován na ${trimmedNew}`);
-            if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
-                closeUserProfileModal();
-            }
-            if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
-                showAdminDashboard();
-            }
+            alert("Změněno");
+            showAdminDashboard();
         }
 
         function kickUserDirect(targetUid, username, userFp) {
-            if (!confirm(`Opravdu chceš vyhodit uživatele ${username}?`)) return;
-
-            db.ref('restrictions/' + targetUid).update({ kicked: true, fingerprint: userFp || deviceFingerprint });
-
-            const audit = getStorageAuditLog();
-            audit.push({ action: 'KICK_USER', userId: targetUid, user: username, admin: 'admin', time: new Date().toLocaleString() });
-            saveStorageAuditLog(audit);
-
-            alert(`Uživatel ${username} byl vyhozen.`);
-            if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
-                closeUserProfileModal();
-            }
-            if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
-                showAdminDashboard();
-            }
+            db.ref('restrictions/' + targetUid).update({ kicked: true, fingerprint: userFp });
+            alert("Vyhozen");
+            showAdminDashboard();
         }
 
         function promptMuteUser(targetUid, username, userFp) {
-            const type = prompt(`Zadej typ ztlumení (Mute) pro ${username}:\n1 = sekundy\n2 = minuty\n3 = hodiny\n4 = dny\n5 = natrvalo\n(Nebo zadej 0 pro zrušení ztlumení)`);
-            if (type === null) return;
-
-            if (type === '0') {
+            const mins = prompt("Mute v minutách (0 pro zrušení):");
+            if (mins === null) return;
+            if (mins === '0') {
                 db.ref('restrictions/' + targetUid + '/mute').remove();
-                alert(`Ztlumení pro uživatele ${username} bylo zrušeno.`);
-                if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
-                    closeUserProfileModal();
-                }
-                if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
-                    showAdminDashboard();
-                }
+                showAdminDashboard();
                 return;
             }
-
-            let durationMs = 0;
-            let isPerm = false;
-
-            if (type === '5') {
-                isPerm = true;
-            } else {
-                const amount = parseInt(prompt("Zadej číselnou hodnotu trvání ztlumení:"));
-                if (isNaN(amount) || amount <= 0) return;
-
-                if (type === '1') durationMs = amount * 1000;
-                else if (type === '2') durationMs = amount * 60 * 1000;
-                else if (type === '3') durationMs = amount * 60 * 60 * 1000;
-                else if (type === '4') durationMs = amount * 24 * 60 * 60 * 1000;
-                else return;
-            }
-
-            const muteData = {
-                permanent: isPerm,
-                expiresAt: isPerm ? 0 : Date.now() + durationMs
-            };
-
-            db.ref('restrictions/' + targetUid).update({ mute: muteData, fingerprint: userFp || deviceFingerprint, userId: targetUid });
-
-            const audit = getStorageAuditLog();
-            audit.push({ action: isPerm ? 'MUTE_PERM' : 'MUTE_TEMPORARY', userId: targetUid, user: username, admin: 'admin', time: new Date().toLocaleString() });
-            saveStorageAuditLog(audit);
-
-            alert(`Uživatel ${username} byl ztlumen.`);
-            if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
-                closeUserProfileModal();
-            }
-            if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
-                showAdminDashboard();
-            }
+            const ms = parseInt(mins) * 60 * 1000;
+            db.ref('restrictions/' + targetUid).update({ mute: { permanent: false, expiresAt: Date.now() + ms }, fingerprint: userFp, userId: targetUid });
+            alert("Ztlumen");
+            showAdminDashboard();
         }
 
         function promptBanUser(targetUid, username, userFp) {
-            const type = prompt(`Zadej typ banu pro ${username}:\n1 = sekundy\n2 = minuty\n3 = hodiny\n4 = dny\n5 = navždy\n(Nebo zadej 0 pro zrušení banu)`);
-            if (type === null) return;
-
-            if (type === '0') {
+            const mins = prompt("Ban v minutách (0 pro zrušení):");
+            if (mins === null) return;
+            if (mins === '0') {
                 db.ref('restrictions/' + targetUid + '/ban').remove();
-                alert(`Ban pro uživatele ${username} byl zrušen.`);
-                if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
-                    closeUserProfileModal();
-                }
-                if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
-                    showAdminDashboard();
-                }
+                showAdminDashboard();
                 return;
             }
-
-            const reason = prompt("Zadej důvod banu (zobrazí se uživateli na obrazovce a v logu):") || "Porušení pravidel chatu";
-
-            let durationMs = 0;
-            let isPerm = false;
-
-            if (type === '5') {
-                isPerm = true;
-            } else {
-                const amount = parseInt(prompt("Zadej číselnou hodnotu trvání:"));
-                if (isNaN(amount) || amount <= 0) return;
-
-                if (type === '1') durationMs = amount * 1000;
-                else if (type === '2') durationMs = amount * 60 * 1000;
-                else if (type === '3') durationMs = amount * 60 * 60 * 1000;
-                else if (type === '4') durationMs = amount * 24 * 60 * 60 * 1000;
-                else return;
-            }
-
-            const banData = {
-                permanent: isPerm,
-                expiresAt: isPerm ? 0 : Date.now() + durationMs,
-                reason: reason,
-                username: username,
-                bannedAt: new Date().toLocaleString()
-            };
-
-            db.ref('restrictions/' + targetUid).update({ ban: banData, fingerprint: userFp || deviceFingerprint, userId: targetUid });
-
-            const audit = getStorageAuditLog();
-            audit.push({ action: isPerm ? 'BAN_PERM' : 'BAN_TEMPORARY', userId: targetUid, user: username, reason: reason, admin: 'admin', time: new Date().toLocaleString() });
-            saveStorageAuditLog(audit);
-
-            alert(`Uživatel ${username} dostal ban.`);
-            if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
-                closeUserProfileModal();
-            }
-            if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
-                showAdminDashboard();
-            }
+            const reason = prompt("Důvod:") || "Porušení pravidel";
+            const ms = parseInt(mins) * 60 * 1000;
+            db.ref('restrictions/' + targetUid).update({ ban: { permanent: false, expiresAt: Date.now() + ms, reason, username }, fingerprint: userFp, userId: targetUid });
+            alert("Zabanován");
+            showAdminDashboard();
         }
 
         function openUserProfileModal(uid, username) {
             if (!isAdmin) return;
             activeProfileUserId = uid;
-
-            document.getElementById('profileUsernameTitle').innerText = `Profil: ${username}`;
-            document.getElementById('profileUserIdSub').innerText = `ID: ${uid}`;
-            
-            const rest = cloudRestrictions[uid] || {};
-            const userFp = rest.fingerprint || deviceFingerprint;
-
-            document.getElementById('profileKickBtn').onclick = () => {
-                kickUserDirect(uid, username, userFp);
-            };
-            document.getElementById('profileMuteBtn').onclick = () => {
-                promptMuteUser(uid, username, userFp);
-            };
-            document.getElementById('profileBanBtn').onclick = () => {
-                promptBanUser(uid, username, userFp);
-            };
-            document.getElementById('profileRenameBtn').onclick = () => {
-                adminChangeNickname(uid, username);
-            };
-
+            document.getElementById('profileUsernameTitle').innerText = username;
+            document.getElementById('profileUserIdSub').innerText = uid;
             renderUserProfileModalContent(uid);
             document.getElementById('userProfileModal').classList.remove('hidden');
         }
@@ -1115,30 +709,11 @@
         function renderUserProfileModalContent(uid) {
             const container = document.getElementById('profileUserMessagesList');
             container.innerHTML = '';
-
             const userMsgs = cloudMessages.filter(m => m.userId === uid && !m.isSystem);
-
-            if (userMsgs.length === 0) {
-                container.innerHTML = '<p class="text-slate-500 text-center py-4">Uživatel zatím nenapsal žádné zprávy.</p>';
-                return;
-            }
-
             userMsgs.reverse().forEach(msg => {
                 const row = document.createElement('div');
-                row.className = "bg-slate-900 border border-slate-800 p-2.5 rounded-xl space-y-1";
-                
-                let contentHtml = `<div class="text-slate-200">${parseMessageText(msg.text || '')}</div>`;
-                if (msg.image) {
-                    contentHtml += `<img src="${msg.image}" class="mt-2 w-20 h-20 object-cover rounded-lg cursor-pointer border border-slate-800" onclick="openLightbox('${msg.image}')">`;
-                }
-
-                row.innerHTML = `
-                    <div class="flex justify-between text-[10px] text-slate-400 font-mono pb-1 border-b border-slate-800">
-                        <span>Čas: ${msg.time}</span>
-                        <button onclick="deleteMessage('${msg.id}')" class="text-rose-400 hover:text-rose-300 font-semibold cursor-pointer">Smazat zprávu</button>
-                    </div>
-                    ${contentHtml}
-                `;
+                row.className = "border border-zinc-900 p-1 bg-black space-y-1";
+                row.innerHTML = `<div class="flex justify-between text-[9px] text-zinc-500"><span>${msg.time}</span><button onclick="deleteMessage('${msg.id}')" class="text-red-400 cursor-pointer">Smazat</button></div><div>${msg.text || ''}</div>`;
                 container.appendChild(row);
             });
         }
@@ -1147,41 +722,27 @@
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(uploadEvent) {
-                const base64 = uploadEvent.target.result;
-                db.ref('emojis').push(base64);
-                alert("Emotikon byl úspěšně nahrán do cloudu!");
-            };
+            reader.onload = function(e) { db.ref('emojis').push(e.target.result); alert("Nahráno"); showAdminDashboard(); };
             reader.readAsDataURL(file);
         }
 
         function renderAdminEmojis() {
-            const listContainer = document.getElementById('adminEmojiList');
-            listContainer.innerHTML = '';
-
-            if (cloudEmojis.length === 0) {
-                listContainer.innerHTML = '<span class="text-xs text-slate-500">Žádné nahrané emotikony.</span>';
-                return;
-            }
-
-            cloudEmojis.forEach((imgSrc, idx) => {
+            const list = document.getElementById('adminEmojiList');
+            list.innerHTML = '';
+            cloudEmojis.forEach((img, idx) => {
                 const wrap = document.createElement('div');
-                wrap.className = "relative group bg-slate-900 p-1 rounded-lg border border-slate-800";
-                wrap.innerHTML = `
-                    <img src="${imgSrc}" class="w-10 h-10 object-contain cursor-pointer" onclick="openLightbox('${imgSrc}')">
-                    <button onclick="deleteAdminEmoji(${idx})" class="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center cursor-pointer">&times;</button>
-                `;
-                listContainer.appendChild(wrap);
+                wrap.className = "relative border border-zinc-800 p-0.5 bg-black";
+                wrap.innerHTML = `<img src="${img}" class="w-6 h-6 object-contain"><button onclick="deleteEmoji(${idx})" class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-3 h-3 text-[8px] flex items-center justify-center cursor-pointer">&times;</button>`;
+                list.appendChild(wrap);
             });
         }
 
-        function deleteAdminEmoji(index) {
-            db.ref('emojis').once('value', (snapshot) => {
-                const val = snapshot.val();
-                if (!val) return;
-                const keys = Object.keys(val);
-                if (keys[index]) {
-                    db.ref('emojis/' + keys[index]).remove();
+        function deleteEmoji(idx) {
+            db.ref('emojis').once('value', s => {
+                const val = s.val();
+                if (val) {
+                    const keys = Object.keys(val);
+                    if (keys[idx]) { db.ref('emojis/' + keys[idx]).remove(); showAdminDashboard(); }
                 }
             });
         }
@@ -1194,14 +755,12 @@
 
         function parseMessageText(text) {
             if (!text) return '';
-            let formatted = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="underline text-indigo-300 hover:text-indigo-200 break-all">$1</a>');
-            formatted = formatted.replace(/\[meme:(data:image\/[^\]]+)\]/g, '<img src="$1" class="inline-block w-6 h-6 object-contain mx-0.5 align-middle cursor-pointer" onclick="openLightbox(\'$1\')">');
-            return formatted;
+            let formatted = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="underline text-blue-400">$1</a>');
+            return formatted.replace(/\[meme:(data:image\/[^\]]+)\]/g, '<img src="$1" class="inline-block w-5 h-5 object-contain align-middle mx-0.5 cursor-pointer" onclick="openLightbox(\'$1\')">');
         }
 
-        function openLightbox(imgSrc) {
-            document.getElementById('lightboxImg').src = imgSrc;
-            document.getElementById('lightboxDownloadBtn').href = imgSrc;
+        function openLightbox(img) {
+            document.getElementById('lightboxImg').src = img;
             document.getElementById('imageLightbox').classList.remove('hidden');
         }
 
@@ -1214,85 +773,32 @@
             currentUser = 'admin (Admin)';
             currentUserId = 'admin_uid';
             isAdmin = true;
-
-            localStorage.setItem('gjw_saved_user', currentUser);
-            localStorage.setItem('gjw_saved_user_id', currentUserId);
-            sessionStorage.setItem('gjw_admin_logged', 'true');
-
-            const audit = getStorageAuditLog();
-            audit.push({
-                action: 'ADMIN_LOGIN_' + mode.toUpperCase(),
-                userId: currentUserId,
-                fingerprint: 'admin_fp',
-                user: 'admin',
-                publicIp: clientPublicIp,
-                privateIp: clientPrivateIp,
-                device: clientDevice,
-                time: new Date().toLocaleString()
-            });
-            saveStorageAuditLog(audit);
-
-            if (mode === 'observed') {
-                db.ref('messages').push({
-                    id: 'msg_' + Date.now(),
-                    userId: currentUserId,
-                    user: 'Systém',
-                    isAdmin: false,
-                    class: '',
-                    text: `admin (Admin) se pridal do Gjw chatuuuuuuu!!!`,
-                    image: null,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    timestamp: Date.now(),
-                    edited: false,
-                    isSystem: true
-                });
-            }
-
             document.getElementById('adminPageScreen').classList.add('hidden');
             document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('userSubtitle').innerText = `Přihlášen: admin (Admin)`;
+            document.getElementById('userSubtitle').innerText = 'admin (Admin)';
             document.getElementById('adminHeaderBtn').classList.remove('hidden');
             renderMessages();
             scrollToBottom(false);
         }
 
         function handleLogin() {
-            const nickInput = document.getElementById('loginNickname').value.trim();
-            const classSelect = document.getElementById('loginClass').value;
-            const errDiv = document.getElementById('loginError');
+            const nick = document.getElementById('loginNickname').value.trim();
+            const cls = document.getElementById('loginClass').value;
+            const err = document.getElementById('loginError');
 
-            if (!nickInput) {
-                errDiv.innerText = "Zadej prosím přezdívku!";
-                errDiv.classList.remove('hidden');
-                return;
-            }
+            if (!nick) { err.innerText = "Zadej přezdívku"; err.classList.remove('hidden'); return; }
+            if (nick.toLowerCase() === 'admin') { err.innerText = "Zakázané jméno"; err.classList.remove('hidden'); return; }
 
-            if (nickInput.toLowerCase() === 'admin') {
-                errDiv.innerText = "Jméno admin je vyhrazené!";
-                errDiv.classList.add('hidden');
-                return;
-            }
+            if (!currentUserId) currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
+            currentUser = nick + (cls ? ' (' + cls + ')' : '');
 
-            if (!currentUserId) {
-                currentUserId = 'user_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
-            }
-
-            currentUser = nickInput + (classSelect ? ' ('+classSelect+')' : '');
-            
             let isBanned = false;
-            let banReason = '';
-            let banExp = '';
-
             const userRest = cloudRestrictions[currentUserId];
-            if (userRest && userRest.ban && (userRest.ban.permanent || Date.now() < userRest.ban.expiresAt)) {
-                isBanned = true;
-                banReason = userRest.ban.reason;
-                banExp = userRest.ban.permanent ? 'Natrvalo' : `Do ${new Date(userRest.ban.expiresAt).toLocaleString()}`;
-            }
+            if (userRest && userRest.ban && (userRest.ban.permanent || Date.now() < userRest.ban.expiresAt)) isBanned = true;
 
             if (isBanned) {
-                document.getElementById('bannedReasonText').innerText = banReason || 'Bez udání důvodu';
-                document.getElementById('bannedDurationText').innerText = banExp;
+                document.getElementById('bannedReasonText').innerText = userRest.ban.reason || '-';
+                document.getElementById('bannedDurationText').innerText = 'Aktivní ban';
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('bannedScreen').classList.remove('hidden');
                 document.getElementById('bannedScreen').classList.add('flex');
@@ -1304,38 +810,20 @@
             localStorage.setItem('gjw_saved_user_id', currentUserId);
 
             const audit = getStorageAuditLog();
-            audit.push({
-                action: 'USER_LOGIN',
-                userId: currentUserId,
-                fingerprint: deviceFingerprint,
-                user: currentUser,
-                publicIp: clientPublicIp,
-                privateIp: clientPrivateIp,
-                device: clientDevice,
-                time: new Date().toLocaleString()
-            });
+            audit.push({ action: 'USER_LOGIN', userId: currentUserId, fingerprint: deviceFingerprint, user: currentUser, publicIp: clientPublicIp, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
-            const joinMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-            const joinText = `${currentUser} se pridal do Gjw chatuuuuuuu!!!`;
-            
             db.ref('messages').push({
-                id: joinMsgId,
+                id: 'msg_' + Date.now(),
                 userId: currentUserId,
                 user: 'Systém',
-                isAdmin: false,
-                class: '',
-                text: joinText,
-                image: null,
+                text: `${currentUser} se připojil`,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                timestamp: Date.now(),
-                edited: false,
                 isSystem: true
             });
 
             document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser}`;
-            recordPresenceAudit();
+            document.getElementById('userSubtitle').innerText = currentUser;
             renderMessages();
             scrollToBottom(false);
         }
@@ -1344,24 +832,19 @@
             localStorage.removeItem('gjw_saved_user');
             localStorage.removeItem('gjw_saved_user_id');
             sessionStorage.removeItem('gjw_admin_logged');
-            currentUser = null;
-            currentUserId = null;
             location.href = './';
         }
 
         function handleKeydown(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
         }
 
         function handleImageUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(uploadEvent) {
-                selectedImageBase64 = uploadEvent.target.result;
+            reader.onload = function(e) {
+                selectedImageBase64 = e.target.result;
                 document.getElementById('imagePreview').src = selectedImageBase64;
                 document.getElementById('imagePreviewContainer').classList.remove('hidden');
             };
@@ -1375,110 +858,26 @@
             document.getElementById('imagePreviewContainer').classList.add('hidden');
         }
 
-        function playFlyingBubbleAnimation(text, image, isUserAdmin) {
-            const sendBtn = document.getElementById('sendBtn');
-            const startRect = sendBtn.getBoundingClientRect();
-            
-            const flyer = document.createElement('div');
-            flyer.className = `flying-bubble max-w-xs rounded-2xl px-4 py-3 text-sm shadow-2xl ${isUserAdmin ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white rounded-br-sm'}`;
-            
-            if (text) {
-                const tDiv = document.createElement('div');
-                tDiv.className = "whitespace-pre-wrap break-words leading-relaxed";
-                tDiv.innerHTML = parseMessageText(text);
-                flyer.appendChild(tDiv);
-            }
-            if (image) {
-                const img = document.createElement('img');
-                img.src = image;
-                img.className = "mt-2 rounded-xl max-h-40 object-cover";
-                flyer.appendChild(img);
-            }
-
-            flyer.style.left = `${startRect.left}px`;
-            flyer.style.top = `${startRect.top}px`;
-
-            document.body.appendChild(flyer);
-
-            const chatRect = chatContainer.getBoundingClientRect();
-            const flyerWidth = flyer.offsetWidth;
-            const flyerHeight = flyer.offsetHeight;
-
-            const targetX = chatRect.right - flyerWidth - 24;
-            const targetY = chatContainer.scrollTop + chatContainer.scrollHeight - chatContainer.scrollTop - flyerHeight - 20;
-            const absoluteTargetY = Math.min(targetY, chatRect.bottom - flyerHeight - 20);
-
-            const deltaX = targetX - startRect.left;
-            const deltaY = absoluteTargetY - startRect.top;
-
-            flyer.style.setProperty('--delta-x', `${deltaX}px`);
-            flyer.style.setProperty('--delta-y', `${deltaY}px`);
-
-            setTimeout(() => {
-                flyer.remove();
-            }, 550);
-        }
-
         function sendMessage() {
-            if (!isAdmin) {
-                const userRest = cloudRestrictions[currentUserId] || {};
-                
-                if (userRest.ban && (userRest.ban.permanent || Date.now() < userRest.ban.expiresAt)) {
-                    alert("Máš ban!");
-                    handleLogout();
-                    return;
-                }
-
-                if (userRest.mute && (userRest.mute.permanent || Date.now() < userRest.mute.expiresAt)) {
-                    alert("Jsi ztlumen a nemůžeš psát!");
-                    return;
-                }
-            }
-
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             if (!text && !selectedImageBase64) return;
 
-            const capturedText = text;
-            const capturedImage = selectedImageBase64;
-            
+            const t = text;
+            const img = selectedImageBase64;
             input.value = '';
             clearImagePreview();
-            input.focus();
 
-            playFlyingBubbleAnimation(capturedText, capturedImage, isAdmin);
-
-            const audit = getStorageAuditLog();
-            const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-            
-            const newMsg = {
-                id: msgId,
+            db.ref('messages').push({
+                id: 'msg_' + Date.now(),
                 userId: currentUserId,
                 user: currentUser,
                 isAdmin: isAdmin,
-                text: capturedText,
-                image: capturedImage,
+                text: t,
+                image: img,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                timestamp: Date.now(),
                 edited: false
-            };
-
-            db.ref('messages').push(newMsg);
-
-            audit.push({
-                action: 'SENT_MESSAGE',
-                msgId: msgId,
-                userId: currentUserId,
-                fingerprint: deviceFingerprint,
-                user: currentUser,
-                isAdmin: isAdmin,
-                text: capturedText,
-                publicIp: clientPublicIp,
-                privateIp: clientPrivateIp,
-                device: clientDevice,
-                time: new Date().toLocaleString()
             });
-            saveStorageAuditLog(audit);
 
             renderMessages();
             scrollToBottom(true);
@@ -1486,7 +885,6 @@
 
         function renderMessages() {
             messagesList.innerHTML = '';
-
             if (cloudMessages.length === 0) {
                 emptyState.classList.remove('hidden');
                 return;
@@ -1495,176 +893,87 @@
 
             cloudMessages.forEach(msg => {
                 const div = document.createElement('div');
-
                 if (msg.isSystem) {
-                    div.className = "flex justify-center my-4 message-animate text-center px-2";
-                    const span = document.createElement('span');
-                    span.className = "text-xs text-slate-400 font-mono tracking-tight wave-animation px-3 py-1.5 bg-slate-900/90 rounded-full border border-slate-800 shadow-sm inline-block max-w-full truncate";
-                    span.innerText = `— ${msg.text} —`;
-                    div.appendChild(span);
-                    
-                    if (isAdmin) {
-                        const adminDelBtn = document.createElement('button');
-                        adminDelBtn.innerText = " [×]";
-                        adminDelBtn.className = "text-rose-400 hover:text-rose-300 font-bold ml-1 align-middle cursor-pointer";
-                        adminDelBtn.onclick = () => deleteMessage(msg.id);
-                        span.appendChild(adminDelBtn);
-                    }
-
+                    div.className = "text-center my-1 text-zinc-600 text-[10px]";
+                    div.innerText = `-- ${msg.text} --`;
                     messagesList.appendChild(div);
                     return;
                 }
 
                 const isAuthor = currentUserId && msg.userId === currentUserId;
-                div.className = `flex flex-col space-y-1 message-animate ${isAuthor ? 'items-end' : 'items-start'} my-2`;
+                div.className = `flex flex-col space-y-0.5 ${isAuthor ? 'items-end' : 'items-start'} my-1.5`;
 
-                const metaDiv = document.createElement('div');
-                metaDiv.className = "flex items-center space-x-2 text-xs text-slate-400 px-1";
-
+                const meta = document.createElement('div');
+                meta.className = "text-[10px] text-zinc-500 px-0.5 flex gap-1.5 items-center";
+                
                 const nameSpan = document.createElement('span');
                 if (msg.isAdmin) {
-                    nameSpan.className = "rainbow-admin text-sm";
-                    nameSpan.innerText = `${msg.user}`;
+                    nameSpan.className = "rainbow-admin text-xs font-bold";
+                    nameSpan.innerText = msg.user;
                 } else {
-                    nameSpan.className = "font-semibold text-slate-300 " + (isAdmin ? "cursor-pointer hover:underline hover:text-indigo-400" : "");
+                    nameSpan.className = "text-zinc-400";
                     nameSpan.innerText = msg.user;
                     if (isAdmin) {
-                        nameSpan.title = "Kliknutím otevřeš profil uživatele (podle unikátního ID)";
-                        nameSpan.onclick = () => openUserProfileModal(msg.userId || 'unknown', msg.user);
+                        nameSpan.className += " cursor-pointer underline text-blue-400";
+                        nameSpan.onclick = () => openUserProfileModal(msg.userId, msg.user);
                     }
                 }
-                metaDiv.appendChild(nameSpan);
+                meta.appendChild(nameSpan);
 
                 const timeSpan = document.createElement('span');
-                timeSpan.className = "text-[10px] shrink-0";
-                const editedLabel = (msg.edited && !msg.isAdmin) ? ' (upraveno)' : '';
-                timeSpan.innerText = msg.time + editedLabel;
-                metaDiv.appendChild(timeSpan);
-                div.appendChild(metaDiv);
+                timeSpan.className = "text-[9px] text-zinc-600";
+                timeSpan.innerText = msg.time + (msg.edited ? ' (upraveno)' : '');
+                meta.appendChild(timeSpan);
+                div.appendChild(meta);
 
-                const contentBox = document.createElement('div');
-                contentBox.className = `max-w-md rounded-2xl px-4 py-3 text-sm shadow-sm ${isAuthor ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-slate-900 border border-slate-800 text-slate-100 rounded-bl-sm'}`;
-
+                const box = document.createElement('div');
+                box.className = `max-w-md border border-zinc-900 p-2 ${isAuthor ? 'bg-zinc-900 text-white' : 'bg-black text-zinc-300'}`;
                 if (msg.text) {
-                    const textP = document.createElement('div');
-                    textP.className = "whitespace-pre-wrap break-words leading-relaxed";
-                    textP.innerHTML = parseMessageText(msg.text);
-                    contentBox.appendChild(textP);
+                    const txt = document.createElement('div');
+                    txt.className = "whitespace-pre-wrap break-words";
+                    txt.innerHTML = parseMessageText(msg.text);
+                    box.appendChild(txt);
                 }
-
                 if (msg.image) {
-                    const img = document.createElement('img');
-                    img.src = msg.image;
-                    img.className = "mt-2 rounded-xl max-h-60 object-cover cursor-pointer hover:opacity-95 transition-opacity";
-                    img.onclick = () => openLightbox(msg.image);
-                    contentBox.appendChild(img);
+                    const image = document.createElement('img');
+                    image.src = msg.image;
+                    image.className = "mt-1 rounded max-h-40 object-cover cursor-pointer border border-zinc-800";
+                    image.onclick = () => openLightbox(msg.image);
+                    box.appendChild(image);
                 }
+                div.appendChild(box);
 
-                div.appendChild(contentBox);
-
-                const actionBox = document.createElement('div');
-                actionBox.className = "flex items-center space-x-2 text-[10px] text-slate-500 px-1 flex-wrap";
-
-                if ((isAuthor && !isAdmin) || (isAdmin && msg.isAdmin)) {
-                    const editBtn = document.createElement('button');
-                    editBtn.innerText = "Upravit";
-                    editBtn.className = "hover:text-indigo-400 transition-colors cursor-pointer";
-                    editBtn.onclick = () => openEditModal(msg.id, msg.text);
-                    actionBox.appendChild(editBtn);
+                const actions = document.createElement('div');
+                actions.className = "text-[9px] text-zinc-600 px-0.5 flex gap-2";
+                if (isAuthor || isAdmin) {
+                    const del = document.createElement('button');
+                    del.innerText = "Smazat";
+                    del.className = "hover:text-red-400 cursor-pointer";
+                    del.onclick = () => deleteMessage(msg.id);
+                    actions.appendChild(del);
                 }
+                div.appendChild(actions);
 
-                if (isAuthor && !isAdmin) {
-                    const delBtn = document.createElement('button');
-                    delBtn.innerText = "Smazat";
-                    delBtn.className = "hover:text-rose-400 transition-colors cursor-pointer";
-                    delBtn.onclick = () => deleteMessage(msg.id);
-                    actionBox.appendChild(delBtn);
-                }
-
-                if (isAdmin) {
-                    const adminDelBtn = document.createElement('button');
-                    adminDelBtn.innerText = "[Admin Smazat]";
-                    adminDelBtn.className = "text-rose-400 hover:text-rose-300 transition-colors cursor-pointer";
-                    adminDelBtn.onclick = () => deleteMessage(msg.id);
-                    actionBox.appendChild(adminDelBtn);
-                }
-
-                div.appendChild(actionBox);
                 messagesList.appendChild(div);
             });
 
-            if (isUserAtBottom) {
-                scrollToBottom(false);
-            }
-        }
-
-        function openEditModal(id, currentText) {
-            editingMessageId = id;
-            document.getElementById('editModalInput').value = currentText || '';
-            document.getElementById('editModal').classList.remove('hidden');
-            document.getElementById('editModalInput').focus();
-        }
-
-        function closeEditModal() {
-            editingMessageId = null;
-            document.getElementById('editModal').classList.add('hidden');
-        }
-
-        function saveEditedMessage() {
-            if (!editingMessageId) return;
-            const newText = document.getElementById('editModalInput').value.trim();
-
-            db.ref('messages').once('value', (snapshot) => {
-                const val = snapshot.val();
-                if (!val) return;
-                for (let key in val) {
-                    if (val[key].id === editingMessageId) {
-                        db.ref('messages/' + key).update({
-                            text: newText,
-                            edited: true
-                        });
-                        break;
-                    }
-                }
-            });
-
-            const audit = getStorageAuditLog();
-            audit.push({ action: 'EDITED_MESSAGE', msgId: editingMessageId, userId: currentUserId, fingerprint: deviceFingerprint, user: currentUser, text: newText, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
-            saveStorageAuditLog(audit);
-
-            closeEditModal();
+            if (isUserAtBottom) scrollToBottom(false);
         }
 
         function deleteMessage(id) {
-            if (!isAdmin && !confirm("Opravdu chceš tuto zprávu smazat?")) return;
-            
-            db.ref('messages').once('value', (snapshot) => {
-                const val = snapshot.val();
+            db.ref('messages').once('value', s => {
+                const val = s.val();
                 if (!val) return;
                 for (let key in val) {
-                    if (val[key].id === id) {
-                        db.ref('messages/' + key).remove();
-                        break;
-                    }
+                    if (val[key].id === id) db.ref('messages/' + key).remove();
                 }
             });
-
-            const audit = getStorageAuditLog();
-            audit.push({ action: 'DELETED_MESSAGE', msgId: id, userId: currentUserId, fingerprint: deviceFingerprint, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
-            saveStorageAuditLog(audit);
-            
-            if (isAdmin) renderAdminImageLog();
         }
 
         function clearChatData() {
-            if (!confirm("OPRAVDU chceš vymazat celou historii chatu v cloudu?")) return;
+            if (!confirm("Smazat celou historii a restrikce?")) return;
             db.ref('messages').remove();
             db.ref('restrictions').remove();
-            
-            const audit = getStorageAuditLog();
-            audit.push({ action: 'WIPE_CHAT_HISTORY', userId: currentUserId, fingerprint: deviceFingerprint, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
-            saveStorageAuditLog(audit);
-
             showAdminDashboard();
         }
     </script>
