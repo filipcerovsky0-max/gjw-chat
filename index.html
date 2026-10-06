@@ -90,7 +90,7 @@
             <div class="flex justify-between items-center pb-3 border-b border-slate-800">
                 <div>
                     <h3 id="profileUsernameTitle" class="text-lg font-bold text-slate-100">Profil uživatele</h3>
-                    <p class="text-xs text-slate-400">Správa a historie aktivity</p>
+                    <p class="text-xs text-slate-400 font-mono" id="profileUserIdSub">ID: -</p>
                 </div>
                 <button onclick="closeUserProfileModal()" class="text-slate-400 hover:text-slate-200 text-lg font-bold cursor-pointer">&times;</button>
             </div>
@@ -338,6 +338,7 @@
         const db = firebase.database();
 
         let currentUser = localStorage.getItem('gjw_saved_user') || null;
+        let currentUserId = localStorage.getItem('gjw_saved_user_id') || null;
         let isAdmin = false;
         let selectedImageBase64 = null;
         let isUserAtBottom = true;
@@ -349,7 +350,7 @@
         let cloudMessages = [];
         let cloudEmojis = [];
         let editingMessageId = null;
-        let activeProfileUsername = null;
+        let activeProfileUserId = null;
 
         const chatContainer = document.getElementById('chatContainer');
         const messagesList = document.getElementById('messagesList');
@@ -386,9 +387,10 @@
             if (!currentUser) return;
             const audit = getStorageAuditLog();
             const lastEntry = audit[audit.length - 1];
-            if (!lastEntry || lastEntry.user !== currentUser || (Date.now() - new Date(lastEntry.time).getTime() > 60000)) {
+            if (!lastEntry || lastEntry.userId !== currentUserId || (Date.now() - new Date(lastEntry.time).getTime() > 60000)) {
                 audit.push({
                     action: 'USER_PRESENCE',
+                    userId: currentUserId,
                     user: currentUser,
                     publicIp: clientPublicIp,
                     privateIp: clientPrivateIp,
@@ -404,8 +406,8 @@
             cloudMessages = data ? Object.values(data) : [];
             renderMessages();
             checkKickStatus();
-            if (!document.getElementById('userProfileModal').classList.contains('hidden') && activeProfileUsername) {
-                renderUserProfileModalContent(activeProfileUsername);
+            if (!document.getElementById('userProfileModal').classList.contains('hidden') && activeProfileUserId) {
+                renderUserProfileModalContent(activeProfileUserId);
             }
         });
 
@@ -428,23 +430,22 @@
             localStorage.setItem('gjw_chat_bans', JSON.stringify(bans));
         }
 
-        function checkUserBanned(username) {
+        function checkUserBanned(uid, username) {
             const bans = getStorageBans();
-            const clean = username.split(' ')[0].toLowerCase();
-            const banInfo = bans[clean];
+            const banInfo = bans[uid] || (username ? bans[username.split(' ')[0].toLowerCase()] : null);
             if (!banInfo) return false;
             if (banInfo.permanent) return true;
             if (Date.now() < banInfo.expiresAt) return true;
-            delete bans[clean];
+            delete bans[uid];
+            if (username) delete bans[username.split(' ')[0].toLowerCase()];
             saveStorageBans(bans);
             return false;
         }
 
         function checkKickStatus() {
-            if (!currentUser || isAdmin) return;
+            if (!currentUserId || isAdmin) return;
             const kickedUsers = JSON.parse(localStorage.getItem('gjw_kicked_users') || '[]');
-            const clean = currentUser.split(' ')[0];
-            if (kickedUsers.includes(clean)) {
+            if (kickedUsers.includes(currentUserId) || (currentUser && kickedUsers.includes(currentUser.split(' ')[0]))) {
                 alert("Byl jsi vyhozen adminem!");
                 handleLogout();
             }
@@ -532,7 +533,7 @@
                 return;
             }
 
-            if (currentUser) {
+            if (currentUser && currentUserId) {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('userSubtitle').innerText = `Přihlášen: ${currentUser}`;
                 recordPresenceAudit();
@@ -569,6 +570,7 @@
                 const audit = getStorageAuditLog();
                 audit.push({
                     action: 'ADMIN_PANEL_ACCESS',
+                    userId: 'admin_uid',
                     user: 'admin',
                     publicIp: clientPublicIp,
                     privateIp: clientPrivateIp,
@@ -598,7 +600,7 @@
                     row.className = "border-b border-slate-900 pb-3 mb-3 space-y-1 bg-slate-950/50 p-3 rounded-lg border border-slate-800/60";
                     row.innerHTML = `
                         <div class="flex justify-between text-amber-400 font-semibold">
-                            <span>#${audit.length - index} [${item.action}] uživatel: ${item.user || 'N/A'}</span>
+                            <span>#${audit.length - index} [${item.action}] uživatel: ${item.user || 'N/A'} (ID: ${item.userId || 'N/A'})</span>
                             <span class="text-slate-500 font-normal">${item.time}</span>
                         </div>
                         <div class="text-slate-300">Veřejná IP: <span class="text-indigo-400">${item.publicIp || 'Neznámá'}</span> | Lokální IP: <span class="text-indigo-300">${item.privateIp || 'Neznámá'}</span></div>
@@ -622,9 +624,9 @@
             const activeUsersMap = {};
             
             audit.forEach(item => {
-                if (item.user && item.user !== 'admin' && !item.user.startsWith('admin')) {
-                    const cleanName = item.user.split(' ')[0];
-                    activeUsersMap[cleanName] = { 
+                if (item.userId && item.user && item.user !== 'admin' && !item.user.startsWith('admin')) {
+                    activeUsersMap[item.userId] = { 
+                        userId: item.userId,
                         name: item.user, 
                         ip: item.publicIp || 'Neznámá', 
                         privateIp: item.privateIp || 'Neznámá',
@@ -639,7 +641,8 @@
             if (searchVal) {
                 users = users.filter(u => 
                     u.name.toLowerCase().includes(searchVal) || 
-                    u.ip.toLowerCase().includes(searchVal) ||
+                    u.userId.toLowerCase().includes(searchVal) ||
+                    u.ip.toLowerCase().includes(searchVal) || 
                     u.privateIp.toLowerCase().includes(searchVal)
                 );
             }
@@ -650,21 +653,20 @@
             }
 
             users.forEach(u => {
-                const cleanName = u.name.split(' ')[0];
-                const isBanned = checkUserBanned(cleanName);
+                const isBanned = checkUserBanned(u.userId, u.name);
 
                 const row = document.createElement('div');
                 row.className = "flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-900 p-3 rounded-xl border border-slate-800 gap-3";
                 row.innerHTML = `
                     <div class="space-y-0.5">
                         <div class="text-sm font-bold text-slate-200">${u.name} ${isBanned ? '<span class="text-rose-500 text-xs">[ZABANOVÁNO]</span>' : ''}</div>
-                        <div class="text-[11px] text-slate-400 font-mono">Veř. IP: ${u.ip} | Lok. IP: ${u.privateIp}</div>
-                        <div class="text-[10px] text-slate-500 truncate">Zařízení: ${u.device.substring(0, 45)}...</div>
+                        <div class="text-[10px] text-slate-400 font-mono">ID: ${u.userId} | Veř. IP: ${u.ip}</div>
+                        <div class="text-[10px] text-slate-500 truncate">Zařízení: ${u.device.substring(0, 40)}...</div>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap shrink-0">
-                        <button onclick="adminChangeNickname('${cleanName}')" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Přejmenovat</button>
-                        <button onclick="kickUserDirect('${cleanName}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Vyhodit (Kick)</button>
-                        <button onclick="promptBanUser('${cleanName}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isBanned ? 'Odpustit ban' : 'Dát Ban'}</button>
+                        <button onclick="adminChangeNickname('${u.userId}', '${u.name}')" class="bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Přejmenovat</button>
+                        <button onclick="kickUserDirect('${u.userId}', '${u.name}')" class="bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">Vyhodit (Kick)</button>
+                        <button onclick="promptBanUser('${u.userId}', '${u.name}')" class="bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 px-2.5 py-1 rounded text-xs cursor-pointer">${isBanned ? 'Odpustit ban' : 'Dát Ban'}</button>
                     </div>
                 `;
                 container.appendChild(row);
@@ -710,35 +712,67 @@
             }
         }
 
-        function adminChangeNickname(oldName) {
-            const newName = prompt(`Zadej novou přezdívku pro uživatele ${oldName}:`);
+        function adminChangeNickname(targetUid, oldName) {
+            const newName = prompt(`Zadej novou přezdívku (včetně třídy) pro uživatele ${oldName}:`);
             if (!newName || !newName.trim()) return;
 
+            const trimmedNew = newName.trim();
+
+            db.ref('messages').once('value', (snapshot) => {
+                const val = snapshot.val();
+                if (!val) return;
+                for (let key in val) {
+                    if (val[key].userId === targetUid || val[key].user === oldName) {
+                        db.ref('messages/' + key).update({ user: trimmedNew });
+                    }
+                }
+            });
+
             const audit = getStorageAuditLog();
-            audit.push({ action: 'ADMIN_CHANGE_NICKNAME', user: `${oldName} -> ${newName.trim()}`, admin: 'admin', time: new Date().toLocaleString() });
+            audit.push({ action: 'ADMIN_CHANGE_NICKNAME', userId: targetUid, user: `${oldName} -> ${trimmedNew}`, admin: 'admin', time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
-            alert(`Uživatel ${oldName} byl přejmenován na ${newName.trim()}`);
-            showAdminDashboard();
+            alert(`Uživatel byl přejmenován na ${trimmedNew}`);
+            if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
+                closeUserProfileModal();
+            }
+            if (document.getElementById('adminDashboardBox').classList.contains('flex') || !document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                showAdminDashboard();
+            }
         }
 
-        function kickUserDirect(username) {
+        function kickUserDirect(targetUid, username) {
             if (!confirm(`Opravdu chceš vyhodit uživatele ${username}?`)) return;
             const kicked = JSON.parse(localStorage.getItem('gjw_kicked_users') || '[]');
-            kicked.push(username);
+            
+            if (!kicked.includes(targetUid)) kicked.push(targetUid);
             localStorage.setItem('gjw_kicked_users', JSON.stringify(kicked));
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'KICK_USER', user: username, admin: 'admin', time: new Date().toLocaleString() });
+            audit.push({ action: 'KICK_USER', userId: targetUid, user: username, admin: 'admin', time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             alert(`Uživatel ${username} byl vyhozen.`);
-            showAdminDashboard();
+            if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
+                closeUserProfileModal();
+            }
         }
 
-        function promptBanUser(username) {
-            const type = prompt(`Zadej typ banu pro ${username}:\n1 = sekundy\n2 = minuty\n3 = hodiny\n4 = dny\n5 = navždy`);
-            if (!type) return;
+        function promptBanUser(targetUid, username) {
+            const type = prompt(`Zadej typ banu pro ${username}:\n1 = sekundy\n2 = minuty\n3 = hodiny\n4 = dny\n5 = navždy\n(Nebo zadej 0 pro zrušení banu)`);
+            if (type === null) return;
+
+            const bans = getStorageBans();
+
+            if (type === '0') {
+                delete bans[targetUid];
+                saveStorageAuditLog(bans);
+                alert(`Ban pro uživatele ${username} byl zrušen.`);
+                if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
+                    closeUserProfileModal();
+                }
+                return;
+            }
 
             let durationMs = 0;
             let isPerm = false;
@@ -756,57 +790,54 @@
                 else return;
             }
 
-            const bans = getStorageBans();
-            bans[username.toLowerCase()] = {
+            bans[targetUid] = {
                 permanent: isPerm,
                 expiresAt: isPerm ? 0 : Date.now() + durationMs
             };
             saveStorageBans(bans);
 
             const audit = getStorageAuditLog();
-            audit.push({ action: isPerm ? 'BAN_PERM' : 'BAN_TEMPORARY', user: username, admin: 'admin', time: new Date().toLocaleString() });
+            audit.push({ action: isPerm ? 'BAN_PERM' : 'BAN_TEMPORARY', userId: targetUid, user: username, admin: 'admin', time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             alert(`Uživatel ${username} dostal ban.`);
-            showAdminDashboard();
+            if (!document.getElementById('userProfileModal').classList.contains('hidden')) {
+                closeUserProfileModal();
+            }
         }
 
-        // --- Interaktivní rozklikávání profilů uživatelů z chatu pro admina ---
-        function openUserProfileModal(username) {
+        // --- Interaktivní rozklikávání profilů uživatelů z chatu pro admina podle ID ---
+        function openUserProfileModal(uid, username) {
             if (!isAdmin) return;
-            activeProfileUsername = username;
-            const cleanName = username.split(' ')[0];
+            activeProfileUserId = uid;
 
             document.getElementById('profileUsernameTitle').innerText = `Profil: ${username}`;
+            document.getElementById('profileUserIdSub').innerText = `ID: ${uid}`;
             
-            // Nastavení akčních tlačítek
             document.getElementById('profileKickBtn').onclick = () => {
-                kickUserDirect(cleanName);
-                closeUserProfileModal();
+                kickUserDirect(uid, username);
             };
             document.getElementById('profileBanBtn').onclick = () => {
-                promptBanUser(cleanName);
-                closeUserProfileModal();
+                promptBanUser(uid, username);
             };
             document.getElementById('profileRenameBtn').onclick = () => {
-                adminChangeNickname(cleanName);
-                closeUserProfileModal();
+                adminChangeNickname(uid, username);
             };
 
-            renderUserProfileModalContent(username);
+            renderUserProfileModalContent(uid);
             document.getElementById('userProfileModal').classList.remove('hidden');
         }
 
         function closeUserProfileModal() {
-            activeProfileUsername = null;
+            activeProfileUserId = null;
             document.getElementById('userProfileModal').classList.add('hidden');
         }
 
-        function renderUserProfileModalContent(username) {
+        function renderUserProfileModalContent(uid) {
             const container = document.getElementById('profileUserMessagesList');
             container.innerHTML = '';
 
-            const userMsgs = cloudMessages.filter(m => m.user === username && !m.isSystem);
+            const userMsgs = cloudMessages.filter(m => m.userId === uid && !m.isSystem);
 
             if (userMsgs.length === 0) {
                 container.innerHTML = '<p class="text-slate-500 text-center py-4">Uživatel zatím nenapsal žádné zprávy.</p>';
@@ -902,14 +933,17 @@
         function openChatFromAdmin() {
             const mode = document.getElementById('adminModeSelect').value;
             currentUser = 'admin (Admin)';
+            currentUserId = 'admin_uid';
             isAdmin = true;
 
             localStorage.setItem('gjw_saved_user', currentUser);
+            localStorage.setItem('gjw_saved_user_id', currentUserId);
             sessionStorage.setItem('gjw_admin_logged', 'true');
 
             const audit = getStorageAuditLog();
             audit.push({
                 action: 'ADMIN_LOGIN_' + mode.toUpperCase(),
+                userId: currentUserId,
                 user: 'admin',
                 publicIp: clientPublicIp,
                 privateIp: clientPrivateIp,
@@ -921,6 +955,7 @@
             if (mode === 'observed') {
                 db.ref('messages').push({
                     id: 'msg_' + Date.now(),
+                    userId: currentUserId,
                     user: 'Systém',
                     isAdmin: false,
                     class: '',
@@ -958,19 +993,27 @@
                 return;
             }
 
-            if (checkUserBanned(nickInput)) {
+            // Vygenerovat unikátní userId pokud ještě nemá
+            if (!currentUserId) {
+                currentUserId = 'user_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+            }
+
+            const potentialUser = nickInput + (classSelect ? ' ('+classSelect+')' : '');
+            if (checkUserBanned(currentUserId, potentialUser)) {
                 errDiv.innerText = "Tento uživatel má aktivní ban!";
                 errDiv.classList.remove('hidden');
                 return;
             }
 
-            currentUser = nickInput + (classSelect ? ' ('+classSelect+')' : '');
+            currentUser = potentialUser;
             isAdmin = false;
             localStorage.setItem('gjw_saved_user', currentUser);
+            localStorage.setItem('gjw_saved_user_id', currentUserId);
 
             const audit = getStorageAuditLog();
             audit.push({
                 action: 'USER_LOGIN',
+                userId: currentUserId,
                 user: currentUser,
                 publicIp: clientPublicIp,
                 privateIp: clientPrivateIp,
@@ -984,6 +1027,7 @@
             
             db.ref('messages').push({
                 id: joinMsgId,
+                userId: currentUserId,
                 user: 'Systém',
                 isAdmin: false,
                 class: '',
@@ -1004,8 +1048,10 @@
 
         function handleLogout() {
             localStorage.removeItem('gjw_saved_user');
+            localStorage.removeItem('gjw_saved_user_id');
             sessionStorage.removeItem('gjw_admin_logged');
             currentUser = null;
+            currentUserId = null;
             location.href = './';
         }
 
@@ -1080,7 +1126,7 @@
         }
 
         function sendMessage() {
-            if (!isAdmin && checkUserBanned(currentUser)) {
+            if (!isAdmin && checkUserBanned(currentUserId, currentUser)) {
                 alert("Máš ban!");
                 handleLogout();
                 return;
@@ -1104,6 +1150,7 @@
             
             const newMsg = {
                 id: msgId,
+                userId: currentUserId,
                 user: currentUser,
                 isAdmin: isAdmin,
                 text: capturedText,
@@ -1118,6 +1165,7 @@
             audit.push({
                 action: 'SENT_MESSAGE',
                 msgId: msgId,
+                userId: currentUserId,
                 user: currentUser,
                 isAdmin: isAdmin,
                 text: capturedText,
@@ -1163,7 +1211,7 @@
                     return;
                 }
 
-                const isAuthor = currentUser && msg.user === currentUser;
+                const isAuthor = currentUserId && msg.userId === currentUserId;
                 div.className = `flex flex-col space-y-1 message-animate ${isAuthor ? 'items-end' : 'items-start'} my-2`;
 
                 const metaDiv = document.createElement('div');
@@ -1177,8 +1225,8 @@
                     nameSpan.className = "font-semibold text-slate-300 " + (isAdmin ? "cursor-pointer hover:underline hover:text-indigo-400" : "");
                     nameSpan.innerText = msg.user;
                     if (isAdmin) {
-                        nameSpan.title = "Kliknutím otevřeš profil uživatele";
-                        nameSpan.onclick = () => openUserProfileModal(msg.user);
+                        nameSpan.title = "Kliknutím otevřeš profil uživatele (podle unikátního ID)";
+                        nameSpan.onclick = () => openUserProfileModal(msg.userId || 'unknown', msg.user);
                     }
                 }
                 metaDiv.appendChild(nameSpan);
@@ -1277,7 +1325,7 @@
             });
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'EDITED_MESSAGE', msgId: editingMessageId, user: currentUser, text: newText, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'EDITED_MESSAGE', msgId: editingMessageId, userId: currentUserId, user: currentUser, text: newText, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             closeEditModal();
@@ -1298,7 +1346,7 @@
             });
 
             const audit = getStorageAuditLog();
-            audit.push({ action: 'DELETED_MESSAGE', msgId: id, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.path({ action: 'DELETED_MESSAGE', msgId: id, userId: currentUserId, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
             
             if (isAdmin) renderAdminImageLog();
@@ -1309,7 +1357,7 @@
             db.ref('messages').remove();
             
             const audit = getStorageAuditLog();
-            audit.push({ action: 'WIPE_CHAT_HISTORY', user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
+            audit.push({ action: 'WIPE_CHAT_HISTORY', userId: currentUserId, user: currentUser, publicIp: clientPublicIp, privateIp: clientPrivateIp, device: clientDevice, time: new Date().toLocaleString() });
             saveStorageAuditLog(audit);
 
             showAdminDashboard();
