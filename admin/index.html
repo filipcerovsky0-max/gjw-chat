@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GJW Hardcore Admin Panel</title>
+    <title>GJW Admin & Master Control</title>
     <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -23,8 +23,9 @@
         }
         .stred { text-align: center; }
         .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
-        h1 { font-size: 22px; font-weight: bold; margin: 15px 0; color: #000000; font-family: 'Papyrus', fantasy, sans-serif; }
-        h2 { font-size: 17px; font-weight: bold; margin: 20px 0 8px 0; color: #000000; font-family: 'Papyrus', fantasy, sans-serif; }
+        h1, h2 { font-family: 'Papyrus', fantasy, sans-serif; }
+        h1 { font-size: 22px; font-weight: bold; margin: 15px 0; color: #000000; }
+        h2 { font-size: 17px; font-weight: bold; margin: 20px 0 8px 0; color: #000000; }
         p { font-size: 13px; color: #555; margin-bottom: 5px; }
         .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; font-family: 'Papyrus', fantasy, sans-serif; }
         .back-link:hover { text-decoration: underline; }
@@ -37,7 +38,7 @@
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        textarea, input[type="text"], input[type="number"], select {
+        textarea, input[type="text"], input[type="password"], input[type="number"], select {
             width: 100%;
             padding: 8px;
             box-sizing: border-box;
@@ -66,7 +67,7 @@
         .btn-warning { background-color: #cc8800; color: white; }
         .btn-warning:hover { background-color: #996600; }
         
-        .chat-row, .user-row {
+        .chat-row, .user-row, .item-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -77,7 +78,6 @@
             gap: 10px;
         }
         
-        /* Rainbow Nick efekt */
         @keyframes rainbow {
             0% { color: red; }
             14% { color: orange; }
@@ -94,43 +94,79 @@
         }
 
         .modal {
-            background: #fff;
+            background: #fffdf5;
             border: 2px solid #222;
             padding: 15px;
             border-radius: 6px;
             margin-top: 15px;
-            background-color: #fffdf5;
+        }
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999; display: flex;
+            justify-content: center; align-items: center;
+        }
+        .login-box {
+            background: #fff; padding: 25px; border-radius: 8px; width: 320px; text-align: center;
         }
         #status { font-weight: bold; margin-left: 10px; color: green; }
     </style>
 </head>
 <body>
+
+    <!-- PŘIHLAŠOVACÍ OVERLAY (Ověření hesla z Firebase) -->
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h2 style="margin-top:0; font-family:'Papyrus',fantasy,sans-serif;">🔐 Admin Přihlášení</h2>
+            <p>Zadej administrátorské heslo:</p>
+            <input type="password" id="adminPasswordInput" placeholder="Heslo...">
+            <button class="btn" style="width:100%; margin-top:10px;" onclick="overitHeslo()">Vstoupit do administrace</button>
+            <p id="loginError" style="color:red; margin-top:10px; font-size:12px;"></p>
+        </div>
+    </div>
+
     <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
     <hr class="oddeleni">
 
     <div class="stred">
-        <h1>⚡ GJW Hardcore Admin & Mod Panel</h1>
-        <p>Správa banů, mutů, kicků, rainbow nicků, zpráv a uživatelů pod jednou střechou.</p>
+        <h1>⚡ GJW Master Control Admin Panel</h1>
+        <p>Vstup do chatu, Ghost mód, správa banů/mute/kicků, úprava názvů písniček, fotek, memů a sekce Rozšiř to!</p>
     </div>
 
     <hr class="oddeleni">
 
-    <!-- SEKCE 1: Správa textů webu -->
+    <!-- SEKCE 1: Správa textů webu a nastavení hesla -->
     <div class="admin-section">
-        <h2>📢 Správa textů a novinek</h2>
+        <h2>📢 Správa textů webu & Heslo</h2>
+        <div style="margin-bottom: 15px;">
+            <p><b>Změnit admin heslo:</b></p>
+            <input type="text" id="newAdminPass" placeholder="Nové heslo do administrace...">
+            <button class="btn" onclick="zmenitHeslo()">Uložit nové heslo</button>
+        </div>
         <textarea id="newsText" placeholder="Novinky HTML..."></textarea>
         <button type="button" class="btn" onclick="ulozTexty()">Uložit texty</button>
         <span id="status"></span>
     </div>
 
-    <!-- SEKCE 2: Živý Chat & Moderace zpráv (Uživatelské i Systémové) -->
+    <!-- SEKCE 2: Vstup do chatu & Ghost mód & Zprávy -->
     <div class="admin-section">
-        <h2>💬 Moderace chatu (Zprávy & Systém)</h2>
-        <p>Maž libovolné zprávy, přepínej stav viditelnosti nebo posílej systémová hlášení:</p>
-        <div style="margin-bottom: 15px;">
-            <input type="text" id="sysMsgInput" placeholder="Napsat systémové hlášení do chatu...">
+        <h2>💬 Vstup do chatu & Ghost mód</h2>
+        <p>Napiš zprávu do chatu jako administrátor s Rainbow nickem, nebo aktivuj Ghost mód (neviditelný průzkum):</p>
+        
+        <div style="background: #f4f4f4; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+            <input type="text" id="adminChatName" value="ADMIN ⚡" placeholder="Admin jméno..." style="margin-bottom: 5px;">
+            <textarea id="adminChatInput" placeholder="Napsat zprávu do chatu..." style="min-height: 40px; margin-bottom: 5px;"></textarea>
+            <div>
+                <label><input type="checkbox" id="adminRainbowCheck" checked> Duhový Rainbow Nick ✨</label>
+                <label style="margin-left: 15px;"><input type="checkbox" id="ghostModeCheck"> 👻 Ghost mód (odeslat jako neviditelný systém/pozorovatel)</label>
+            </div>
+            <button class="btn" style="margin-top: 8px;" onclick="odeslatAdminZpravu()">Odeslat zprávu do chatu</button>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+            <input type="text" id="sysMsgInput" placeholder="Nebo pošli systémové hlášení...">
             <button class="btn btn-warning" onclick="odeslatSystemovouZpravu()">Odeslat systémovou zprávu</button>
         </div>
+
         <div id="chatMessagesList" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; background: #fff;">
             <p style="padding: 10px; text-align: center;">Načítám zprávy...</p>
         </div>
@@ -138,13 +174,12 @@
 
     <!-- SEKCE 3: Správa Uživatelů, Banů, Mute a Kicků -->
     <div class="admin-section">
-        <h2>🔨 Správa uživatelů, Banů a Mute</h2>
-        <p>Kliknutím na uživatele níže otevřeš jeho detail, kde můžeš udělit trest na zvolenou dobu:</p>
+        <h2>🔨 Správa uživatelů, Banů, Mute & Kick</h2>
+        <p>Rozklikni uživatele a uděl mu trest na zvolenou dobu:</p>
         <div id="usersList" style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; background: #fff; margin-bottom: 15px;">
             <p style="padding: 10px; text-align: center;">Načítám uživatele...</p>
         </div>
 
-        <!-- Detail rozkliknutého uživatele / Tresty -->
         <div id="userDetailModal" class="modal" style="display:none;">
             <h3 id="modalUserName" style="margin-top:0;">Detail uživatele</h3>
             <p><b>ID / Jméno:</b> <span id="modalUserId"></span></p>
@@ -164,14 +199,32 @@
             </div>
 
             <div style="margin-top: 10px;">
-                <label><input type="checkbox" id="rainbowToggle"> Povolit legendární <b>Rainbow Nick</b> ✨</label>
+                <label><input type="checkbox" id="rainbowToggle"> Povolit <b>Rainbow Nick</b> ✨</label>
             </div>
 
             <div style="margin-top: 15px;">
                 <button class="btn btn-danger" onclick="aplikovatTrest()">Provést trest / Nastavení</button>
-                <button class="btn" onclick="zavritModal()">Zavřít</option>
+                <button class="btn" onclick="zavritModal()">Zavřít</button>
             </div>
         </div>
+    </div>
+
+    <!-- SEKCE 4: Správa Hudebního koutku, Fotek, Memů a Rozšiř to! -->
+    <div class="admin-section">
+        <h2>🎵 Hudba, 📸 Fotky, 🎭 Memes & 📢 Rozšiř to!</h2>
+        <p>Správa názvů a položek v jednotlivých sekcích:</p>
+        
+        <h3>Hudební koutek (Názvy skladeb)</h3>
+        <div id="adminHudbaList"></div>
+        <button class="btn" style="margin-top:10px;" onclick="pridatHudbuPolozku()">+ Přidat skladbu</button>
+
+        <h3 style="margin-top:20px;">Fotky učitelů (Názvy a soubory)</h3>
+        <div id="adminFotkyList"></div>
+        <button class="btn" style="margin-top:10px;" onclick="pridatFotkuPolozku()">+ Přidat fotku</button>
+
+        <h3 style="margin-top:20px;">Memes & Rozšiř to!</h3>
+        <textarea id="rozsirContent" placeholder="Správa položek v sekci Rozšiř to!..."></textarea>
+        <button class="btn" onclick="ulozRozsir()">Uložit Rozšiř to!</button>
     </div>
 
     <hr class="oddeleni">
@@ -183,6 +236,28 @@
         const db = firebase.database();
 
         let aktivniUzivatelJmeno = null;
+
+        // Ověření hesla z Firebase
+        function overitHeslo() {
+            const zadebaneHeslo = document.getElementById('adminPasswordInput').value;
+            db.ref('adminConfig/password').once('value', (snap) => {
+                const spravneHeslo = snap.val() || "heslo123"; // výchozí heslo pokud není nastaveno
+                if (zadebaneHeslo === spravneHeslo) {
+                    document.getElementById('loginOverlay').style.display = "none";
+                } else {
+                    document.getElementById('loginError').innerText = "Nesprávné heslo!";
+                }
+            });
+        }
+
+        function zmenitHeslo() {
+            const noveHeslo = document.getElementById('newAdminPass').value;
+            if (!noveHeslo) return alert("Zadej platné heslo!");
+            db.ref('adminConfig/password').set(noveHeslo).then(() => {
+                alert("Heslo bylo úspěšně změněno ve Firebase!");
+                document.getElementById('newAdminPass').value = "";
+            });
+        }
 
         // 1. Texty
         db.ref('siteContent/newsText').once('value', (snap) => {
@@ -198,7 +273,27 @@
             });
         }
 
-        // 2. Systémová zpráva do chatu
+        // 2. Chat & Ghost mód
+        function odeslatAdminZpravu() {
+            const name = document.getElementById('adminChatName').value || "ADMIN ⚡";
+            const text = document.getElementById('adminChatInput').value;
+            const rainbow = document.getElementById('adminRainbowCheck').checked;
+            const ghost = document.getElementById('ghostModeCheck').checked;
+
+            if (!text) return;
+
+            db.ref('messages').push({
+                name: name,
+                text: text,
+                rainbow: rainbow,
+                ghost: ghost,
+                seen: true,
+                timestamp: Date.now()
+            });
+
+            document.getElementById('adminChatInput').value = "";
+        }
+
         function odeslatSystemovouZpravu() {
             const text = document.getElementById('sysMsgInput').value;
             if (!text) return;
@@ -206,12 +301,12 @@
                 name: "SYSTEM ⚠️",
                 text: text,
                 isSystem: true,
+                seen: true,
                 timestamp: Date.now()
             });
             document.getElementById('sysMsgInput').value = "";
         }
 
-        // 3. Živý chat a správa zpráv (Viděné/Neviděné, mazání)
         db.ref('messages').on('value', (snapshot) => {
             const chatList = document.getElementById('chatMessagesList');
             chatList.innerHTML = "";
@@ -221,16 +316,17 @@
                 return;
             }
 
-            Object.keys(msgs).forEach(key => {
+            Object.keys(msgs).reverse().forEach(key => {
                 const msg = msgs[key];
                 const row = document.createElement('div');
                 row.className = 'chat-row';
                 const stav = msg.seen ? "👁️ Viděno" : "🔴 Neviděno";
+                const ghostTag = msg.ghost ? " 👻[GHOST]" : "";
                 
                 row.innerHTML = `
                     <div>
                         <span class="${msg.rainbow ? 'rainbow-nick' : ''}"><b>${msg.name || 'Anonym'}:</b></span> 
-                        <span>${msg.text || ''}</span>
+                        <span>${msg.text || ''}${ghostTag}</span>
                         <br><small style="color: #888;">Stav: ${stav}</small>
                     </div>
                     <div>
@@ -242,21 +338,16 @@
             });
         });
 
-        function smazZpravu(id) {
-            db.ref('messages/' + id).remove();
-        }
+        function smazZpravu(id) { db.ref('messages/' + id).remove(); }
+        function prepnoutVidene(id, stav) { db.ref('messages/' + id + '/seen').set(stav); }
 
-        function prepnoutVidene(id, stav) {
-            db.ref('messages/' + id + '/seen').set(stav);
-        }
-
-        // 4. Správa uživatelů a trestů
+        // 3. Uživatelé & Tresty
         db.ref('users').on('value', (snapshot) => {
             const usersList = document.getElementById('usersList');
             usersList.innerHTML = "";
             const users = snapshot.val();
             if (!users) {
-                usersList.innerHTML = '<p style="padding: 10px; text-align: center;">Žádní aktivní uživatelé v databázi.</p>';
+                usersList.innerHTML = '<p style="padding: 10px; text-align: center;">Žádní uživatelé.</p>';
                 return;
             }
 
@@ -289,25 +380,29 @@
             const typ = document.getElementById('trestTyp').value;
             const dobaMinut = parseInt(document.getElementById('trestDoba').value) || 0;
             const rainbow = document.getElementById('rainbowToggle').checked;
-
             const expiration = dobaMinut > 0 ? Date.now() + (dobaMinut * 60000) : 0;
 
             if (typ === 'ban') {
-                db.ref('bans/' + aktivniUzivatelJmeno).set({ expires: expiration, reason: "Administrátorský ban" });
+                db.ref('bans/' + aktivniUzivatelJmeno).set({ expires: expiration });
                 db.ref('users/' + aktivniUzivatelJmeno + '/status').set('ZABANOVÁN');
             } else if (typ === 'mute') {
                 db.ref('mutes/' + aktivniUzivatelJmeno).set({ expires: expiration });
                 db.ref('users/' + aktivniUzivatelJmeno + '/status').set('ZTLUMEN (MUTE)');
             } else if (typ === 'kick') {
-                db.ref('users/' + aktivniUzivatelJmeno + '/status').set('VYKOPNUT (KICK)');
-                alert("Uživatel byl vykopnut!");
+                db.ref('users/' + aktivniUzivatelJmeno + '/status').set('VYKOPNUT');
             }
-
-            // Nastavení Rainbow nicku
             db.ref('users/' + aktivniUzivatelJmeno + '/rainbow').set(rainbow);
-
-            alert("Trest a nastavení byly úspěšně aplikovány!");
+            alert("Trest aplikován!");
             zavritModal();
+        }
+
+        // 4. Hudba, Fotky, Rozšiř to!
+        db.ref('siteContent/rozsirText').once('value', (snap) => {
+            if (snap.val()) document.getElementById('rozsirContent').value = snap.val();
+        });
+        function ulozRozsir() {
+            const val = document.getElementById('rozsirContent').value;
+            db.ref('siteContent/rozsirText').set(val).then(() => alert("Uloženo!"));
         }
     </script>
 </body>
