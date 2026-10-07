@@ -48,14 +48,14 @@
 
     <div class="stred">
         <h1>🎵 Hudební koutek</h1>
-        <p>Lepší než poslouchat učitele</p>
+        <p>Poslouchej písničky, lepší než poslouchat učitele.</p>
     </div>
 
     <hr class="oddeleni">
 
     <!-- Seznam písniček -->
     <div id="seznam-pisnicek">
-        <p class="stred" style="color: #666;">Načítám písničky...</p>
+        <p class="stred" style="color: #666;">Načítám hudební koutek...</p>
     </div>
 
     <hr class="oddeleni">
@@ -66,58 +66,33 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        async function nactiHudbu() {
-            const playlistDiv = document.getElementById('seznam-pisnicek');
-            try {
-                // 1. Zjistí, jaké MP3 soubory fyzicky jsou ve složce hudba/
-                const response = await fetch('./');
-                const text = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(text, 'text/html');
-                const links = doc.querySelectorAll('a');
-                
-                let mp3Files = [];
-                links.forEach(link => {
-                    const href = link.getAttribute('href');
-                    if (href && href.toLowerCase().endsWith('.mp3')) {
-                        const fileName = decodeURIComponent(href.split('/').pop());
-                        mp3Files.push({ fileName: fileName, url: href });
-                    }
-                });
+        const playlistDiv = document.getElementById('seznam-pisnicek');
 
-                if (mp3Files.length === 0) {
-                    playlistDiv.innerHTML = '<p class="stred">Ve složce hudba/ zatím nejsou žádné MP3 soubory.</p>';
-                    return;
-                }
+        // Sleduje seznam písniček a jejich názvů z Firebase v reálném čase
+        db.ref('hudbaPiesne').on('value', (snapshot) => {
+            playlistDiv.innerHTML = "";
+            const data = snapshot.val();
 
-                // 2. Stáhne z Firebase vlastní názvy, které admin nastavil
-                db.ref('hudbaNazvy').once('value', (snapshot) => {
-                    const customNames = snapshot.val() || {};
-                    playlistDiv.innerHTML = "";
-
-                    mp3Files.forEach(song => {
-                        // Pokud admin nastavil vlastní název, použije ho, jinak vezme název souboru
-                        const displayName = customNames[song.fileName] || song.fileName.replace(/\.mp3$/i, '').replace(/[-_]/g, ' ');
-
-                        const box = document.createElement('div');
-                        box.className = 'music-box';
-                        box.innerHTML = `
-                            <p><b>🎵 ${displayName}</b></p>
-                            <audio controls preload="metadata">
-                                <source src="${song.url}" type="audio/mp3">
-                                Tvůj prohlížeč nepodporuje přehrávání audio souborů.
-                            </audio>
-                        `;
-                        playlistDiv.appendChild(box);
-                    });
-                });
-
-            } catch (error) {
-                playlistDiv.innerHTML = `<p class="stred" style="color: red;">Chyba při načítání složky: ${error.message}</p>`;
+            if (!data) {
+                playlistDiv.innerHTML = '<p class="stred">Zatím tu nejsou žádné písničky.</p>';
+                return;
             }
-        }
 
-        nactiHudbu();
+            Object.keys(data).forEach(key => {
+                const song = data[key];
+                
+                const box = document.createElement('div');
+                box.className = 'music-box';
+                box.innerHTML = `
+                    <p><b>🎵 ${song.nazev}</b></p>
+                    <audio controls preload="metadata">
+                        <source src="${song.soubor}" type="audio/mp3">
+                        Tvůj prohlížeč nepodporuje přehrávání audio souborů.
+                    </audio>
+                `;
+                playlistDiv.appendChild(box);
+            });
+        });
     </script>
 </body>
 </html>
