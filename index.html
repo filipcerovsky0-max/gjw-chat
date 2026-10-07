@@ -1,117 +1,170 @@
 <!DOCTYPE html>
-<html lang="cs" class="h-full">
+<html lang="cs">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=0">
+    <title>Studenstvo GJW</title>
     
-    <title>Gymnázium Jiřího Wolkera, Prostějov</title>
-    <meta name="description" content="Oficiální stránky a portál studentů Gymnázia Jiřího Wolkera v Prostějově.">
-    <meta property="og:title" content="GJW Prostějov">
-    <meta property="og:description" content="Oficiální portál studentů Gymnázia Jiřího Wolkera v Prostějově.">
-    <meta property="og:type" content="website">
-
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Meta tagy -->
+    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <meta name="description" content="komický stránky pro studenty a zaměstnance Gymnázia Jiřího Wolkera v Prostějově. Přijď se podívat!">
+    
     <style>
         body {
-            background-color: #f4f4f0;
-            color: #1a1a1a;
+            background-color: #f0f0f0;
+            color: #000000;
             font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            margin: 20px;
+            padding: 0;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }
-        .gjw-border {
-            border: 1px solid #b0b0a8;
+        .stred {
+            text-align: center;
         }
-        .gjw-header-bg {
-            background: linear-gradient(to bottom, #2b4c7e 0%, #1a365d 100%);
+        .logo {
+            max-width: 100%;
+            height: auto;
+        }
+        .oddeleni {
+            border: 0;
+            height: 1px;
+            background: #ccc;
+            margin: 15px 0;
+        }
+        .minioddeleni {
+            border: 0;
+            height: 1px;
+            background: #e0e0e0;
+            margin: 8px 0;
+        }
+        #druhynadpis {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0 5px 0;
+        }
+        #druhynadpis a {
+            color: #0000EE;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #druhynadpis a:hover {
+            text-decoration: underline;
+        }
+        #mininadpis {
+            font-size: 13px;
+            margin: 6px 0 2px 0;
+        }
+        #mininadpis a {
+            color: #555;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        #mininadpis a:hover {
+            text-decoration: underline;
+        }
+        .novinky {
+            margin: 6px 0;
+            font-size: 13px;
+        }
+        .tady, .dva {
+            font-size: 12px;
+            color: #555;
+            margin: 2px 0 10px 0;
+        }
+        .jaromil {
+            color: #0000EE;
+            text-decoration: none;
+        }
+        .jaromil:hover {
+            text-decoration: underline;
+        }
+        .tmavetlacitko {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            border-radius: 4px;
+        }
+        .tmavetlacitko:hover {
+            background-color: #555;
         }
     </style>
 </head>
-<body class="h-full flex flex-col justify-between min-h-screen">
+<body>
 
-    <!-- Hlavní obal stránky (fixní šířka / centrovaný školní portál) -->
-    <div class="max-w-4xl w-full mx-auto bg-white gjw-border shadow-md my-0 sm:my-4 flex flex-col min-h-screen sm:min-h-0">
-        
-        <!-- Hlavička školy -->
-        <header class="gjw-header-bg text-white p-5 border-b-2 border-[#1a365d]">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold tracking-wide">Gymnázium Jiřího Wolkera, Prostějov</h1>
-                    <p class="text-xs text-blue-200 mt-0.5">Studentský portál a informační rozcestník</p>
-                </div>
-                <div class="text-right text-xs text-blue-100 hidden sm:block">
-                    <p>GJW PV</p>
-                    <p class="font-mono">Est. tradice</p>
-                </div>
-            </div>
-        </header>
+    <p class="stred"><a href="index.html"><img class="logo" src="https://i.imgur.com/QvqvK3M.png" alt="GJW Logo"></a></p>
+    <hr class="oddeleni">
+    
+    <h2 id="druhynadpis">Novinky</h2>
+    <p class="novinky"><strong>7/10/26</strong> - <a class="jaromil" href="./chat/"><b>GJW CHAT JE TADY</b></a> - Připoj se do nového chatu pro celou školu!</p>
+    <p class="novinky"><strong>6/9/22</strong> - <a class="jaromil" href="polep.php"><b>NÁLEPKY KE STAŽENÍ</b></a> - Vytvoř s námi komunitu!</p>
+    <p class="novinky"><strong>1/9/22</strong> - Jsme zpátky!</p>
+    <p class="novinky"><strong>20/6/22</strong> - VYHLAŠUJEME VÝSLEDKY CENY OSOBNOSTI GJW <a href="cenaosobnosti.html" class="jaromil">ZDE</a></p>
+    <p class="novinky"><strong>18/4/22</strong> - Vážíme si toho, že nám posíláte <a class="jaromil" href="rozvodna.php">fanouškovské stránky!</a></p>
+    <br>
+    <hr class="oddeleni">
 
-        <!-- Navigační lišta (Záložky) -->
-        <nav class="bg-[#e2e8f0] gjw-border border-x-0 px-3 py-2 flex flex-wrap gap-1 text-xs font-bold">
-            <a href="./" class="px-3 py-1.5 bg-white gjw-border text-blue-900 shadow-sm">Domů</a>
-            <a href="./chat" class="px-3 py-1.5 bg-[#dbeafe] gjw-border text-blue-800 hover:bg-blue-200 transition-colors">💬 GJW Chat</a>
-            
-            <!-- Místo pro další záložky, které budeme doplňovat -->
-            <a href="#" class="px-3 py-1.5 bg-gray-100 gjw-border text-gray-500 hover:bg-gray-200 transition-colors">[ Další záložka ]</a>
-            <a href="#" class="px-3 py-1.5 bg-gray-100 gjw-border text-gray-500 hover:bg-gray-200 transition-colors">[ Další záložka ]</a>
-            <a href="#" class="px-3 py-1.5 bg-gray-100 gjw-border text-gray-500 hover:bg-gray-200 transition-colors">[ Další záložka ]</a>
-        </nav>
+    <!-- Zde je přidaný odkaz na náš chat -->
+    <h2 id="druhynadpis"><a href="./chat/"><img src="https://i.imgur.com/c8lHe3s.png" width="19" alt="Chat">GJW Chat pro všechny</a></h2>
+    <p class="tady">Oficiální komunitní chat v reálném čase</p>
+    <hr class="oddeleni">
 
-        <!-- Hlavní obsah -->
-        <main class="p-5 flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            <!-- Levý sloupec - Aktuality / Oznámení -->
-            <div class="md:col-span-2 space-y-4">
-                <div class="gjw-border bg-[#fdfdfc] p-4 rounded-sm">
-                    <h2 class="text-sm font-bold text-[#1a365d] border-b border-gray-300 pb-1.5 mb-3 flex items-center gap-2">
-                        <span>📢</span> Aktuální dění na GJW
-                    </h2>
-                    <div class="space-y-3 text-xs leading-relaxed text-gray-700">
-                        <div>
-                            <span class="text-[10px] text-gray-500 block font-mono">07. 10. 2026</span>
-                            <p class="font-bold text-black">Spuštění nového oficiálního chatu pro studenty</p>
-                            <p>Byl spuštěn nový komunikační prostor pro všechny studenty a učitele GJW. Připojit se můžete přes záložku „GJW Chat“ v horní nabídce nebo přímo na adrese <a href="./chat" class="text-blue-700 underline">gjwprostejov.com/chat</a>.</p>
-                        </div>
-                        <div class="border-t border-gray-200 pt-2">
-                            <span class="text-[10px] text-gray-500 block font-mono">Září 2026</span>
-                            <p class="font-bold text-black">Vítejte v novém školním roce</p>
-                            <p>Přejeme všem studentům i pedagogům úspěšný vstup do nového školního období plného studijních i sportovních úspěchů.</p>
-                        </div>
-                    </div>
-                </div>
+    <h2 id="druhynadpis"><a href="rozvodna.php"><img src="https://i.imgur.com/vxuW8Rj.png" width="19" alt="Ikona">Fanouškovské stránky pedagogů</a></h2>
+    <p class="tady">Co jste nám poslali</p>
+    <hr class="oddeleni">
 
-                <div class="gjw-border bg-[#fdfdfc] p-4 rounded-sm">
-                    <h2 class="text-sm font-bold text-[#1a365d] border-b border-gray-300 pb-1.5 mb-3">Rychlé odkazy</h2>
-                    <ul class="text-xs space-y-2 list-disc list-inside text-blue-800">
-                        <li><a href="./chat" class="hover:underline font-bold">Vstoupit do GJW Chatu</a></li>
-                        <li><a href="https://gjwpv.cz" target="_blank" class="hover:underline">Původní archivní web GJW PV</a></li>
-                        <li><span class="text-gray-400">[ Připravujeme další sekci ]</span></li>
-                    </ul>
-                </div>
-            </div>
+    <h2 id="druhynadpis"><a href="http://forumgjw.8u.cz/"><img src="https://i.imgur.com/gi0d2SC.png" width="19" alt="Fórum">Fórum</a></h2>
+    <p class="tady">Moderní celoškolské fórum</p>
+    <hr class="oddeleni">
 
-            <!-- Pravý sloupec - Rychlé info / Widgety -->
-            <div class="space-y-4">
-                <div class="gjw-border bg-[#f8fafc] p-4 rounded-sm">
-                    <h3 class="text-xs font-bold text-gray-800 border-b border-gray-300 pb-1 mb-2">O portálu</h3>
-                    <p class="text-[11px] text-gray-600 leading-relaxed">
-                        Tento portál slouží jako nezávislý a modernizovaný rozcestník pro studenty Gymnázia Jiřího Wolkera v Prostějově navazující na historickou tradici školních stránek.
-                    </p>
-                </div>
+    <h2 id="druhynadpis"><a href="zpravodaj/index.php"><img src="https://i.imgur.com/ZQuvgPm.png" width="19" alt="Zpravodaj">Zpravodaj</a></h2>
+    <p class="tady">Svobodný přístup k informacím</p>
+    <hr class="oddeleni">
 
-                <div class="gjw-border bg-[#f8fafc] p-4 rounded-sm text-center">
-                    <h3 class="text-xs font-bold text-gray-800 border-b border-gray-300 pb-1 mb-2">Komununita</h3>
-                    <p class="text-[11px] text-gray-600 mb-3">Připoj se ke zbytku školy v reálném čase.</p>
-                    <a href="./chat" class="inline-block bg-[#1a365d] text-white text-xs font-bold px-4 py-2 rounded hover:bg-[#2b4c7e] transition-colors">Přejít do chatu &raquo;</a>
-                </div>
-            </div>
+    <h2 id="druhynadpis"><a href="http://www.gjwforum.8u.cz/index.html"><img src="https://i.imgur.com/c8lHe3s.png" width="19" alt="Portál">Diskuzní Portál</a></h2>
+    <p class="tady">Chat pro celou školu</p>
+    <hr class="oddeleni">
 
-        </main>
+    <h2 id="druhynadpis"><a href="memikoveobrazky.html"><img src="https://i.imgur.com/abPFQdx.png" width="19" alt="Memy">Memískové Obrázky</a></h2>
+    <p class="tady">Volný přístup k memovým obrázkům</p>
+    <hr class="oddeleni">
 
-        <!-- Patička -->
-        <footer class="gjw-border border-x-0 border-b-0 bg-[#e2e8f0] text-center py-3 text-[10px] text-gray-600">
-            <p>&copy; 2026 Gymnázium Jiřího Wolkera, Prostějov | Všechna práva vyhrazena.</p>
-        </footer>
+    <h2 id="druhynadpis"><a href="https://ostatni-studenstvo.8u.cz/launchpad.php"><img src="https://i.imgur.com/ate3KNa.png" width="19" alt="Launchpad">Launchpad</a></h2>
+    <p class="tady">popřej svým učitelům pěkný den na jejich email</p>
+    <hr class="oddeleni">
 
-    </div>
+    <h2 id="druhynadpis"><a href="loteria.php"><img src="https://i.imgur.com/Apc1eyS.png" width="19" alt="Loteria">Loteria</a></h2>
+    <p class="tady">Zábavné a interaktivní aktivity</p>
+    <hr class="oddeleni">
+
+    <h2 id="druhynadpis"><a href="tobeuzitecne.html"><img src="https://i.imgur.com/RiPIC7E.png" width="19" alt="Užitečné">Funkce tobě užitečný</a></h2>
+    <p class="tady">Nástroje pro tvůj užitek</p>
+    <hr class="oddeleni">
+
+    <h2 id="druhynadpis">Informácie</h2>
+    <p class="dva">Máš nějaké informace které chceš zveřejnit? pošli je na mail <br> Kontaktuj nás na <strong><a style="color: black;" href="mailto:kontakt@gjwpv.cz">kontakt@gjwpv.cz</a></strong></p>
+    
+    <h2 id="mininadpis"><a href="adminstvo.php"><img src="https://i.imgur.com/wTOw3uT.png" width="13" alt="Admin">Adminstvo</a></h2>
+    <hr class="minioddeleni">
+    
+    <h2 id="mininadpis"><a href="https://creativecommons.org/licenses/by/4.0/"><img src="https://i.imgur.com/BHls5El.png" width="13" alt="Licence">Licence</a></h2>
+    <hr class="minioddeleni">
+    
+    <h2 id="mininadpis"><a href="zpravodaj/proc.html"><img src="https://i.imgur.com/MFrBGJy.png" width="13" alt="Rychlost">Je stránka pomalá?</a></h2>
+
+    <p class="stred"><button onclick="alert('Tmavý režim')" class="tmavetlacitko">Tmavý režim</button></p>
+    <hr class="oddeleni">
+
+    <p style="font-size: 13px;"><i>Vyrobeno v sauně Gymnázia Jiřího Wolkera 2007. Neukládáme žádná osobní data, zatím.</i></p>
 
 </body>
 </html>
