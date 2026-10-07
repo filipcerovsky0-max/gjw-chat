@@ -42,10 +42,11 @@
             margin-bottom: 8px;
         }
         .photo-title {
-            font-size: 13px;
+            font-size: 15px;
             font-weight: bold;
             color: #333;
             margin: 5px 0 0 0;
+            font-family: 'Papyrus', fantasy, sans-serif;
         }
         .back-link {
             color: #0000EE;
@@ -53,11 +54,17 @@
             font-size: 13px;
             display: inline-block;
             margin-bottom: 15px;
+            font-family: 'Papyrus', fantasy, sans-serif;
         }
         .back-link:hover {
             text-decoration: underline;
         }
-        .stred { text-align: center; color: #666; font-size: 14px; }
+        .stred { 
+            text-align: center; 
+            color: #666; 
+            font-size: 15px; 
+            font-family: 'Papyrus', fantasy, sans-serif;
+        }
     </style>
 </head>
 <body>
@@ -73,9 +80,9 @@
             { soubor: "idk co tu dela.jpg", nazev: "idk co tu dela" },
             { soubor: "coldjpg.jpg", nazev: "studene" },
             { soubor: "sedlak.jpg", nazev: "sedlak" },
-            { soubor: "subirov.jpg", nazev: "subirov" },
+            { soubor: "subirovjpg.jpg", nazev: "subirov" },
             { soubor: "je v katakombach.jpg", nazev: "je v katakombach" },
-            { soubor: "taky je v katakombach.jpg", nazev: "bracho co tu delas" }
+            { soubor: "taky v katakombach.jpg", nazev: "bracho co tu delas" }
         ];
 
         function nactiGalerii() {
@@ -92,7 +99,7 @@
                 box.className = 'photo-box';
                 box.innerHTML = `
                     <img src="${foto.soubor}" alt="${foto.nazev}">
-                    <p class="photo-title">📷 ${foto.nazev}</p>
+                    <p class="photo-title">${foto.nazev}</p>
                 `;
                 galerieDiv.appendChild(box);
             });
