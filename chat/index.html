@@ -19,37 +19,26 @@
             display: flex;
             flex-direction: column;
         }
-        .retro-box {
-            background: #ffffff;
-            border: 1px solid #b0b0a8;
-            padding: 8px;
-        }
+        .retro-box { background: #ffffff; border: 1px solid #b0b0a8; padding: 8px; }
         .retro-button {
-            background: #e2e8f0;
-            border: 1px solid #94a3b8;
-            padding: 4px 10px;
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            cursor: pointer;
-            color: #000;
-            border-radius: 3px;
+            background: #e2e8f0; border: 1px solid #94a3b8; padding: 4px 10px;
+            font-family: Arial, sans-serif; font-size: 12px; cursor: pointer; color: #000; border-radius: 3px;
         }
         .retro-button:hover { background: #cbd5e1; }
         .retro-input, .retro-select, .retro-textarea {
-            background: #ffffff;
-            border: 1px solid #94a3b8;
-            padding: 5px;
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            color: #000;
-            border-radius: 3px;
+            background: #ffffff; border: 1px solid #94a3b8; padding: 5px;
+            font-family: Arial, sans-serif; font-size: 12px; color: #000; border-radius: 3px;
+        }
+        .rainbow-admin {
+            background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold;
         }
         a { color: #0000EE; text-decoration: underline; }
     </style>
 </head>
 <body class="h-full flex flex-col">
 
-    <!-- Přihlášení -->
+    <!-- Přihlášení (jméno + třída) -->
     <div id="loginScreen" class="fixed inset-0 bg-[#f0f0f0] z-50 flex flex-col items-center justify-center p-4">
         <div class="retro-box p-6 w-full max-w-sm space-y-3 shadow-md">
             <div class="text-center">
@@ -82,6 +71,21 @@
         </div>
     </div>
 
+    <!-- Uživatelský profil modal pro admina -->
+    <div id="userProfileModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
+        <div class="retro-box bg-[#f0f0f0] p-4 w-full max-w-sm space-y-2 border-2 border-[#1d4372]">
+            <div class="flex justify-between items-center bg-[#1d4372] text-white px-2 py-1 -mx-2 -mt-2 mb-2 font-bold">
+                <span id="profileUsernameTitle">Uživatel</span>
+                <button onclick="closeUserProfileModal()" class="cursor-pointer px-1">X</button>
+            </div>
+            <p class="text-[11px]" id="profileUserIdSub">ID: -</p>
+            <div class="flex gap-1 pt-2">
+                <button onclick="actionKick()" class="retro-button text-red-700 font-bold">Vyhodit</button>
+                <button onclick="closeUserProfileModal()" class="retro-button">Zavřít</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Hlavička chatu -->
     <header class="border-b border-gray-300 bg-[#e2e8f0] px-3 py-2 flex justify-between items-center shrink-0">
         <div class="flex items-center space-x-2">
@@ -102,7 +106,6 @@
             <div id="messagesList" class="space-y-2 max-w-xl mx-auto w-full"></div>
         </div>
 
-        <!-- Vstup pro zprávy -->
         <footer class="border-t border-gray-300 bg-[#f0f0f0] p-2 fixed bottom-0 left-0 right-0">
             <div class="max-w-xl mx-auto flex items-center space-x-2">
                 <textarea id="messageInput" placeholder="Napiš zprávu... (Enter pro odeslání)" rows="1" class="retro-textarea flex-1 resize-none" onkeydown="handleKeydown(event)"></textarea>
@@ -122,6 +125,8 @@
             currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
             localStorage.setItem('gjw_saved_user_id', currentUserId);
         }
+        let isAdmin = currentUser && currentUser.toLowerCase().startsWith('admin');
+        let activeProfileUid = null;
 
         window.addEventListener('DOMContentLoaded', () => {
             if (currentUser) {
@@ -138,12 +143,14 @@
             if (!nick) { err.innerText = "Zadej přezdívku!"; err.classList.remove('hidden'); return; }
             
             currentUser = nick + (cls ? ' (' + cls + ')' : '');
+            isAdmin = nick.toLowerCase() === 'admin';
             localStorage.setItem('gjw_saved_user', currentUser);
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('userSubtitle').innerText = currentUser;
 
             db.ref('messages').push({
-                user: 'Systém',
+                userId: currentUserId,
+                user: currentUser,
                 text: `${currentUser} vstoupil do chatu`,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 isSystem: true
@@ -167,10 +174,33 @@
             input.value = '';
 
             db.ref('messages').push({
+                userId: currentUserId,
                 user: currentUser,
+                isAdmin: isAdmin,
                 text: text,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             });
+        }
+
+        function openUserProfileModal(uid, username) {
+            if (!isAdmin) return;
+            activeProfileUid = uid;
+            document.getElementById('profileUsernameTitle').innerText = username;
+            document.getElementById('profileUserIdSub').innerText = 'ID uživatele: ' + uid;
+            document.getElementById('userProfileModal').classList.remove('hidden');
+            document.getElementById('userProfileModal').classList.add('flex');
+        }
+
+        function closeUserProfileModal() {
+            document.getElementById('userProfileModal').classList.remove('flex');
+            document.getElementById('userProfileModal').classList.add('hidden');
+        }
+
+        function actionKick() {
+            if (!activeProfileUid) return;
+            db.ref('restrictions/' + activeProfileUid).update({ kicked: true });
+            alert("Uživatel byl vyhozen.");
+            closeUserProfileModal();
         }
 
         db.ref('messages').on('value', (snapshot) => {
@@ -187,7 +217,11 @@
                     div.innerText = `-- ${msg.text} --`;
                 } else {
                     div.className = "bg-white border border-gray-300 p-2 rounded shadow-sm text-xs";
-                    div.innerHTML = `<div class="flex justify-between font-bold text-blue-900 text-[11px] mb-0.5"><span>${msg.user}</span><span class="text-gray-400 font-normal">${msg.time}</span></div><div>${msg.text}</div>`;
+                    const nameHtml = msg.isAdmin 
+                        ? `<span class="rainbow-admin cursor-pointer" onclick="openUserProfileModal('${msg.userId}', '${msg.user}')">${msg.user}</span>`
+                        : `<span class="font-bold text-blue-900 cursor-pointer underline" onclick="openUserProfileModal('${msg.userId}', '${msg.user}')">${msg.user}</span>`;
+                    
+                    div.innerHTML = `<div class="flex justify-between text-[11px] mb-0.5"><span>${nameHtml}</span><span class="text-gray-400 font-normal">${msg.time}</span></div><div>${msg.text}</div>`;
                 }
                 messagesList.appendChild(div);
             });
