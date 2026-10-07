@@ -94,6 +94,13 @@
         }
         .action-btn:hover { background: #cbd5e1; }
         .close-btn { background: #ffcccc; border-color: #ff9999; color: #990000; }
+        
+        .modal-body-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .modal-img {
             max-width: 100%;
             max-height: 70vh;
@@ -101,6 +108,25 @@
             margin: 0 auto;
             border: 1px solid #ccc;
         }
+        
+        /* Šipky pro přepínání přímo v okně */
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            font-size: 18px;
+            padding: 10px 12px;
+            cursor: pointer;
+            border-radius: 3px;
+            z-index: 10;
+        }
+        .nav-arrow:hover { background: rgba(0, 0, 0, 0.8); }
+        #prevBtn { left: 5px; }
+        #nextBtn { right: 5px; }
+
         a { color: #0000EE; text-decoration: underline; }
     </style>
 </head>
@@ -123,7 +149,13 @@
                 <button onclick="printImage()" class="action-btn" title="Vytisknout obrázek">🖨️ Vytisknout</button>
                 <button onclick="closeModal()" class="action-btn close-btn">✕ Zavřít</button>
             </div>
-            <img id="modalImage" class="modal-img" src="" alt="Zvětšený design">
+            
+            <div class="modal-body-container" id="modalSwipeArea">
+                <button class="nav-arrow" id="prevBtn" onclick="changeDesign(-1)">&#10094;</button>
+                <img id="modalImage" class="modal-img" src="" alt="Zvětšený design">
+                <button class="nav-arrow" id="nextBtn" onclick="changeDesign(1)">&#10095;</button>
+            </div>
+
             <div id="modalTitle" style="font-weight: bold; margin-top: 10px; font-size: 13px;"></div>
         </div>
     </div>
@@ -133,10 +165,14 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        let allDesigns = [];
+        let currentIndex = 0;
+
         db.ref('promoDesigns').on('value', (snapshot) => {
             const data = snapshot.val();
             const container = document.getElementById('designsGridContainer');
             container.innerHTML = '';
+            allDesigns = [];
 
             if (!data) {
                 container.innerHTML = '<p class="tady italic text-gray-500">Zatím nebyly nahrány žádné designy přes administraci.</p>';
@@ -144,11 +180,14 @@
             }
 
             Object.entries(data).reverse().forEach(([key, item]) => {
+                allDesigns.push(item);
+            });
+
+            allDesigns.forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = "design-card";
-                card.onclick = () => openModal(item.image, item.title);
+                card.onclick = () => openModal(index);
                 
-                // Pokud je název prázdný, titulek pod fotkou vůbec nevykreslíme
                 const titleHtml = item.title ? `<div class="design-title">${item.title}</div>` : '';
 
                 card.innerHTML = `
@@ -159,20 +198,74 @@
             });
         });
 
-        function openModal(imgSrc, title) {
-            const overlay = document.getElementById('modalOverlay');
+        function openModal(index) {
+            currentIndex = index;
+            updateModalContent();
+            document.getElementById('modalOverlay').style.display = 'flex';
+        }
+
+        function updateModalContent() {
+            if (allDesigns.length === 0) return;
+            const item = allDesigns[currentIndex];
+            
             const modalImg = document.getElementById('modalImage');
             const downloadBtn = document.getElementById('modalDownloadBtn');
             const modalTitle = document.getElementById('modalTitle');
 
-            modalImg.src = imgSrc;
-            downloadBtn.href = imgSrc;
-            modalTitle.innerText = title || '';
-            overlay.style.display = 'flex';
+            modalImg.src = item.image;
+            downloadBtn.href = item.image;
+            modalTitle.innerText = item.title || '';
+        }
+
+        function changeDesign(direction) {
+            currentIndex += direction;
+            if (currentIndex < 0) {
+                currentIndex = allDesigns.length - 1; // Smyčka na konec
+            } else if (currentIndex >= allDesigns.length) {
+                currentIndex = 0; // Smyčka na začátek
+            }
+            updateModalContent();
         }
 
         function closeModal() {
             document.getElementById('modalOverlay').style.display = 'none';
+        }
+
+        // Ovládání šipkami na klávesnici
+        document.addEventListener('keydown', function(e) {
+            const overlay = document.getElementById('modalOverlay');
+            if (overlay.style.display === 'flex') {
+                if (e.key === 'ArrowLeft') {
+                    changeDesign(-1);
+                } else if (e.key === 'ArrowRight') {
+                    changeDesign(1);
+                } else if (e.key === 'Escape') {
+                    closeModal();
+                }
+            }
+        });
+
+        // Podpora pro dotyková gesta (swipování na mobilech)
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        const swipeArea = document.getElementById('modalSwipeArea');
+        swipeArea.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        swipeArea.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50) {
+                changeDesign(1); // Přejetí doleva -> další
+            }
+            if (touchEndX > touchStartX + 50) {
+                changeDesign(-1); // Přejetí doprava -> předchozí
+            }
         }
 
         function printImage() {
