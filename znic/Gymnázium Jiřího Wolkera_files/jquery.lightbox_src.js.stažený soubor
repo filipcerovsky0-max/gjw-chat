@@ -1,0 +1,150 @@
+(function($) {
+  $.fn.lightBox = function(parametry) {
+    var param = parametry,
+        obr = 0,
+        arrObr = [],
+        probiha = false,
+        sirka = vyska = 250;
+
+    $(this).each(function(index,element) {
+      arrObr.push(new Array($(element).attr('href'), $(element).attr('title')));
+    });
+    for (var i = 0; i < arrObr.length; i++) {
+      for (var j = arrObr.length - 1; j > i; j--) {
+        if (arrObr[i][0] == arrObr[j][0]) {
+          arrObr.splice(j, 1);
+        }
+      }
+    }
+
+    return $(this).live('click',function() {
+      $('#lightbox,#lightbox_seda').remove();
+
+      for (i = 0; i < arrObr.length; i++) {
+        if (arrObr[i][0] == $(this).attr('href')) {
+          $('body').append('<div id="lightbox_seda"></div><div id="lightbox"><div id="lightbox_obsah"><div class="obsah"><img /><div id="lightbox_navigace"><a href="#" class="zpet"></a><a href="#" class="vpred"></a></div><div class="nacitani"></div></div></div><div id="lightbox_popis"><div class="popis"><div class="detaily"><span class="titulek"></span><span class="informace"><a style="padding-right: 5px;" title="' + param.txtZpet + '" href="#" class="zpet">' + param.txtZpetOdk + '</a><a style="padding-right: 5px;" title="' + param.txtVpred + '" href="#" class="vpred">' + param.txtVpredOdk + '</a><span class="pocet"></span></span></div><a href="#" class="zavrit" title="' + param.txtZavrit + '"></a></div><div style="clear: both;"></div></div></div>');
+          $('#lightbox, #lightbox_seda, #lightbox_popis .zavrit').click(function(){return zavrit();});
+          $('#lightbox_obsah').width(sirka).height(vyska);
+          $('#lightbox_popis').width(sirka);
+      	  $("#lightbox_seda").css({width: '100%',height: $(document).height() + 'px',opacity : 0.8}).fadeIn();
+    	  $('#lightbox').css({top: ($(document).scrollTop() + 20)+'px', left: $(document).scrollLeft()+'px'}).show();
+          zmenObrazek(i);
+          return false;
+        }
+      }
+
+      return false;
+    });
+
+    function zmenObrazek(poradi) {
+      if (probiha == false) {
+        probiha = true;
+        obr = poradi;
+        $('#lightbox .nacitani').show();
+        $('#lightbox img, #lightbox_navigace .zpet, #lightbox_navigace .vpred, #lightbox_popis .zpet, #lightbox_popis .vpred, #lightbox_popis .detaily').hide();
+
+        var obrazek = new Image();
+        obrazek.onload = function() {
+          var obrSirka = obrazek.width;
+          var obrVyska = obrazek.height;
+          var strSirka = $(window).width() - 20;
+          var strVyska = $(window).height() - 90;
+
+          if ((obrazek.height > strVyska) || (obrazek.width > strSirka)) {
+            if ((strSirka/strVyska) > (obrazek.width/obrazek.height)) {
+              obrSirka = parseInt((strVyska/obrazek.height) * obrazek.width);
+              obrVyska = strVyska;
+            }
+            else {
+              obrVyska = parseInt((strSirka/obrazek.width) * obrazek.height);
+              obrSirka = strSirka;
+            }
+          }
+          $('#lightbox img').attr('src', arrObr[obr][0]).width(obrSirka).height(obrVyska);
+
+          sirka = $('#lightbox_obsah').outerWidth();
+          vyska = $('#lightbox_obsah').outerHeight();
+          var novaSirka = Math.max(350, obrSirka + 20);
+          var novaVyska = (obrVyska + 20);
+
+          $('#lightbox_popis').animate({width: novaSirka},350,'linear');
+          $('#lightbox_obsah').animate({width: novaSirka},350,'linear', function() {
+            $('#lightbox_obsah').animate({height: novaVyska},350,'linear', function() {
+              zobrazObrazek();
+            });
+          });
+
+          if(((vyska - novaVyska) == 0) && ((sirka - novaSirka) == 0)) {
+            var date = new Date();
+            while(new Date() - date < (jQuery.browser.msie? 250 : 120)) {}
+          }
+          $('#lightbox_navigace .zpet, #lightbox_navigace .vpred').height(obrVyska);
+        };
+
+        obrazek.src = arrObr[obr][0];
+      }
+    };
+
+    function zavrit() {
+      $(document).unbind('keydown');
+      $('#lightbox').hide();
+      $('#lightbox_seda').fadeOut();
+      return false;
+    };
+
+    function zobrazObrazek() {
+      var kodPocet = '';
+      if (arrObr.length > 1) {
+        if (obr > 0) {
+          obrazek = new Image();
+          obrazek.src = arrObr[obr-1][0];
+
+          $('#lightbox_navigace .zpet, #lightbox_popis .zpet').show().click(function() {
+            zmenObrazek(obr-1);
+            return false;
+          });
+        }
+        if ((obr+1) < arrObr.length) {
+          obrazek = new Image();
+          obrazek.src = arrObr[obr+1][0];
+
+          $('#lightbox_navigace .vpred, #lightbox_popis .vpred').show().click(function() {
+            zmenObrazek(obr+1);
+            return false;
+          });
+        }
+        kodPocet = (obr+1) + '/' + arrObr.length;
+      }
+
+      $('#lightbox .nacitani').hide();
+      $('#lightbox img').fadeIn('fast');
+      $('#lightbox_popis .titulek').html(arrObr[obr][1]? arrObr[obr][1] : '');
+      $('#lightbox_popis .pocet').html(kodPocet + '<a style="padding-left: 5px;" href="' + arrObr[obr][0] + '">' + param.txtZobrazit + '</a>');
+      $('#lightbox_popis .pocet a').click(function(event){event.stopPropagation(); return true;});
+      $('#lightbox_popis .popis,#lightbox_popis .detaily').show();
+      $('#lightbox_seda').height($(document).height());
+      probiha = false;
+
+	  $(document).bind('keydown', function(e) {
+	    var kod = e.keyCode;
+	    var klavesa = String.fromCharCode(kod).toLowerCase();
+
+	    if (klavesa == 'x' || klavesa == 'o' || klavesa == 'c' || kod == 27) {
+	      zavrit();
+	    }
+	    else if (klavesa == 'p' || kod == 37) {
+	      if (obr != 0) {
+	        $(document).unbind('keydown');
+	        zmenObrazek(obr - 1);
+	      }
+	    }
+	    else if (klavesa == 'n' || kod == 39) {
+	      if (obr != (arrObr.length-1)) {
+	        $(document).unbind('keydown');
+	        zmenObrazek(obr + 1);
+	      }
+	    }
+	  });
+    };
+  };
+})(jQuery);
