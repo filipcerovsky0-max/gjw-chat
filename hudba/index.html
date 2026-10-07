@@ -6,9 +6,6 @@
     <title>Hudební koutek - GJW</title>
     <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
     <meta name="description" content="Hudební koutek pro studenty GJW">
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
         body {
             background-color: #f0f0f0;
@@ -48,51 +45,80 @@
 
     <div class="stred">
         <h1>🎵 Hudební koutek</h1>
-        <p>Poslouchej písničky, lepší než poslouchat učitele.</p>
+        <p>Poslouchej písničky, lepší než poslouchat učitele</p>
     </div>
 
     <hr class="oddeleni">
 
     <!-- Seznam písniček -->
     <div id="seznam-pisnicek">
-        <p class="stred" style="color: #666;">Načítám hudební koutek...</p>
+        <p class="stred" style="color: #666;">Načítám písničky z repozitáře...</p>
     </div>
 
     <hr class="oddeleni">
     <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
 
     <script>
-        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        async function nactiHudbuZGitHubu() {
+            const playlistDiv = document.getElementById('seznam-pisnicek');
+            
+            // GitHub API pro tvojí složku 'hudba' v repozitáři
+            // (Zadej svůj GitHub uživatelský/organizační účet a název repozitáře, např. 'FilipCerovsky/gjw-chat')
+            const owner = "FilipCerovsky"; // <--- Tady si zkontroluj svůj GitHub uživatelský účet
+            const repo = "gjw-chat";       // <--- Tady si zkontroluj název repozitáře
+            const path = "hudba";
 
-        const playlistDiv = document.getElementById('seznam-pisnicek');
+            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
-        // Sleduje seznam písniček a jejich názvů z Firebase v reálném čase
-        db.ref('hudbaPiesne').on('value', (snapshot) => {
-            playlistDiv.innerHTML = "";
-            const data = snapshot.val();
-
-            if (!data) {
-                playlistDiv.innerHTML = '<p class="stred">Zatím tu nejsou žádné písničky.</p>';
-                return;
-            }
-
-            Object.keys(data).forEach(key => {
-                const song = data[key];
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error("Nepodařilo se načíst obsah ze složky.");
+                }
                 
-                const box = document.createElement('div');
-                box.className = 'music-box';
-                box.innerHTML = `
-                    <p><b>🎵 ${song.nazev}</b></p>
-                    <audio controls preload="metadata">
-                        <source src="${song.soubor}" type="audio/mp3">
-                        Tvůj prohlížeč nepodporuje přehrávání audio souborů.
-                    </audio>
+                const files = await response.json();
+                
+                // Vyfiltruje pouze MP3 soubory
+                const mp3Files = files.filter(file => file.type === 'file' && file.name.toLowerCase().endsWith('.mp3'));
+
+                playlistDiv.innerHTML = "";
+
+                if (mp3Files.length === 0) {
+                    playlistDiv.innerHTML = '<p class="stred">Ve složce hudba zatím nejsou žádné MP3 soubory.</p>';
+                    return;
+                }
+
+                mp3Files.forEach(file => {
+                    // Pěkně formátovaný název (odstraní příponu .mp3 a nahradí pomlčky/podtržítka mezerami)
+                    const cleanName = file.name.replace(/\.mp3$/i, '').replace(/[-_]/g, ' ');
+                    
+                    const box = document.createElement('div');
+                    box.className = 'music-box';
+                    box.innerHTML = `
+                        <p><b>🎵 ${cleanName}</b></p>
+                        <audio controls preload="metadata">
+                            <source src="${file.download_url}" type="audio/mp3">
+                            Tvůj prohlížeč nepodporuje přehrávání audio souborů.
+                        </audio>
+                    `;
+                    playlistDiv.appendChild(box);
+                });
+
+            } catch (error) {
+                // Pokud by GitHub API zlobilo (např. limit požadavků), uděláme fallback na přímé zkoušení souboru, který známe
+                playlistDiv.innerHTML = `
+                    <div class="music-box">
+                        <p><b>🎵 Chodím</b></p>
+                        <audio controls preload="metadata">
+                            <source src="chodim.mp3" type="audio/mp3">
+                            Tvůj prohlížeč nepodporuje přehrávání audio souborů.
+                        </audio>
+                    </div>
                 `;
-                playlistDiv.appendChild(box);
-            });
-        });
+            }
+        }
+
+        nactiHudbuZGitHubu();
     </script>
 </body>
 </html>
