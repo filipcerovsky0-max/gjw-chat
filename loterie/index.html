@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GJW Loterie - Kolikrát tě vyzkoušejí?</title>
+    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            margin: 15px;
+            padding: 10px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .stred { text-align: center; }
+        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
+        h1 { font-size: 20px; font-weight: bold; margin: 15px 0; color: #000000; font-family: 'Papyrus', fantasy, sans-serif; }
+        p { font-size: 15px; line-height: 1.5; color: #333; font-family: 'Papyrus', fantasy, sans-serif; }
+        .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; font-family: 'Papyrus', fantasy, sans-serif; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .loterie-box {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .btn-loterie {
+            background-color: #222;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-family: 'Papyrus', fantasy, sans-serif;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .btn-loterie:hover {
+            background-color: #444;
+        }
+        #vysledek {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #b30000;
+            font-family: 'Papyrus', fantasy, sans-serif;
+        }
+        #komentar {
+            font-size: 14px;
+            color: #555;
+            margin-top: 8px;
+            font-family: 'Papyrus', fantasy, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
+    <hr class="oddeleni">
+
+    <div class="stred">
+        <h1>🎰 Školní Loterie Vyzkoušení</h1>
+        <p>predikce toho jestli se mas vubec vratit domu</p>
+    </div>
+
+    <hr class="oddeleni">
+
+    <div class="loterie-box">
+        <p><b>Klikni na losuj a zjisti co te dnes ceka</b></p>
+        <button class="btn-loterie" onclick="losujVyzkouseni()">losuj</button>
+        
+        <div id="vysledek"></div>
+        <div id="komentar"></div>
+    </div>
+
+    <hr class="oddeleni">
+    <p style="font-size: 11px; color: #666; text-align: center; font-family: 'Papyrus', fantasy, sans-serif;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
+
+    <script>
+        function losujVyzkouseni() {
+            // Generuje náhodné číslo od 0 do 4
+            const cislo = Math.floor(Math.random() * 5);
+            const vysledekDiv = document.getElementById('vysledek');
+            const komentarDiv = document.getElementById('komentar');
+
+            let text = "";
+            let komentar = "";
+
+            if (cislo === 0) {
+                text = "🎉 0 vyzkoušení!";
+                komentar = "kvuli tobe vyzkousej nekoho jinyho neraduj se";
+            } else if (cislo === 1) {
+                text = "⚠️ 1 vyzkoušení";
+                komentar = "nojono kinda klasika";
+            } else if (cislo === 2) {
+                text = "🔥 2 vyzkoušení!";
+                komentar = "takovej horsi den";
+            } else if (cislo === 3) {
+                text = "💀 3 vyzkoušení!";
+                komentar = "jses v pici kamo ucitele se na tebe spikli";
+            } else {
+                text = "🚨 4 vyzkoušení!";
+                komentar = "je cas je mobilizovat a shodit vedeni skoly";
+            }
+
+            vysledekDiv.innerText = text;
+            komentarDiv.innerText = komentar;
+        }
+    </script>
+</body>
+</html>
