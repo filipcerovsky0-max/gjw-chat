@@ -48,7 +48,7 @@
         #druhynadpis a { color: #0000EE; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
         #druhynadpis a:hover { text-decoration: underline; }
         #mininadpis { font-size: 13px; margin: 10px 0 4px 0; font-weight: bold; color: #000000; }
-        .novinky { margin: 8px 0; font-size: 13px; line-height: 1.4; }
+        .novinky { margin: 8px 0; font-size: 13px; line-height: 1.5; }
         .tady, .dva { font-size: 12px; color: #555; margin: 4px 0 12px 0; line-height: 1.4; }
         .jaromil { color: #0000EE; text-decoration: none; }
         .jaromil:hover { text-decoration: underline; }
@@ -70,7 +70,12 @@
     <hr class="oddeleni">
         
     <h2 id="druhynadpis">Novinky</h2>
-    <p class="novinky" id="homeNewsText"><strong>7/10/26</strong> - <a class="jaromil" href="./chat/"><b>SPUSTILI JSME DISKUZNÍ PORTÁL (CHAT)</b></a> - Přijď se podívat a pokecat!</p>
+    <div class="novinky" id="homeNewsText">
+        <strong>7/10/26</strong> - Spuštěna kompletní verze 2.0 portálu!<br>
+        - 💬 <a class="jaromil" href="./chat/"><b>Diskuzní portál (Chat)</b></a> s přihlášením, správou ID, muty, bany vázanými na zařízení a odpočty.<br>
+        - 🌑 <a class="jaromil" href="./temno/"><b>Temná stránka školy</b></a> pro nahrávání důkazů a fotogalerii.<br>
+        - 📢 <a class="jaromil" href="./rozsir/"><b>Rozšiř to!</b></a> – galerie propagačních designů se stažením a tiskem.
+    </div>
     <br>
     <hr class="oddeleni">
 
@@ -78,9 +83,14 @@
     <p class="tady" id="homePortalDesc">Chat pro celou školu v reálném čase</p>
     <hr class="oddeleni">
 
-    <!-- Odkaz na podstránku Temná stránka -->
+    <!-- Temná stránka -->
     <h2 id="druhynadpis"><a href="./temno/">🌑 Temná stránka školy</a></h2>
     <p class="tady">Nahlédni pod pokličku toho, co se raději ututlává...</p>
+    <hr class="oddeleni">
+
+    <!-- Rozšiř to! (Napevno v HTML, aby se neztratilo) -->
+    <h2 id="druhynadpis"><a href="./rozsir/">📢 Rozšiř to!</a></h2>
+    <p class="tady">Pomoz dostat portál mezi lidi. Stáhni si nebo vytiskni naše propagační designy!</p>
     <hr class="oddeleni">
 
     <h2 id="druhynadpis">Informácie</h2>
