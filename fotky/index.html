@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fotky učitelů - GJW</title>
     <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <!-- Vynucení Papyrus stylu nebo fallbacku -->
     <style>
         body {
             background-color: #f0f0f0;
@@ -20,33 +21,27 @@
         .gallery {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px;
+            gap: 25px;
             justify-content: center;
             margin-top: 20px;
         }
         .photo-box {
-            background: #fff;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             text-align: center;
             max-width: 300px;
         }
         .photo-box img {
             max-width: 100%;
             height: auto;
-            max-height: 250px;
+            max-height: 280px;
             display: block;
-            border-radius: 4px;
-            margin-bottom: 8px;
+            border-radius: 2px;
         }
         .photo-title {
             font-size: 15px;
             font-weight: bold;
-            color: #333;
-            margin: 5px 0 0 0;
-            font-family: 'Papyrus', fantasy, sans-serif;
+            color: #222;
+            margin: 8px 0 0 0;
+            font-family: 'Papyrus', fantasy, 'Comic Sans MS', cursive, sans-serif;
         }
         .back-link {
             color: #0000EE;
