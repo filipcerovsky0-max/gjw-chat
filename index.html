@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- SEO a Google rich snippet nastavení pro Gjw-chat -->
     <title>GJW Chat</title>
     <meta name="description" content="Oficiální chat pro všechny studenty a učitele z Gymnázia Jiřího Wolkera v Prostějově.">
-    <meta property="og:title" content="GJW-Chat">
-    <meta property="og:description" content="Oficiální chat pro všechny studenty a učitele z Gymnázia Jiřího Wolkera v Prostějově.">
+    <meta property="og:title" content="Gjw-chat">
+    <meta property="og:description" content="Oficiální chat pro všechny studenty a učitele z Gymnázia Jiřího Wolkera v Prostějovĕ.">
     <meta property="og:type" content="website">
     
     <script type="application/ld+json">
@@ -70,28 +69,28 @@
         }
         a { color: #0000ff; text-decoration: underline; }
         
-        /* Skrytí komponent podle stavu */
-        .app-screen { display: none !important; }
-        .app-screen.active { display: flex !important; }
+        /* Absolutní kontrola zobrazení přes JS */
+        .my-hidden { display: none !important; }
+        .my-flex { display: flex !important; }
     </style>
 </head>
 <body class="h-full flex flex-col">
 
     <!-- Ban obrazovka -->
-    <div id="bannedScreen" class="app-screen fixed inset-0 bg-[#ece9d8] z-[9999] flex-col items-center justify-center p-4 text-center space-y-3">
+    <div id="bannedScreen" class="my-hidden fixed inset-0 bg-[#ece9d8] z-[9999] flex-col items-center justify-center p-4 text-center space-y-3">
         <div class="retro-box p-4 max-w-xs w-full space-y-2 bg-[#f1f1f1] border-red-500">
             <h1 class="text-xs font-bold text-red-600">MÁŠ AKTIVNÍ BAN</h1>
             <div class="text-left space-y-1 text-gray-800">
                 <p>Důvod: <span id="bannedReasonText" class="text-black font-bold">-</span></p>
                 <p>Trvání: <span id="bannedDurationText" class="text-black font-bold">-</span></p>
-                <p id="bannedCountdownContainer" class="pt-1 text-red-600 hidden">Zpět za: <span id="bannedCountdownTimer">-</span></p>
+                <p id="bannedCountdownContainer" class="pt-1 text-red-600 my-hidden">Zpět za: <span id="bannedCountdownTimer">-</span></p>
             </div>
             <p class="text-[10px] text-gray-600">Po uplynutí trestu můžeš zpátky do chatu.</p>
         </div>
     </div>
 
     <!-- Úprava zprávy -->
-    <div id="editModal" class="app-screen fixed inset-0 bg-black/40 z-50 items-center justify-center p-4">
+    <div id="editModal" class="my-hidden fixed inset-0 bg-black/40 z-50 items-center justify-center p-4">
         <div class="retro-box bg-[#ece9d8] p-3 w-full max-w-sm space-y-2 border-2 border-[#003c74]">
             <div class="flex justify-between items-center bg-[#000080] text-white px-2 py-1 -mx-3 -mt-3 mb-2 font-bold">
                 <span>Upravit zprávu</span>
@@ -106,7 +105,7 @@
     </div>
 
     <!-- Uživatelský profil (pro admina) -->
-    <div id="userProfileModal" class="app-screen fixed inset-0 bg-black/40 z-50 items-center justify-center p-4">
+    <div id="userProfileModal" class="my-hidden fixed inset-0 bg-black/40 z-50 items-center justify-center p-4">
         <div class="retro-box bg-[#ece9d8] p-3 w-full max-w-sm max-h-[80vh] flex-col space-y-2 border-2 border-[#003c74]">
             <div class="flex justify-between items-center bg-[#000080] text-white px-2 py-1 -mx-3 -mt-3 mb-2 font-bold">
                 <div>
@@ -130,13 +129,13 @@
     </div>
 
     <!-- Lightbox -->
-    <div id="imageLightbox" class="app-screen fixed inset-0 bg-black/80 z-50 flex-col items-center justify-center p-4">
+    <div id="imageLightbox" class="my-hidden fixed inset-0 bg-black/80 z-50 flex-col items-center justify-center p-4">
         <button onclick="closeLightbox()" class="absolute top-3 right-3 retro-button">Zavřít</button>
         <img id="lightboxImg" class="max-w-full max-h-[85vh] object-contain border-2 border-white">
     </div>
 
     <!-- Přihlášení (Homepage) -->
-    <div id="loginScreen" class="app-screen fixed inset-0 bg-[#ece9d8] z-50 flex-col justify-between p-4 overflow-y-auto">
+    <div id="loginScreen" class="my-flex fixed inset-0 bg-[#ece9d8] z-50 flex-col justify-between p-4 overflow-y-auto">
         <div class="flex-1 flex items-center justify-center w-full py-6">
             <div class="retro-box bg-[#f1f1f1] p-5 w-full max-w-xs space-y-3 border-2 border-[#7f9db9]">
                 
@@ -169,7 +168,7 @@
                             <p class="text-[9px] text-gray-500 mt-0.5">vyber si třídu</p>
                         </div>
                         <button onclick="handleLogin()" class="retro-button w-full font-bold py-1.5 text-center">Vstoupit do chatu</button>
-                        <div id="loginError" class="text-red-600 text-[10px] text-center hidden font-bold"></div>
+                        <div id="loginError" class="text-red-600 text-[10px] text-center my-hidden font-bold"></div>
                     </div>
                     <div class="pt-2 border-t border-gray-300 text-[9px] text-gray-500 text-center">
                         <p>Gymnázium Jiřího Wolkera, Prostějov</p>
@@ -180,18 +179,18 @@
     </div>
 
     <!-- Admin Panel -->
-    <div id="adminPageScreen" class="app-screen fixed inset-0 bg-[#ece9d8] z-50 flex-col items-center justify-center p-4">
+    <div id="adminPageScreen" class="my-hidden fixed inset-0 bg-[#ece9d8] z-50 flex-col items-center justify-center p-4">
         <div class="retro-box bg-[#f1f1f1] p-4 w-full max-w-3xl max-h-[90vh] flex flex-col space-y-3 border-2 border-[#000080]">
             <div id="adminAuthBox" class="space-y-3 my-auto max-w-xs mx-auto text-center">
                 <h1 class="font-bold text-[#000080] text-sm">Admin Control Room</h1>
                 <p class="text-[10px] text-gray-600">Zadej administrátorské heslo</p>
                 <input type="password" id="adminPasswordInput" placeholder="heslo..." class="retro-input w-full">
                 <button onclick="verifyAdminPassword()" class="retro-button w-full font-bold">Ověřit</button>
-                <div id="adminLoginError" class="text-red-600 text-[10px] hidden font-bold">Špatné heslo</div>
+                <div id="adminLoginError" class="text-red-600 text-[10px] my-hidden font-bold">Špatné heslo</div>
                 <a href="./" class="block text-[10px] text-blue-700 underline pt-1">Zpět na hlavní stránku</a>
             </div>
 
-            <div id="adminDashboardBox" class="hidden flex-1 overflow-y-auto space-y-3 pr-1">
+            <div id="adminDashboardBox" class="my-hidden flex-1 overflow-y-auto space-y-3 pr-1">
                 <div class="flex justify-between items-center border-b border-gray-400 pb-2 bg-[#000080] text-white px-2 py-1">
                     <div>
                         <span class="font-bold">Admin Dashboard</span>
@@ -236,7 +235,7 @@
 
                 <div class="retro-box bg-white p-2.5 space-y-1">
                     <span class="font-bold text-[#000080] block">Memy (Custom emotikony)</span>
-                    <input type="file" id="adminEmojiUploadInput" accept="image/*" class="hidden" onchange="handleAdminUploadEmoji(event)">
+                    <input type="file" id="adminEmojiUploadInput" accept="image/*" class="my-hidden" onchange="handleAdminUploadEmoji(event)">
                     <button onclick="document.getElementById('adminEmojiUploadInput').click()" class="retro-button mt-1">Nahrát nový obrázek</button>
                     <div id="adminEmojiList" class="flex flex-wrap gap-1 pt-1"></div>
                 </div>
@@ -250,7 +249,7 @@
     </div>
 
     <!-- Hlavní hlavička chatu -->
-    <header id="chatHeader" class="border-b-2 border-[#7f9db9] bg-[#000080] text-white px-3 py-1.5 flex justify-between items-center shrink-0 hidden">
+    <header id="chatHeader" class="my-hidden border-b-2 border-[#7f9db9] bg-[#000080] text-white px-3 py-1.5 justify-between items-center shrink-0">
         <div class="flex items-center space-x-2">
             <span id="headerLogoTrigger" onclick="handleLogoClick()" class="font-bold cursor-pointer text-white underline">GJW-Chat</span>
             <span id="userSubtitle" class="text-gray-200">-</span>
@@ -260,15 +259,15 @@
                 <span class="w-2 h-2 bg-green-600 inline-block"></span>
                 <span>Online: <span id="onlineCountBadge" class="text-green-700 font-mono">1</span></span>
             </div>
-            <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" class="hidden retro-button text-amber-800 font-bold">Admin</button>
+            <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" class="my-hidden retro-button text-amber-800 font-bold">Admin</button>
             <button onclick="handleLogout()" class="retro-button">Odhlásit</button>
         </div>
     </header>
 
     <!-- Chat tělo -->
-    <div id="chatScreenContainer" class="flex-1 flex-col overflow-hidden relative bg-white hidden">
+    <div id="chatScreenContainer" class="my-hidden flex-1 flex-col overflow-hidden relative bg-white">
         <div id="chatContainer" class="flex-1 overflow-y-auto p-3 space-y-2 pb-28">
-            <div id="emptyState" class="hidden h-full flex items-center justify-center text-gray-500 italic">Zatím žádné zprávy v této místnosti</div>
+            <div id="emptyState" class="my-hidden h-full flex items-center justify-center text-gray-500 italic">Zatím žádné zprávy v této místnosti</div>
             <div id="messagesList" class="space-y-2 max-w-xl mx-auto"></div>
         </div>
 
@@ -278,26 +277,26 @@
         <footer class="border-t-2 border-[#7f9db9] bg-[#ece9d8] p-2 shrink-0 fixed bottom-0 left-0 right-0 z-40">
             <div class="max-w-xl mx-auto flex flex-col space-y-2">
                 
-                <div id="mutedNoticeBox" class="hidden w-full border border-red-600 bg-red-100 p-2 text-center text-red-700 space-y-0.5 font-bold">
+                <div id="mutedNoticeBox" class="my-hidden w-full border border-red-600 bg-red-100 p-2 text-center text-red-700 space-y-0.5 font-bold">
                     <span id="mutedNoticeText">Jsi ztlumen.</span>
-                    <div id="mutedCountdownContainer" class="text-red-800 hidden">Zbývá: <span id="mutedCountdownTimer">-</span></div>
+                    <div id="mutedCountdownContainer" class="text-red-800 my-hidden">Zbývá: <span id="mutedCountdownTimer">-</span></div>
                 </div>
 
                 <div id="activeInputControls" class="space-y-1.5">
-                    <div id="imageSourcePopup" class="hidden absolute bottom-12 left-0 retro-box bg-[#ece9d8] p-1 shadow-lg w-32 z-50 flex flex-col space-y-1">
+                    <div id="imageSourcePopup" class="my-hidden absolute bottom-12 left-0 retro-box bg-[#ece9d8] p-1 shadow-lg w-32 z-50 flex-col space-y-1">
                         <button onclick="triggerFileInput(false)" class="text-left p-1 text-black hover:bg-[#b8d4f8] cursor-pointer">Galerie</button>
                         <button onclick="triggerFileInput(true)" class="text-left p-1 text-black hover:bg-[#b8d4f8] cursor-pointer">Vyfotit</button>
                     </div>
 
-                    <div id="emojiPickerPopup" class="hidden absolute bottom-12 left-12 retro-box bg-[#ece9d8] p-2 shadow-lg w-48 max-h-36 overflow-y-auto z-50">
+                    <div id="emojiPickerPopup" class="my-hidden absolute bottom-12 left-12 retro-box bg-[#ece9d8] p-2 shadow-lg w-48 max-h-36 overflow-y-auto z-50">
                         <div class="text-[10px] font-bold pb-1 border-b border-gray-400 mb-1">Rychlé memy</div>
                         <div id="emojiPickerContent" class="flex flex-wrap gap-1"></div>
                     </div>
 
-                    <input type="file" id="imageInputGallery" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-                    <input type="file" id="imageInputCamera" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
+                    <input type="file" id="imageInputGallery" accept="image/*" class="my-hidden" onchange="handleImageUpload(event)">
+                    <input type="file" id="imageInputCamera" accept="image/*" capture="environment" class="my-hidden" onchange="handleImageUpload(event)">
 
-                    <div id="imagePreviewContainer" class="hidden p-1.5 retro-box bg-[#f1f1f1] flex items-center justify-between">
+                    <div id="imagePreviewContainer" class="my-hidden p-1.5 retro-box bg-[#f1f1f1] flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <img id="imagePreview" class="h-8 w-8 object-cover border border-[#7f9db9]">
                             <span class="text-[10px] text-gray-700 font-bold">Obrázek přiložen</span>
@@ -422,7 +421,7 @@
             const badge = document.getElementById('onlineCountBadge');
             if (badge) badge.innerText = activeCount;
 
-            if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+            if (!document.getElementById('adminDashboardBox').classList.contains('my-hidden')) {
                 renderAdminUsersList();
             }
         });
@@ -431,7 +430,7 @@
             const data = snapshot.val();
             cloudMessages = data ? Object.values(data) : [];
             renderMessages();
-            if (document.getElementById('userProfileModal').classList.contains('active') && activeProfileUserId) {
+            if (document.getElementById('userProfileModal').classList.contains('my-flex') && activeProfileUserId) {
                 renderUserProfileModalContent(activeProfileUserId);
             }
         });
@@ -439,7 +438,7 @@
         db.ref('emojis').on('value', (snapshot) => {
             const data = snapshot.val();
             cloudEmojis = data ? Object.values(data) : [];
-            if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+            if (!document.getElementById('adminDashboardBox').classList.contains('my-hidden')) {
                 renderAdminEmojis();
             }
             renderEmojiPickerList();
@@ -462,7 +461,7 @@
             }
 
             checkLiveRestrictions();
-            if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+            if (!document.getElementById('adminDashboardBox').classList.contains('my-hidden')) {
                 renderAdminUsersList();
                 renderAdminBansLog();
                 renderAdminImageLog();
@@ -502,9 +501,10 @@
             }
 
             if (!matchedRest) {
-                bannedScreen.classList.remove('active');
-                noticeBox.classList.add('hidden');
-                activeControls.classList.remove('hidden');
+                bannedScreen.classList.remove('my-flex');
+                bannedScreen.classList.add('my-hidden');
+                noticeBox.classList.add('my-hidden');
+                activeControls.classList.remove('my-hidden');
                 return;
             }
 
@@ -534,7 +534,7 @@
                     const countdownTimer = document.getElementById('bannedCountdownTimer');
 
                     if (!ban.permanent && ban.expiresAt) {
-                        countdownContainer.classList.remove('hidden');
+                        countdownContainer.classList.remove('my-hidden');
                         restrictionCountdownInterval = setInterval(() => {
                             const remaining = ban.expiresAt - Date.now();
                             if (remaining <= 0) {
@@ -547,17 +547,22 @@
                             countdownTimer.innerText = `${mins}m ${secs}s`;
                         }, 1000);
                     } else {
-                        countdownContainer.classList.add('hidden');
+                        countdownContainer.classList.add('my-hidden');
                     }
 
-                    document.getElementById('loginScreen').classList.remove('active');
-                    document.getElementById('chatScreenContainer').classList.remove('active');
-                    document.getElementById('chatHeader').classList.add('hidden');
-                    bannedScreen.classList.add('active');
+                    document.getElementById('loginScreen').classList.remove('my-flex');
+                    document.getElementById('loginScreen').classList.add('my-hidden');
+                    document.getElementById('chatScreenContainer').classList.remove('my-flex');
+                    document.getElementById('chatScreenContainer').classList.add('my-hidden');
+                    document.getElementById('chatHeader').classList.remove('my-flex');
+                    document.getElementById('chatHeader').classList.add('my-hidden');
+                    bannedScreen.classList.remove('my-hidden');
+                    bannedScreen.classList.add('my-flex');
                     return;
                 }
             }
-            bannedScreen.classList.remove('active');
+            bannedScreen.classList.remove('my-flex');
+            bannedScreen.classList.add('my-hidden');
 
             const noticeText = document.getElementById('mutedNoticeText');
             const mutedCountdownContainer = document.getElementById('mutedCountdownContainer');
@@ -566,12 +571,12 @@
             if (matchedRest.mute) {
                 if (matchedRest.mute.permanent) {
                     noticeText.innerText = `Jsi ztlumen natrvalo.`;
-                    mutedCountdownContainer.classList.add('hidden');
-                    noticeBox.classList.remove('hidden');
-                    activeControls.classList.add('hidden');
+                    mutedCountdownContainer.classList.add('my-hidden');
+                    noticeBox.classList.remove('my-hidden');
+                    activeControls.classList.add('my-hidden');
                 } else if (Date.now() < matchedRest.mute.expiresAt) {
                     noticeText.innerText = `Jsi ztlumen správcem.`;
-                    mutedCountdownContainer.classList.remove('hidden');
+                    mutedCountdownContainer.classList.remove('my-hidden');
 
                     restrictionCountdownInterval = setInterval(() => {
                         const remaining = matchedRest.mute.expiresAt - Date.now();
@@ -586,16 +591,16 @@
                         mutedCountdownTimer.innerText = `${mins}m ${secs}s`;
                     }, 1000);
 
-                    noticeBox.classList.remove('hidden');
-                    activeControls.classList.add('hidden');
+                    noticeBox.classList.remove('my-hidden');
+                    activeControls.classList.add('my-hidden');
                 } else {
                     db.ref('restrictions/' + (matchedRest.userId || currentUserId) + '/mute').remove();
-                    noticeBox.classList.add('hidden');
-                    activeControls.classList.remove('hidden');
+                    noticeBox.classList.add('my-hidden');
+                    activeControls.classList.remove('my-hidden');
                 }
             } else {
-                noticeBox.classList.add('hidden');
-                activeControls.classList.remove('hidden');
+                noticeBox.classList.add('my-hidden');
+                activeControls.classList.remove('my-hidden');
             }
         }
 
@@ -603,18 +608,23 @@
         const imageSourcePopup = document.getElementById('imageSourcePopup');
 
         function toggleMemePicker() {
-            imageSourcePopup.classList.add('hidden');
-            emojiPopup.classList.toggle('hidden');
-            if (!emojiPopup.classList.contains('hidden')) renderEmojiPickerList();
+            imageSourcePopup.classList.remove('my-flex');
+            imageSourcePopup.classList.add('my-hidden');
+            emojiPopup.classList.toggle('my-hidden');
+            emojiPopup.classList.toggle('my-flex');
+            if (!emojiPopup.classList.contains('my-hidden')) renderEmojiPickerList();
         }
 
         function toggleImageSourceMenu() {
-            emojiPopup.classList.add('hidden');
-            imageSourcePopup.classList.toggle('hidden');
+            emojiPopup.classList.remove('my-flex');
+            emojiPopup.classList.add('my-hidden');
+            imageSourcePopup.classList.toggle('my-hidden');
+            imageSourcePopup.classList.toggle('my-flex');
         }
 
         function triggerFileInput(isCamera) {
-            imageSourcePopup.classList.add('hidden');
+            imageSourcePopup.classList.remove('my-flex');
+            imageSourcePopup.classList.add('my-hidden');
             if (isCamera) document.getElementById('imageInputCamera').click();
             else document.getElementById('imageInputGallery').click();
         }
@@ -633,7 +643,8 @@
                 img.className = "w-6 h-6 object-contain cursor-pointer border border-[#7f9db9] bg-white p-0.5 hover:border-black";
                 img.onclick = () => {
                     insertEmojiIntoMessage(imgSrc);
-                    emojiPopup.classList.add('hidden');
+                    emojiPopup.classList.remove('my-flex');
+                    emojiPopup.classList.add('my-hidden');
                 };
                 content.appendChild(img);
             });
@@ -654,25 +665,31 @@
         window.addEventListener('DOMContentLoaded', () => {
             const path = window.location.pathname;
             if (path.includes('admin')) {
-                document.getElementById('loginScreen').classList.remove('active');
-                document.getElementById('adminPageScreen').classList.add('active');
+                document.getElementById('loginScreen').classList.remove('my-flex');
+                document.getElementById('loginScreen').classList.add('my-hidden');
+                document.getElementById('adminPageScreen').classList.remove('my-hidden');
+                document.getElementById('adminPageScreen').classList.add('my-flex');
                 if (sessionStorage.getItem('gjw_admin_logged') === 'true') {
-                    document.getElementById('adminAuthBox').classList.add('hidden');
-                    document.getElementById('adminDashboardBox').classList.remove('hidden');
+                    document.getElementById('adminAuthBox').classList.add('my-hidden');
+                    document.getElementById('adminDashboardBox').classList.remove('my-hidden');
                     showAdminDashboard();
                 }
                 return;
             }
 
             if (currentUser && currentUserId && currentUserId !== 'undefined') {
-                document.getElementById('loginScreen').classList.remove('active');
-                document.getElementById('chatHeader').classList.remove('hidden');
-                document.getElementById('chatScreenContainer').classList.add('active');
+                document.getElementById('loginScreen').classList.remove('my-flex');
+                document.getElementById('loginScreen').classList.add('my-hidden');
+                document.getElementById('chatHeader').classList.remove('my-hidden');
+                document.getElementById('chatHeader').classList.add('my-flex');
+                document.getElementById('chatScreenContainer').classList.remove('my-hidden');
+                document.getElementById('chatScreenContainer').classList.add('my-flex');
                 document.getElementById('userSubtitle').innerText = currentUser;
                 renderMessages();
                 scrollToBottom(false);
             } else {
-                document.getElementById('loginScreen').classList.add('active');
+                document.getElementById('loginScreen').classList.remove('my-hidden');
+                document.getElementById('loginScreen').classList.add('my-flex');
             }
         });
 
@@ -702,14 +719,14 @@
 
                 if (inputVal === cloudPassword) {
                     sessionStorage.setItem('gjw_admin_logged', 'true');
-                    document.getElementById('adminAuthBox').classList.add('hidden');
-                    document.getElementById('adminDashboardBox').classList.remove('hidden');
+                    document.getElementById('adminAuthBox').classList.add('my-hidden');
+                    document.getElementById('adminDashboardBox').classList.remove('my-hidden');
                     showAdminDashboard();
                 } else {
-                    document.getElementById('adminLoginError').classList.remove('hidden');
+                    document.getElementById('adminLoginError').classList.remove('my-hidden');
                 }
             }).catch(() => {
-                document.getElementById('adminLoginError').classList.remove('hidden');
+                document.getElementById('adminLoginError').classList.remove('my-hidden');
             });
         }
 
@@ -909,14 +926,16 @@
             document.getElementById('profileUsernameTitle').innerText = username;
             document.getElementById('profileUserIdSub').innerText = 'ID: ' + uid;
             renderUserProfileModalContent(uid);
-            document.getElementById('userProfileModal').classList.add('active');
+            document.getElementById('userProfileModal').classList.remove('my-hidden');
+            document.getElementById('userProfileModal').classList.add('my-flex');
         }
 
         function closeUserProfileModal() {
             activeProfileUserId = null;
             activeProfileUsername = null;
             activeProfileFingerprint = null;
-            document.getElementById('userProfileModal').classList.remove('active');
+            document.getElementById('userProfileModal').classList.remove('my-flex');
+            document.getElementById('userProfileModal').classList.add('my-hidden');
         }
 
         function renderUserProfileModalContent(uid) {
@@ -979,22 +998,28 @@
 
         function openLightbox(img) {
             document.getElementById('lightboxImg').src = img;
-            document.getElementById('imageLightbox').classList.add('active');
+            document.getElementById('imageLightbox').classList.remove('my-hidden');
+            document.getElementById('imageLightbox').classList.add('my-flex');
         }
 
         function closeLightbox() {
-            document.getElementById('imageLightbox').classList.remove('active');
+            document.getElementById('imageLightbox').classList.remove('my-flex');
+            document.getElementById('imageLightbox').classList.add('my-hidden');
         }
 
         function openChatFromAdmin() {
             currentUser = 'admin (Admin)';
             currentUserId = 'admin_uid';
             isAdmin = true;
-            document.getElementById('adminPageScreen').classList.remove('active');
-            document.getElementById('loginScreen').classList.remove('active');
-            document.getElementById('chatHeader').classList.remove('hidden');
-            document.getElementById('chatScreenContainer').classList.add('active');
-            document.getElementById('adminHeaderBtn').classList.remove('hidden');
+            document.getElementById('adminPageScreen').classList.remove('my-flex');
+            document.getElementById('adminPageScreen').classList.add('my-hidden');
+            document.getElementById('loginScreen').classList.remove('my-flex');
+            document.getElementById('loginScreen').classList.add('my-hidden');
+            document.getElementById('chatHeader').classList.remove('my-hidden');
+            document.getElementById('chatHeader').classList.add('my-flex');
+            document.getElementById('chatScreenContainer').classList.remove('my-hidden');
+            document.getElementById('chatScreenContainer').classList.add('my-flex');
+            document.getElementById('adminHeaderBtn').classList.remove('my-hidden');
             renderMessages();
             scrollToBottom(false);
         }
@@ -1004,8 +1029,8 @@
             const cls = document.getElementById('loginClass').value;
             const err = document.getElementById('loginError');
 
-            if (!nick) { err.innerText = "Zadej svou přezdívku!"; err.classList.remove('hidden'); return; }
-            if (nick.toLowerCase() === 'admin') { err.innerText = "Tato přezdívka je zakázaná!"; err.classList.remove('hidden'); return; }
+            if (!nick) { err.innerText = "Zadej svou přezdívku!"; err.classList.remove('my-hidden'); return; }
+            if (nick.toLowerCase() === 'admin') { err.innerText = "Tato přezdívka je zakázaná!"; err.classList.remove('my-hidden'); return; }
 
             if (!currentUserId || currentUserId === 'undefined') {
                 currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
@@ -1019,8 +1044,10 @@
             if (isBanned) {
                 document.getElementById('bannedReasonText').innerText = userRest.ban.reason || '-';
                 document.getElementById('bannedDurationText').innerText = 'Aktivní ban na zařízení';
-                document.getElementById('loginScreen').classList.remove('active');
-                document.getElementById('bannedScreen').classList.add('active');
+                document.getElementById('loginScreen').classList.remove('my-flex');
+                document.getElementById('loginScreen').classList.add('my-hidden');
+                document.getElementById('bannedScreen').classList.remove('my-hidden');
+                document.getElementById('bannedScreen').classList.add('my-flex');
                 return;
             }
 
@@ -1041,9 +1068,12 @@
                 isSystem: true
             });
 
-            document.getElementById('loginScreen').classList.remove('active');
-            document.getElementById('chatHeader').classList.remove('hidden');
-            document.getElementById('chatScreenContainer').classList.add('active');
+            document.getElementById('loginScreen').classList.remove('my-flex');
+            document.getElementById('loginScreen').classList.add('my-hidden');
+            document.getElementById('chatHeader').classList.remove('my-hidden');
+            document.getElementById('chatHeader').classList.add('my-flex');
+            document.getElementById('chatScreenContainer').classList.remove('my-hidden');
+            document.getElementById('chatScreenContainer').classList.add('my-flex');
             document.getElementById('userSubtitle').innerText = currentUser;
             
             db.ref('presence/' + currentUserId).set({
@@ -1078,7 +1108,7 @@
             reader.onload = function(e) {
                 selectedImageBase64 = e.target.result;
                 document.getElementById('imagePreview').src = selectedImageBase64;
-                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                document.getElementById('imagePreviewContainer').classList.remove('my-hidden');
             };
             reader.readAsDataURL(file);
         }
@@ -1087,7 +1117,7 @@
             selectedImageBase64 = null;
             document.getElementById('imageInputGallery').value = '';
             document.getElementById('imageInputCamera').value = '';
-            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('imagePreviewContainer').classList.add('my-hidden');
         }
 
         function sendMessage() {
@@ -1118,10 +1148,10 @@
         function renderMessages() {
             messagesList.innerHTML = '';
             if (cloudMessages.length === 0) {
-                emptyState.classList.remove('hidden');
+                emptyState.classList.remove('my-hidden');
                 return;
             }
-            emptyState.classList.add('hidden');
+            emptyState.classList.add('my-hidden');
 
             cloudMessages.forEach(msg => {
                 const div = document.createElement('div');
@@ -1202,12 +1232,14 @@
         function openEditModal(id, currentText) {
             editingMessageId = id;
             document.getElementById('editModalInput').value = currentText;
-            document.getElementById('editModal').classList.add('active');
+            document.getElementById('editModal').classList.remove('my-hidden');
+            document.getElementById('editModal').classList.add('my-flex');
         }
 
         function closeEditModal() {
             editingMessageId = null;
-            document.getElementById('editModal').classList.remove('active');
+            document.getElementById('editModal').classList.remove('my-flex');
+            document.getElementById('editModal').classList.add('my-hidden');
         }
 
         function saveEditedMessage() {
