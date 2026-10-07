@@ -21,10 +21,10 @@
             margin-right: auto;
             transition: background-color 0.3s, color 0.3s;
         }
-        /* Tmavý režim třída */
+        /* Tmavý režim - zajištění viditelnosti všech textů a odkazů */
         body.dark-mode {
             background-color: #121212;
-            color: #e0e0e0;
+            color: #ffffff;
         }
         body.dark-mode .oddeleni {
             background: #333;
@@ -32,14 +32,23 @@
         body.dark-mode .minioddeleni {
             background: #222;
         }
-        body.dark-mode #druhynadpis a {
-            color: #61afef;
+        body.dark-mode h2, 
+        body.dark-mode #druhynadpis, 
+        body.dark-mode #mininadpis,
+        body.dark-mode .novinky,
+        body.dark-mode .tady, 
+        body.dark-mode .dva, 
+        body.dark-mode p,
+        body.dark-mode i {
+            color: #ffffff !important;
         }
-        body.dark-mode .tady, body.dark-mode .dva, body.dark-mode p {
-            color: #aaa;
+        body.dark-mode #druhynadpis a, 
+        body.dark-mode .jaromil,
+        body.dark-mode a {
+            color: #61afef !important;
         }
-        body.dark-mode .jaromil {
-            color: #61afef;
+        body.dark-mode .legal-text {
+            color: #cccccc !important;
         }
         body.dark-mode .tmavetlacitko {
             background-color: #e0e0e0;
@@ -69,6 +78,7 @@
             font-size: 16px;
             font-weight: bold;
             margin: 10px 0 5px 0;
+            color: #000000;
         }
         #druhynadpis a {
             color: #0000EE;
@@ -84,6 +94,7 @@
             font-size: 13px;
             margin: 6px 0 2px 0;
             font-weight: bold;
+            color: #000000;
         }
         .novinky {
             margin: 6px 0;
@@ -119,9 +130,6 @@
             line-height: 1.4;
             margin: 5px 0 10px 0;
         }
-        body.dark-mode .legal-text {
-            color: #888;
-        }
     </style>
 </head>
 <body>
@@ -139,7 +147,7 @@
     <hr class="oddeleni">
 
     <h2 id="druhynadpis">Informácie</h2>
-    <p class="dva">Máš nějaké informace které chceš zveřejnit? Pošli je na mail <strong><a style="color: inherit;" href="mailto:anonym.gjw@proton.me">anonym.gjw@proton.me</a></strong></p>
+    <p class="dva">Máš nějaké informace které chceš zveřejnit? Pošli je na mail <strong><a href="mailto:anonym.gjw@proton.me">anonym.gjw@proton.me</a></strong></p>
     
     <h2 id="mininadpis">Licence</h2>
     <p class="legal-text">Veškerý obsah na této stránce je šířen pod licencí Creative Commons (BY 4.0). Stránka slouží jako neoficiální nezávislý studentský portál. Jakékoliv šíření materiálů podléhá autorským právům původních tvůrců.</p>
@@ -161,7 +169,6 @@
             document.getElementById('darkModeBtn').innerText = isDark ? 'Světlý režim' : 'Tmavý režim';
         }
 
-        // Načtení preferovaného režimu při startu
         window.addEventListener('DOMContentLoaded', () => {
             if (localStorage.getItem('gjw_dark_mode') === 'enabled') {
                 document.body.classList.add('dark-mode');
