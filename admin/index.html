@@ -46,11 +46,11 @@
             <button onclick="enterChatAsAdmin()" class="border border-blue-700 bg-blue-950/40 text-blue-400 px-4 py-2.5 rounded font-bold cursor-pointer hover:bg-blue-900/50">Vstoupit do chatu &raquo;</button>
         </div>
 
-        <!-- NOVÁ SEKCE: Nahrávání designů do "Rozšiř to!" -->
+        <!-- Správa designů v "Rozšiř to!" (Nahrávání + Mazání) -->
         <div class="border border-zinc-800 p-4 bg-zinc-950 rounded-lg space-y-3">
-            <h2 class="font-bold text-yellow-400 text-xs">📢 Nahrát design do "Rozšiř to!"</h2>
-            <p class="text-[10px] text-zinc-500">Přidej nový plakátek, QR kód nebo banner, který se okamžitě objeví ve veřejné galerii.</p>
-            <div class="space-y-2">
+            <h2 class="font-bold text-yellow-400 text-xs">📢 Správa designů v "Rozšiř to!"</h2>
+            <p class="text-[10px] text-zinc-500">Přidej nový plakátek nebo spravuj (smaž) stávající designy.</p>
+            <div class="space-y-2 border-b border-zinc-900 pb-3">
                 <div>
                     <label class="block text-[10px] text-zinc-400 mb-1">Název designu:</label>
                     <input type="text" id="designTitleInput" placeholder="např. Hlavní QR Plakát A4" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
@@ -60,6 +60,13 @@
                     <input type="file" id="designFileInput" accept="image/*" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
                 </div>
                 <button onclick="uploadDesignAdmin()" class="border border-green-700 bg-green-950/40 text-green-400 px-4 py-2 rounded font-bold cursor-pointer hover:bg-green-900/50">Nahrát design</button>
+            </div>
+            
+            <div class="space-y-2 pt-1">
+                <label class="block text-[10px] text-zinc-400 font-bold">Aktivní nahrané designy:</label>
+                <div id="adminDesignsListContainer" class="space-y-1 max-h-40 overflow-y-auto">
+                    <span class="text-zinc-600 text-[10px]">Načítám designy...</span>
+                </div>
             </div>
         </div>
 
@@ -163,6 +170,14 @@
             reader.readAsDataURL(file);
         }
 
+        function deleteDesignAdmin(key) {
+            if (confirm("Opravdu trvale smazat tento design z galerie?")) {
+                db.ref('promoDesigns/' + key).remove().then(() => {
+                    alert("Design byl smazán.");
+                });
+            }
+        }
+
         function loadAdminData() {
             db.ref('siteContent').once('value').then(snap => {
                 const data = snap.val() || {};
@@ -171,6 +186,21 @@
                 if (data.infoText) document.getElementById('editInfo').value = data.infoText;
                 if (data.licenseText) document.getElementById('editLicense').value = data.licenseText;
                 if (data.footerText) document.getElementById('editFooter').value = data.footerText;
+            });
+
+            // Načtení designů do administrace pro možnost mazání
+            db.ref('promoDesigns').on('value', snap => {
+                const container = document.getElementById('adminDesignsListContainer');
+                container.innerHTML = '';
+                const designs = snap.val();
+                if (!designs) { container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádné nahrané designy</span>'; return; }
+
+                Object.entries(designs).forEach(([key, d]) => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center bg-black border border-zinc-900 p-2 rounded";
+                    row.innerHTML = `<span><b>${d.title}</b></span><button onclick="deleteDesignAdmin('${key}')" class="border border-red-800 bg-red-950/20 text-red-400 px-2 py-0.5 rounded cursor-pointer">Smazat</button>`;
+                    container.appendChild(row);
+                });
             });
 
             db.ref('presence').on('value', snap => {
