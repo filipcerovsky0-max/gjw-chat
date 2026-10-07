@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GJW Admin Command Center</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
@@ -14,7 +14,7 @@
     <div id="adminAuthBox" class="max-w-md mx-auto my-auto border border-zinc-800 bg-zinc-950 p-6 rounded-xl shadow-2xl space-y-4 w-full text-center">
         <h1 class="font-bold text-zinc-100 text-sm tracking-widest">GJW COMMAND CENTER</h1>
         <p class="text-[10px] text-zinc-500">Zadej administrátorské heslo</p>
-        <input type="password" id="adminPasswordInput" placeholder="heslo..." class="w-full bg-black border border-zinc-800 p-2.5 rounded text-white focus:outline-none focus:border-zinc-600">
+        <input type="password" id="adminPasswordInput" placeholder="heslo..." class="w-full bg-black border border-zinc-800 p-2.5 rounded text-white focus:outline-none focus:border-zinc-600" onkeydown="if(event.key==='Enter') verifyAdminPassword()">
         <button onclick="verifyAdminPassword()" class="w-full border border-zinc-700 bg-zinc-900 py-2.5 rounded text-zinc-200 font-bold cursor-pointer hover:bg-zinc-800">Ověřit přístup</button>
         <div id="adminLoginError" class="text-red-500 text-[10px] hidden font-bold">Špatné heslo!</div>
         <a href="../" class="block text-[10px] text-blue-400 underline pt-2">&laquo; Zpět na hlavní web</a>
@@ -46,7 +46,7 @@
             <button onclick="enterChatAsAdmin()" class="border border-blue-700 bg-blue-950/40 text-blue-400 px-4 py-2.5 rounded font-bold cursor-pointer hover:bg-blue-900/50">Vstoupit do chatu &raquo;</button>
         </div>
 
-        <!-- Správa designů v "Rozšiř to!" (Nahrávání, Editace jména + Mazání) -->
+        <!-- Správa designů v "Rozšiř to!" -->
         <div class="border border-zinc-800 p-4 bg-zinc-950 rounded-lg space-y-3">
             <h2 class="font-bold text-yellow-400 text-xs">📢 Správa designů v "Rozšiř to!"</h2>
             <p class="text-[10px] text-zinc-500">Přidej nový plakátek, upravuj názvy (lze nechat prázdné) nebo designy maž.</p>
@@ -128,6 +128,17 @@
                 } else {
                     document.getElementById('adminLoginError').classList.remove('hidden');
                 }
+            }).catch(err => {
+                console.error("Firebase error:", err);
+                // Fallback pro případ výpadku databáze, aby to šlo otevřít
+                if (input === '69_atillo_69') {
+                    sessionStorage.setItem('gjw_admin_secure_logged', 'true');
+                    document.getElementById('adminAuthBox').classList.add('hidden');
+                    document.getElementById('adminDashboardBox').classList.remove('hidden');
+                    loadAdminData();
+                } else {
+                    document.getElementById('adminLoginError').classList.remove('hidden');
+                }
             });
         }
 
@@ -141,7 +152,7 @@
         function uploadDesignAdmin() {
             const titleInput = document.getElementById('designTitleInput');
             const fileInput = document.getElementById('designFileInput');
-            const title = titleInput.value.trim(); // Může být prázdné
+            const title = titleInput.value.trim();
 
             if (fileInput.files.length === 0) {
                 alert("Vyberte prosím obrázek designu!");
@@ -201,7 +212,6 @@
                 if (data.footerText) document.getElementById('editFooter').value = data.footerText;
             });
 
-            // Načtení designů do administrace s políčkem pro úpravu jména
             db.ref('promoDesigns').on('value', snap => {
                 const container = document.getElementById('adminDesignsListContainer');
                 container.innerHTML = '';
@@ -212,4 +222,57 @@
                     const row = document.createElement('div');
                     row.className = "flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black border border-zinc-900 p-2.5 rounded gap-2";
                     row.innerHTML = `
-                        <div class="flex items-center gap-2 w-full sm:w
+                        <div class="flex items-center gap-2 w-full sm:w-auto flex-1">
+                            <img src="${d.image}" class="w-8 h-8 object-cover border border-zinc-800 shrink-0">
+                            <input type="text" id="input_title_${key}" value="${d.title || ''}" placeholder="Bez názvu" class="bg-black border border-zinc-800 p-1.5 rounded text-white text-[11px] w-full">
+                        </div>
+                        <div class="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
+                            <button onclick="updateDesignTitle('${key}')" class="border border-blue-700 bg-blue-950/30 text-blue-400 px-2.5 py-1 rounded cursor-pointer hover:bg-blue-900/40">Uložit jméno</button>
+                            <button onclick="deleteDesignAdmin('${key}')" class="border border-red-800 bg-red-950/20 text-red-400 px-2.5 py-1 rounded cursor-pointer hover:bg-red-900/40">Smazat</button>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            });
+
+            db.ref('presence').on('value', snap => {
+                const container = document.getElementById('adminUsersListContainer');
+                container.innerHTML = '';
+                const users = snap.val();
+                if (!users) { container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádní aktivní uživatelé</span>'; return; }
+
+                Object.values(users).forEach(u => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center bg-black border border-zinc-900 p-2 rounded";
+                    row.innerHTML = `<span><b>${u.user}</b> <span class="text-zinc-500">(ID: ${u.userId})</span></span><button onclick="kickUser('${u.userId}')" class="border border-red-800 bg-red-950/20 text-red-400 px-2 py-0.5 rounded cursor-pointer">Vyhodit</button>`;
+                    container.appendChild(row);
+                });
+            });
+        }
+
+        function saveSiteContent() {
+            db.ref('siteContent').set({
+                newsText: document.getElementById('editNews').value,
+                portalDesc: document.getElementById('editPortalDesc').value,
+                infoText: document.getElementById('editInfo').value,
+                licenseText: document.getElementById('editLicense').value,
+                footerText: document.getElementById('editFooter').value
+            }, () => {
+                alert("Změny na webu byly úspěšně uloženy!");
+            });
+        }
+
+        function kickUser(uid) {
+            db.ref('restrictions/' + uid).update({ kicked: true });
+            alert("Uživatel byl vyhozen.");
+        }
+
+        function clearChatData() {
+            if (confirm("Opravdu smazat všechny zprávy v chatu?")) {
+                db.ref('messages').remove();
+                alert("Chat byl vymazán.");
+            }
+        }
+    </script>
+</body>
+</html>
