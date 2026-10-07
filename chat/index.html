@@ -35,7 +35,7 @@
 <body class="h-full flex flex-col m-0 p-0 overflow-hidden">
 
     <!-- Ban obrazovka s reálným odpočtem -->
-    <div id="bannedScreen" class="fixed inset-0 bg-black/9א z-[99999] hidden flex-col items-center justify-center p-4 text-center text-white">
+    <div id="bannedScreen" class="fixed inset-0 bg-black/90 z-[99999] hidden flex-col items-center justify-center p-4 text-center text-white">
         <div class="retro-box bg-white text-black p-6 max-w-sm w-full space-y-3">
             <h1 class="text-sm font-bold text-red-600">MÁŠ AKTIVNÍ BAN</h1>
             <div class="text-left space-y-1 text-xs">
@@ -157,7 +157,7 @@
         }
 
         let isAdmin = sessionStorage.getItem('gjw_admin_session') === 'true';
-        let adminMode = sessionStorage.getItem('gjw_admin_mode') || 'observed'; // 'observed' nebo 'hidden'
+        let adminMode = sessionStorage.getItem('gjw_admin_mode') || 'observed';
         let activeProfileUid = null;
         let activeProfileName = null;
         let restrictionInterval = null;
@@ -178,12 +178,10 @@
             }
         });
 
-        // Sledování restrikcí a banů vázaných na zařízení
         db.ref('restrictions').on('value', snap => {
             const restrictions = snap.val() || {};
             let myRest = restrictions[currentUserId];
             
-            // Pokud není pod ID, zkontrolujeme fingerprint
             if (!myRest) {
                 for (let uid in restrictions) {
                     if (restrictions[uid].fingerprint === deviceFingerprint) {
@@ -347,12 +345,12 @@
             if (!activeProfileUid) return;
             const val = prompt("Zadejte délku banu (např. 1h, 7d, 30d nebo 'perm' pro natrvalo):");
             if (!val) return;
-            const reason = prompt("Zadejte důvod banu:") / "Porušení pravidel";
+            const reason = prompt("Zadejte důvod banu:") || "Porušení pravidel";
             const ms = parseDuration(val);
             const permanent = val.toLowerCase() === 'perm';
 
             db.ref('restrictions/' + activeProfileUid).update({
-                ban: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms, reason: reason || 'Porušení pravidel', username: activeProfileName },
+                ban: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms, reason: reason, username: activeProfileName },
                 userId: activeProfileUid
             });
             alert("Uživatel byl zabanován.");
