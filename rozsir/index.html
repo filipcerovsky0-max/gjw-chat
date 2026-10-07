@@ -109,7 +109,7 @@
     <hr class="oddeleni">
 
     <h1 id="nadpis">📢 Rozšiř to!</h1>
-    <p class="tady">Studentstvo se nesmí nechat utlačovat propagandou Gjw a proto si najdi design, který se ti líbí a rozšiř ho buď postem na socialních sítích či fyzickým tiskem (kdo ho vylepí v ředitelně dostává zlatého Bálinťáka)</p>
+    <p class="tady">Studentstvo se nesmí nechat utlačovat propagandou GJW, a proto si najdi design, který se ti líbí, a rozšiř ho buď postem na sociálních sítích, či fyzickým tiskem (kdo ho vylepí v ředitelně, dostává zlatého Bálinťáka).</p>
     
     <div id="designsGridContainer" class="designs-grid">
         <p class="tady italic text-gray-500" id="loadingText">Načítám designy...</p>
@@ -176,9 +176,30 @@
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
                 <html>
-                    <head><title>Tisk designu</title></head>
-                    <body style="text-align:center; margin-top:50px;">
-                        <img src="${imgSrc}" style="max-width:100%; height:auto;" onload="window.print();window.close();"/>
+                    <head>
+                        <title></title>
+                        <style>
+                            @page {
+                                size: landscape;
+                                margin: 0;
+                            }
+                            body {
+                                margin: 0;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                height: 100vh;
+                                background: white;
+                            }
+                            img {
+                                max-width: 100%;
+                                max-height: 100vh;
+                                object-fit: contain;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="${imgSrc}" onload="window.print();window.close();"/>
                     </body>
                 </html>
             `);
