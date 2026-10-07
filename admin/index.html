@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - GJW</title>
+    <title>GJW Hardcore Admin Panel</title>
     <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -16,161 +16,299 @@
             font-size: 14px;
             margin: 15px;
             padding: 10px;
-            max-width: 800px;
+            max-width: 1000px;
             margin-left: auto;
             margin-right: auto;
             box-sizing: border-box;
         }
         .stred { text-align: center; }
         .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
-        h1 { font-size: 20px; font-weight: bold; margin: 15px 0; color: #000000; }
-        h3 { font-size: 15px; margin: 0 0 8px 0; }
-        .box { background: #fff; border: 1px solid #ccc; padding: 15px; margin: 15px 0; border-radius: 6px; }
-        .tbox { width: 100%; padding: 8px; margin-bottom: 8px; box-sizing: border-box; font-size: 13px; }
-        .submit { background: #0000EE; color: white; border: none; padding: 8px 15px; cursor: pointer; font-size: 13px; font-weight: bold; border-radius: 4px; }
-        .submit:hover { background: #0000cc; }
-        .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; }
+        h1 { font-size: 22px; font-weight: bold; margin: 15px 0; color: #000000; font-family: 'Papyrus', fantasy, sans-serif; }
+        h2 { font-size: 17px; font-weight: bold; margin: 20px 0 8px 0; color: #000000; font-family: 'Papyrus', fantasy, sans-serif; }
+        p { font-size: 13px; color: #555; margin-bottom: 5px; }
+        .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; font-family: 'Papyrus', fantasy, sans-serif; }
         .back-link:hover { text-decoration: underline; }
-        .status { font-size: 12px; margin-top: 5px; font-weight: bold; }
+        
+        .admin-section {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        textarea, input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            background-color: #222;
+            color: #fff;
+            border: none;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: bold;
+            font-family: 'Papyrus', fantasy, sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .btn:hover { background-color: #444; }
+        .btn-danger { background-color: #b30000; }
+        .btn-danger:hover { background-color: #800000; }
+        .btn-warning { background-color: #cc8800; color: white; }
+        .btn-warning:hover { background-color: #996600; }
+        
+        .chat-row, .user-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+            gap: 10px;
+        }
+        
+        /* Rainbow Nick efekt */
+        @keyframes rainbow {
+            0% { color: red; }
+            14% { color: orange; }
+            28% { color: yellow; }
+            42% { color: green; }
+            57% { color: blue; }
+            71% { color: indigo; }
+            85% { color: violet; }
+            100% { color: red; }
+        }
+        .rainbow-nick {
+            font-weight: bold;
+            animation: rainbow 3s infinite linear;
+        }
+
+        .modal {
+            background: #fff;
+            border: 2px solid #222;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            background-color: #fffdf5;
+        }
+        #status { font-weight: bold; margin-left: 10px; color: green; }
     </style>
 </head>
 <body>
-    <a class="back-link" href="./">&laquo; Zpět na hlavní stránku</a>
+    <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
     <hr class="oddeleni">
 
     <div class="stred">
-        <h1>⚙️ Administrace portálu GJW</h1>
+        <h1>⚡ GJW Hardcore Admin & Mod Panel</h1>
+        <p>Správa banů, mutů, kicků, rainbow nicků, zpráv a uživatelů pod jednou střechou.</p>
     </div>
 
     <hr class="oddeleni">
 
-    <!-- Správa obsahu hlavní stránky -->
-    <div class="box">
-        <h3>📝 Úprava textů na hlavní stránce</h3>
-        <label style="font-size: 12px; color: #666;">Novinky text:</label>
-        <textarea id="editNews" class="tbox" rows="3"></textarea>
-        
-        <label style="font-size: 12px; color: #666;">Popisek portálu (chat):</label>
-        <input type="text" id="editPortal" class="tbox">
-        
-        <label style="font-size: 12px; color: #666;">Spodní text / footer:</label>
-        <input type="text" id="editFooter" class="tbox">
-
-        <button onclick="ulozObsah()" class="submit">Uložit změny na webu</button>
-        <p id="obsahStatus" class="status"></p>
+    <!-- SEKCE 1: Správa textů webu -->
+    <div class="admin-section">
+        <h2>📢 Správa textů a novinek</h2>
+        <textarea id="newsText" placeholder="Novinky HTML..."></textarea>
+        <button type="button" class="btn" onclick="ulozTexty()">Uložit texty</button>
+        <span id="status"></span>
     </div>
 
-    <!-- Správa hudebního koutku -->
-    <div class="box">
-        <h3>🎵 Úprava názvů MP3 písniček ve složce hudba/</h3>
-        <p style="font-size: 12px; color: #666; margin-bottom: 12px;">Jakmile nahraješ MP3 soubory do složky <code>hudba/</code> v počítači, tady jim můžeš nastavit vlastní název, který se ukáže studentům.</p>
-        
-        <div id="admin-seznam-hudby">
-            <p style="font-size: 13px;">Načítám soubory ze složky...</p>
+    <!-- SEKCE 2: Živý Chat & Moderace zpráv (Uživatelské i Systémové) -->
+    <div class="admin-section">
+        <h2>💬 Moderace chatu (Zprávy & Systém)</h2>
+        <p>Maž libovolné zprávy, přepínej stav viditelnosti nebo posílej systémová hlášení:</p>
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="sysMsgInput" placeholder="Napsat systémové hlášení do chatu...">
+            <button class="btn btn-warning" onclick="odeslatSystemovouZpravu()">Odeslat systémovou zprávu</button>
         </div>
-        <p id="adminHudbaStatus" class="status"></p>
+        <div id="chatMessagesList" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; background: #fff;">
+            <p style="padding: 10px; text-align: center;">Načítám zprávy...</p>
+        </div>
+    </div>
+
+    <!-- SEKCE 3: Správa Uživatelů, Banů, Mute a Kicků -->
+    <div class="admin-section">
+        <h2>🔨 Správa uživatelů, Banů a Mute</h2>
+        <p>Kliknutím na uživatele níže otevřeš jeho detail, kde můžeš udělit trest na zvolenou dobu:</p>
+        <div id="usersList" style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; background: #fff; margin-bottom: 15px;">
+            <p style="padding: 10px; text-align: center;">Načítám uživatele...</p>
+        </div>
+
+        <!-- Detail rozkliknutého uživatele / Tresty -->
+        <div id="userDetailModal" class="modal" style="display:none;">
+            <h3 id="modalUserName" style="margin-top:0;">Detail uživatele</h3>
+            <p><b>ID / Jméno:</b> <span id="modalUserId"></span></p>
+            
+            <div style="margin-top: 10px;">
+                <label><b>Typ trestu:</b></label>
+                <select id="trestTyp">
+                    <option value="mute">Mute (Ztlumení psaní)</option>
+                    <option value="ban">Ban (Zákaz vstupu)</option>
+                    <option value="kick">Kick (Okamžité vyhození)</option>
+                </select>
+            </div>
+            
+            <div style="margin-top: 10px;">
+                <label><b>Doba trvání (v minutách, 0 = natrvalo):</b></label>
+                <input type="number" id="trestDoba" value="60" min="0">
+            </div>
+
+            <div style="margin-top: 10px;">
+                <label><input type="checkbox" id="rainbowToggle"> Povolit legendární <b>Rainbow Nick</b> ✨</label>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <button class="btn btn-danger" onclick="aplikovatTrest()">Provést trest / Nastavení</button>
+                <button class="btn" onclick="zavritModal()">Zavřít</option>
+            </div>
+        </div>
     </div>
 
     <hr class="oddeleni">
-    <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
+    <p style="font-size: 11px; color: #666; text-align: center; font-family: 'Papyrus', fantasy, sans-serif;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
 
     <script>
         const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Načtení aktuálních textů do admin formuláře
-        db.ref('siteContent').once('value', (snapshot) => {
-            const data = snapshot.val();
-            if (!data) return;
-            if (data.newsText) document.getElementById('editNews').value = data.newsText;
-            if (data.portalDesc) document.getElementById('editPortal').value = data.portalDesc;
-            if (data.footerText) document.getElementById('editFooter').value = data.footerText;
+        let aktivniUzivatelJmeno = null;
+
+        // 1. Texty
+        db.ref('siteContent/newsText').once('value', (snap) => {
+            if (snap.val()) document.getElementById('newsText').value = snap.val();
         });
 
-        // Uložení textů
-        function ulozObsah() {
-            const news = document.getElementById('editNews').value;
-            const portal = document.getElementById('editPortal').value;
-            const footer = document.getElementById('editFooter').value;
-            const status = document.getElementById('obsahStatus');
-
-            db.ref('siteContent').update({
-                newsText: news,
-                portalDesc: portal,
-                footerText: footer
-            }).then(() => {
-                status.style.color = "green";
-                status.innerText = "✅ Změny byly úspěšně uloženy!";
-                setTimeout(() => { status.innerText = ""; }, 3000);
-            }).catch((err) => {
-                status.style.color = "red";
-                status.innerText = "Chyba: " + err.message;
+        function ulozTexty() {
+            const val = document.getElementById('newsText').value;
+            db.ref('siteContent/newsText').set(val).then(() => {
+                const stat = document.getElementById('status');
+                stat.innerText = "Uloženo!";
+                setTimeout(() => stat.innerText = "", 2000);
             });
         }
 
-        // Načtení a správa hudebních souborů
-        async function nactiAdminHudbu() {
-            const adminDiv = document.getElementById('admin-seznam-hudby');
-            try {
-                const response = await fetch('./hudba/');
-                const text = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(text, 'text/html');
-                const links = doc.querySelectorAll('a');
-                
-                let mp3Files = [];
-                links.forEach(link => {
-                    const href = link.getAttribute('href');
-                    if (href && href.toLowerCase().endsWith('.mp3')) {
-                        const fileName = decodeURIComponent(href.split('/').pop());
-                        mp3Files.push(fileName);
-                    }
-                });
+        // 2. Systémová zpráva do chatu
+        function odeslatSystemovouZpravu() {
+            const text = document.getElementById('sysMsgInput').value;
+            if (!text) return;
+            db.ref('messages').push({
+                name: "SYSTEM ⚠️",
+                text: text,
+                isSystem: true,
+                timestamp: Date.now()
+            });
+            document.getElementById('sysMsgInput').value = "";
+        }
 
-                if (mp3Files.length === 0) {
-                    adminDiv.innerHTML = '<p style="font-size: 13px; color: #666;">Ve složce <code>hudba/</code> nejsou žádné MP3 soubory.</p>';
-                    return;
-                }
-
-                db.ref('hudbaNazvy').once('value', (snapshot) => {
-                    const customNames = snapshot.val() || {};
-                    adminDiv.innerHTML = "";
-
-                    mp3Files.forEach(fileName => {
-                        const currentName = customNames[fileName] || fileName.replace(/\.mp3$/i, '').replace(/[-_]/g, ' ');
-                        
-                        const row = document.createElement('div');
-                        row.style.cssText = "margin-bottom: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;";
-                        row.innerHTML = `
-                            <span style="font-size: 12px; color: #555; width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${fileName}">${fileName}</span>
-                            <input type="text" id="input-${fileName}" value="${currentName}" style="flex-grow: 1; padding: 6px; font-size: 13px;" placeholder="Upravit název...">
-                            <button onclick="ulozNazevPisen('${fileName}')" style="background: #0000EE; color: white; border: none; padding: 6px 12px; cursor: pointer; font-size: 12px; border-radius: 4px;">Uložit</button>
-                        `;
-                        adminDiv.appendChild(row);
-                    });
-                });
-
-            } catch (e) {
-                adminDiv.innerHTML = '<p style="font-size: 13px; color: red;">Nepodařilo se automaticky načíst složku hudba/.</p>';
+        // 3. Živý chat a správa zpráv (Viděné/Neviděné, mazání)
+        db.ref('messages').on('value', (snapshot) => {
+            const chatList = document.getElementById('chatMessagesList');
+            chatList.innerHTML = "";
+            const msgs = snapshot.val();
+            if (!msgs) {
+                chatList.innerHTML = '<p style="padding: 10px; text-align: center;">Žádné zprávy.</p>';
+                return;
             }
-        }
 
-        function ulozNazevPisen(fileName) {
-            const novyNazev = document.getElementById(`input-${fileName}`).value;
-            const status = document.getElementById('adminHudbaStatus');
-
-            db.ref('hudbaNazvy/' + fileName.replace(/[.#$\/\[\]]/g, '_')).set(novyNazev).then(() => {
-                status.style.color = "green";
-                status.innerText = `✅ Název pro ${fileName} byl úspěšně upraven!`;
-                setTimeout(() => { status.innerText = ""; }, 3000);
-            }).catch((err) => {
-                status.style.color = "red";
-                status.innerText = `Chyba: ${err.message}`;
+            Object.keys(msgs).forEach(key => {
+                const msg = msgs[key];
+                const row = document.createElement('div');
+                row.className = 'chat-row';
+                const stav = msg.seen ? "👁️ Viděno" : "🔴 Neviděno";
+                
+                row.innerHTML = `
+                    <div>
+                        <span class="${msg.rainbow ? 'rainbow-nick' : ''}"><b>${msg.name || 'Anonym'}:</b></span> 
+                        <span>${msg.text || ''}</span>
+                        <br><small style="color: #888;">Stav: ${stav}</small>
+                    </div>
+                    <div>
+                        <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="prepnoutVidene('${key}', ${!msg.seen})">Přepnout viditelnost</button>
+                        <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="smazZpravu('${key}')">Smazat</button>
+                    </div>
+                `;
+                chatList.appendChild(row);
             });
+        });
+
+        function smazZpravu(id) {
+            db.ref('messages/' + id).remove();
         }
 
-        nactiAdminHudbu();
+        function prepnoutVidene(id, stav) {
+            db.ref('messages/' + id + '/seen').set(stav);
+        }
+
+        // 4. Správa uživatelů a trestů
+        db.ref('users').on('value', (snapshot) => {
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = "";
+            const users = snapshot.val();
+            if (!users) {
+                usersList.innerHTML = '<p style="padding: 10px; text-align: center;">Žádní aktivní uživatelé v databázi.</p>';
+                return;
+            }
+
+            Object.keys(users).forEach(uid => {
+                const user = users[uid];
+                const row = document.createElement('div');
+                row.className = 'user-row';
+                row.innerHTML = `
+                    <span><b class="${user.rainbow ? 'rainbow-nick' : ''}">${user.name || uid}</b> (Stav: ${user.status || 'Aktivní'})</span>
+                    <button class="btn" onclick="otevritDetailUto('${uid}', '${user.name || uid}')">Rozkliknout a spravovat</button>
+                `;
+                usersList.appendChild(row);
+            });
+        });
+
+        function otevritDetailUto(uid, jmeno) {
+            aktivniUzivatelJmeno = uid;
+            document.getElementById('modalUserName').innerText = "Správa uživatele: " + jmeno;
+            document.getElementById('modalUserId').innerText = uid;
+            document.getElementById('userDetailModal').style.display = "block";
+        }
+
+        function zavritModal() {
+            document.getElementById('userDetailModal').style.display = "none";
+            aktivniUzivatelJmeno = null;
+        }
+
+        function aplikovatTrest() {
+            if (!aktivniUzivatelJmeno) return;
+            const typ = document.getElementById('trestTyp').value;
+            const dobaMinut = parseInt(document.getElementById('trestDoba').value) || 0;
+            const rainbow = document.getElementById('rainbowToggle').checked;
+
+            const expiration = dobaMinut > 0 ? Date.now() + (dobaMinut * 60000) : 0;
+
+            if (typ === 'ban') {
+                db.ref('bans/' + aktivniUzivatelJmeno).set({ expires: expiration, reason: "Administrátorský ban" });
+                db.ref('users/' + aktivniUzivatelJmeno + '/status').set('ZABANOVÁN');
+            } else if (typ === 'mute') {
+                db.ref('mutes/' + aktivniUzivatelJmeno).set({ expires: expiration });
+                db.ref('users/' + aktivniUzivatelJmeno + '/status').set('ZTLUMEN (MUTE)');
+            } else if (typ === 'kick') {
+                db.ref('users/' + aktivniUzivatelJmeno + '/status').set('VYKOPNUT (KICK)');
+                alert("Uživatel byl vykopnut!");
+            }
+
+            // Nastavení Rainbow nicku
+            db.ref('users/' + aktivniUzivatelJmeno + '/rainbow').set(rainbow);
+
+            alert("Trest a nastavení byly úspěšně aplikovány!");
+            zavritModal();
+        }
     </script>
 </body>
 </html>
