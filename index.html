@@ -1,4 +1,3 @@
-<!-- co se cumis do zdrojaku okamzite vypadni nebo se te najdu -->
 <!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -48,9 +47,15 @@
         #druhynadpis a { color: #0000EE; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
         #druhynadpis a:hover { text-decoration: underline; }
         #mininadpis { font-size: 13px; margin: 10px 0 4px 0; font-weight: bold; color: #000000; }
-        .novinky { margin: 8px 0; font-size: 13px; line-height: 1.5; }
+        
+        /* Novinky ve fontu Papyrus */
+        .novinky-sekce {
+            font-family: 'Papyrus', fantasy, sans-serif;
+        }
+        .novinky { margin: 8px 0; font-size: 15px; line-height: 1.5; font-family: 'Papyrus', fantasy, sans-serif; }
+        
         .tady, .dva { font-size: 12px; color: #555; margin: 4px 0 12px 0; line-height: 1.4; }
-        .jaromil { color: #0000EE; text-decoration: none; }
+        .jaromil { color: #0000EE; text-decoration: none; font-family: 'Papyrus', fantasy, sans-serif; }
         .jaromil:hover { text-decoration: underline; }
         .legal-text { font-size: 11px; color: #666; line-height: 1.5; margin: 6px 0 12px 0; }
         
@@ -69,9 +74,11 @@
     </p>
     <hr class="oddeleni">
         
-    <h2 id="druhynadpis">Novinky</h2>
-    <div class="novinky" id="homeNewsText">
-        <strong>7/10/26</strong> - Přidali jsme: <a class="jaromil" href="./chat/"><b>Diskuzní portál (chat)</b></a>, <a class="jaromil" href="./temno/"><b>Temnou stránku školy</b></a> pro nahrávání důkazů, sekci <a class="jaromil" href="./rozsir/"><b>Rozšiř to!</b></a> s propagačními designy, sekci <a class="jaromil" href="./znic/"><b>Znič stránku školy!</b></a> 💣, sekci <a class="jaromil" href="./parek/"><b>Párek v rohlíku</b></a> 🌭 a nově <a class="jaromil" href="./ucitele/"><b>Pošli učiteli hezký den</b></a> ☀️.
+    <div class="novinky-sekce">
+        <h2 id="druhynadpis" style="font-family: 'Papyrus', fantasy, sans-serif;">Novinky</h2>
+        <div class="novinky" id="homeNewsText">
+            <strong>7/10/26</strong> - Přidali jsme: <a class="jaromil" href="./chat/"><b>Diskuzní portál (chat)</b></a>, <a class="jaromil" href="./temno/"><b>Temnou stránku školy</b></a> pro nahrávání důkazů, sekci <a class="jaromil" href="./rozsir/"><b>Rozšiř to!</b></a> s propagačními designy, sekci <a class="jaromil" href="./znic/"><b>Znič stránku školy!</b></a> 💣, sekci <a class="jaromil" href="./parek/"><b>Párek v rohlíku</b></a> 🌭, <a class="jaromil" href="./ucitele/"><b>Pošli učiteli hezký den</b></a> ☀️ a <a class="jaromil" href="./hudba/"><b>Hudební koutek</b></a> 🎵.
+        </div>
     </div>
     <br>
     <hr class="oddeleni">
@@ -102,7 +109,12 @@
 
     <!-- Pošli učiteli hezký den -->
     <h2 id="druhynadpis"><a href="./ucitele/">☀️ Pošli učiteli hezký den</a></h2>
-    <p class="tady">Pošli učitelům anonymní pozdrav a zvedni jim náladu</p>
+    <p class="tady">Pošli učitelům anonymní pozdrav</p>
+    <hr class="oddeleni">
+
+    <!-- Hudební koutek -->
+    <h2 id="druhynadpis"><a href="./hudba/">🎵 Hudební koutek</a></h2>
+    <p class="tady">Taky tě nudí poslouchat kecy učitelů? Pojď si něco poslechnout</p>
     <hr class="oddeleni">
 
     <h2 id="druhynadpis">Informácie</h2>

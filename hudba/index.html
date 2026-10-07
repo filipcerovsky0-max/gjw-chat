@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hudební koutek - GJW</title>
+    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <meta name="description" content="Hudební koutek pro studenty GJW">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            margin: 15px;
+            padding: 10px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .stred { text-align: center; }
+        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
+        h1 { font-size: 20px; font-weight: bold; margin: 15px 0; color: #000000; }
+        p { font-size: 14px; line-height: 1.5; color: #333; }
+        .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; }
+        .back-link:hover { text-decoration: underline; }
+        .music-box {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
+    <hr class="oddeleni">
+
+    <div class="stred">
+        <h1>🎵 Hudební koutek</h1>
+        <p>Lepší než poslouchat učitele</p>
+    </div>
+
+    <hr class="oddeleni">
+
+    <!-- Seznam písniček -->
+    <div id="seznam-pisnicek">
+        <p class="stred" style="color: #666;">Načítám písničky...</p>
+    </div>
+
+    <hr class="oddeleni">
+    <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        async function nactiHudbu() {
+            const playlistDiv = document.getElementById('seznam-pisnicek');
+            try {
+                // 1. Zjistí, jaké MP3 soubory fyzicky jsou ve složce hudba/
+                const response = await fetch('./');
+                const text = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+                const links = doc.querySelectorAll('a');
+                
+                let mp3Files = [];
+                links.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && href.toLowerCase().endsWith('.mp3')) {
+                        const fileName = decodeURIComponent(href.split('/').pop());
+                        mp3Files.push({ fileName: fileName, url: href });
+                    }
+                });
+
+                if (mp3Files.length === 0) {
+                    playlistDiv.innerHTML = '<p class="stred">Ve složce hudba/ zatím nejsou žádné MP3 soubory.</p>';
+                    return;
+                }
+
+                // 2. Stáhne z Firebase vlastní názvy, které admin nastavil
+                db.ref('hudbaNazvy').once('value', (snapshot) => {
+                    const customNames = snapshot.val() || {};
+                    playlistDiv.innerHTML = "";
+
+                    mp3Files.forEach(song => {
+                        // Pokud admin nastavil vlastní název, použije ho, jinak vezme název souboru
+                        const displayName = customNames[song.fileName] || song.fileName.replace(/\.mp3$/i, '').replace(/[-_]/g, ' ');
+
+                        const box = document.createElement('div');
+                        box.className = 'music-box';
+                        box.innerHTML = `
+                            <p><b>🎵 ${displayName}</b></p>
+                            <audio controls preload="metadata">
+                                <source src="${song.url}" type="audio/mp3">
+                                Tvůj prohlížeč nepodporuje přehrávání audio souborů.
+                            </audio>
+                        `;
+                        playlistDiv.appendChild(box);
+                    });
+                });
+
+            } catch (error) {
+                playlistDiv.innerHTML = `<p class="stred" style="color: red;">Chyba při načítání složky: ${error.message}</p>`;
+            }
+        }
+
+        nactiHudbu();
+    </script>
+</body>
+</html>

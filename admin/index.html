@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GJW Admin Command Center</title>
+    <title>Admin Panel - GJW</title>
+    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
@@ -11,292 +13,164 @@
             background-color: #f0f0f0;
             color: #000000;
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 13px;
-            margin: 20px;
-            padding: 0;
+            font-size: 14px;
+            margin: 15px;
+            padding: 10px;
             max-width: 800px;
             margin-left: auto;
             margin-right: auto;
+            box-sizing: border-box;
         }
-        .retro-box { background: #ffffff; border: 1px solid #b0b0a8; padding: 12px; margin-bottom: 15px; }
-        .retro-button {
-            background: #e2e8f0; border: 1px solid #94a3b8; padding: 5px 12px;
-            font-family: Arial, sans-serif; font-size: 12px; cursor: pointer; color: #000; border-radius: 3px;
-        }
-        .retro-button:hover { background: #cbd5e1; }
-        .retro-input, .retro-select, .retro-textarea {
-            background: #ffffff; border: 1px solid #94a3b8; padding: 6px;
-            font-family: Arial, sans-serif; font-size: 12px; color: #000; border-radius: 3px; width: 100%; box-sizing: border-box;
-        }
-        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 15px 0; }
-        h1, h2 { font-size: 15px; font-weight: bold; margin: 0 0 8px 0; color: #000; }
-        a { color: #0000EE; text-decoration: underline; }
-        .hidden { display: none !important; }
+        .stred { text-align: center; }
+        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
+        h1 { font-size: 20px; font-weight: bold; margin: 15px 0; color: #000000; }
+        h3 { font-size: 15px; margin: 0 0 8px 0; }
+        .box { background: #fff; border: 1px solid #ccc; padding: 15px; margin: 15px 0; border-radius: 6px; }
+        .tbox { width: 100%; padding: 8px; margin-bottom: 8px; box-sizing: border-box; font-size: 13px; }
+        .submit { background: #0000EE; color: white; border: none; padding: 8px 15px; cursor: pointer; font-size: 13px; font-weight: bold; border-radius: 4px; }
+        .submit:hover { background: #0000cc; }
+        .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; }
+        .back-link:hover { text-decoration: underline; }
+        .status { font-size: 12px; margin-top: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
+    <a class="back-link" href="./">&laquo; Zpět na hlavní stránku</a>
+    <hr class="oddeleni">
 
-    <!-- Přihlašovací box -->
-    <div id="adminAuthBox" class="retro-box" style="max-width: 350px; margin: 100px auto; text-align: center;">
-        <h2>more co tu delas todle je pro adminy</h2>
-        <p class="text-xs" style="margin-bottom: 10px; color: #555;">Zadej heslo (pokud si tudle stranku nenasel nahodne)</p>
-        <input type="password" id="adminPasswordInput" placeholder="heslo..." class="retro-input" style="margin-bottom: 8px;" onkeydown="if(event.key==='Enter') verifyAdminPassword()">
-        <button onclick="verifyAdminPassword()" class="retro-button font-bold" style="width: 100%;">Ověřit přístup</button>
-        <div id="adminLoginError" class="text-red-600 text-xs hidden font-bold" style="margin-top: 8px; color: red;">Špatné heslo!</div>
-        <div style="margin-top: 12px;"><a href="../">&laquo; Zpět na hlavní web</a></div>
+    <div class="stred">
+        <h1>⚙️ Administrace portálu GJW</h1>
     </div>
 
-    <!-- Hlavní Dashboard -->
-    <div id="adminDashboardBox" class="hidden">
-        <div class="retro-box" style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h1 style="margin: 0;">GJW Admin Command Center</h1>
-                <p style="font-size: 11px; color: #666; margin: 2px 0 0 0;">Správa webu, chatu a propagačních designů</p>
-            </div>
-            <div>
-                <button onclick="clearChatData()" class="retro-button" style="background: #ffcccc; border-color: #ff9999; color: #990000;">Smazat chat</button>
-                <button onclick="handleAdminLogout()" class="retro-button" style="margin-left: 5px;">Odhlásit</button>
-            </div>
-        </div>
+    <hr class="oddeleni">
 
-        <!-- Vstup do chatu -->
-        <div class="retro-box">
-            <h2>💬 Vstup do chatu</h2>
-            <p style="font-size: 12px; color: #555; margin-bottom: 8px;">Zvol si režim připojení do chatu:</p>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <select id="adminModeSelect" class="retro-select" style="flex: 1;">
-                    <option value="observed">Viditelný admin (duhový nick, moderace kliknutím)</option>
-                    <option value="hidden">Ghost admin (zcela skrytý v zákulisí)</option>
-                </select>
-                <button onclick="enterChatAsAdmin()" class="retro-button font-bold" style="white-space: nowrap;">Vstoupit do chatu &raquo;</button>
-            </div>
-        </div>
+    <!-- Správa obsahu hlavní stránky -->
+    <div class="box">
+        <h3>📝 Úprava textů na hlavní stránce</h3>
+        <label style="font-size: 12px; color: #666;">Novinky text:</label>
+        <textarea id="editNews" class="tbox" rows="3"></textarea>
+        
+        <label style="font-size: 12px; color: #666;">Popisek portálu (chat):</label>
+        <input type="text" id="editPortal" class="tbox">
+        
+        <label style="font-size: 12px; color: #666;">Spodní text / footer:</label>
+        <input type="text" id="editFooter" class="tbox">
 
-        <!-- Správa designů v "Rozšiř to!" -->
-        <div class="retro-box">
-            <h2>📢 Správa designů v "Rozšiř to!"</h2>
-            <p style="font-size: 12px; color: #555; margin-bottom: 8px;">Přidej nový plakátek, uprav názvy (lze nechat prázdné) nebo designy maž.</p>
-            
-            <div style="margin-bottom: 12px; border-bottom: 1px solid #ddd; padding-bottom: 12px;">
-                <label style="font-weight: bold; display: block; margin-bottom: 4px;">Název designu (volitelné):</label>
-                <input type="text" id="designTitleInput" placeholder="např. Hlavní QR Plakát A4 (lze nechat prázdné)" class="retro-input" style="margin-bottom: 6px;">
-                
-                <label style="font-weight: bold; display: block; margin-bottom: 4px;">Soubor obrázku:</label>
-                <input type="file" id="designFileInput" accept="image/*" class="retro-input" style="margin-bottom: 8px;">
-                
-                <button onclick="uploadDesignAdmin()" class="retro-button font-bold">Nahrát design</button>
-            </div>
-
-            <div>
-                <label style="font-weight: bold; display: block; margin-bottom: 6px;">Aktivní nahrané designy:</label>
-                <div id="adminDesignsListContainer" style="max-height: 200px; overflow-y: auto;">
-                    <span style="color: #666; font-style: italic;">Načítám designy...</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Editor textů na hlavní stránce -->
-        <div class="retro-box">
-            <h2>✏️ Editor textů na hlavní stránce</h2>
-            <div>
-                <label style="font-weight: bold; display: block; margin-top: 6px;">Novinky (HTML):</label>
-                <textarea id="editNews" rows="2" class="retro-textarea"></textarea>
-
-                <label style="font-weight: bold; display: block; margin-top: 6px;">Popis portálu / chatu:</label>
-                <input type="text" id="editPortalDesc" class="retro-input">
-
-                <label style="font-weight: bold; display: block; margin-top: 6px;">Informácie (Email / text):</label>
-                <textarea id="editInfo" rows="2" class="retro-textarea"></textarea>
-
-                <label style="font-weight: bold; display: block; margin-top: 6px;">Licence:</label>
-                <textarea id="editLicense" rows="2" class="retro-textarea"></textarea>
-
-                <label style="font-weight: bold; display: block; margin-top: 6px;">Patička (Vyrobeno v...):</label>
-                <input type="text" id="editFooter" class="retro-input" style="margin-bottom: 10px;">
-
-                <button onclick="saveSiteContent()" class="retro-button font-bold">Uložit změny na webu</button>
-            </div>
-        </div>
-
-        <!-- Aktivní uživatelé -->
-        <div class="retro-box">
-            <h2>🛡️ Aktivní uživatelé a moderace</h2>
-            <div id="adminUsersListContainer" style="max-height: 150px; overflow-y: auto;"></div>
-        </div>
+        <button onclick="ulozObsah()" class="submit">Uložit změny na webu</button>
+        <p id="obsahStatus" class="status"></p>
     </div>
+
+    <!-- Správa hudebního koutku -->
+    <div class="box">
+        <h3>🎵 Úprava názvů MP3 písniček ve složce hudba/</h3>
+        <p style="font-size: 12px; color: #666; margin-bottom: 12px;">Jakmile nahraješ MP3 soubory do složky <code>hudba/</code> v počítači, tady jim můžeš nastavit vlastní název, který se ukáže studentům.</p>
+        
+        <div id="admin-seznam-hudby">
+            <p style="font-size: 13px;">Načítám soubory ze složky...</p>
+        </div>
+        <p id="adminHudbaStatus" class="status"></p>
+    </div>
+
+    <hr class="oddeleni">
+    <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
 
     <script>
         const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Kontrola přihlášení při načtení
-        if (sessionStorage.getItem('gjw_admin_secure_logged') === 'true') {
-            document.getElementById('adminAuthBox').classList.add('hidden');
-            document.getElementById('adminDashboardBox').classList.remove('hidden');
-            loadAdminData();
-        }
+        // Načtení aktuálních textů do admin formuláře
+        db.ref('siteContent').once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            if (data.newsText) document.getElementById('editNews').value = data.newsText;
+            if (data.portalDesc) document.getElementById('editPortal').value = data.portalDesc;
+            if (data.footerText) document.getElementById('editFooter').value = data.footerText;
+        });
 
-        function verifyAdminPassword() {
-            const input = document.getElementById('adminPasswordInput').value;
-            db.ref('admin/password').once('value').then(snap => {
-                let pass = snap.val() || '69_atillo_69';
-                if (input === pass) {
-                    sessionStorage.setItem('gjw_admin_secure_logged', 'true');
-                    document.getElementById('adminAuthBox').classList.add('hidden');
-                    document.getElementById('adminDashboardBox').classList.remove('hidden');
-                    loadAdminData();
-                } else {
-                    document.getElementById('adminLoginError').classList.remove('hidden');
-                }
-            }).catch(err => {
-                if (input === '69_atillo_69') {
-                    sessionStorage.setItem('gjw_admin_secure_logged', 'true');
-                    document.getElementById('adminAuthBox').classList.add('hidden');
-                    document.getElementById('adminDashboardBox').classList.remove('hidden');
-                    loadAdminData();
-                } else {
-                    document.getElementById('adminLoginError').classList.remove('hidden');
-                }
+        // Uložení textů
+        function ulozObsah() {
+            const news = document.getElementById('editNews').value;
+            const portal = document.getElementById('editPortal').value;
+            const footer = document.getElementById('editFooter').value;
+            const status = document.getElementById('obsahStatus');
+
+            db.ref('siteContent').update({
+                newsText: news,
+                portalDesc: portal,
+                footerText: footer
+            }).then(() => {
+                status.style.color = "green";
+                status.innerText = "✅ Změny byly úspěšně uloženy!";
+                setTimeout(() => { status.innerText = ""; }, 3000);
+            }).catch((err) => {
+                status.style.color = "red";
+                status.innerText = "Chyba: " + err.message;
             });
         }
 
-        function handleAdminLogout() {
-            sessionStorage.removeItem('gjw_admin_secure_logged');
-            location.reload();
-        }
-
-        function enterChatAsAdmin() {
-            const mode = document.getElementById('adminModeSelect').value;
-            sessionStorage.setItem('gjw_admin_session', 'true');
-            sessionStorage.setItem('gjw_admin_mode', mode);
-            window.location.href = '../chat/';
-        }
-
-        function uploadDesignAdmin() {
-            const titleInput = document.getElementById('designTitleInput');
-            const fileInput = document.getElementById('designFileInput');
-            const title = titleInput.value.trim();
-
-            if (fileInput.files.length === 0) {
-                alert("Vyberte prosím obrázek designu!");
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Image = e.target.result;
-
-                db.ref('promoDesigns').push({
-                    title: title,
-                    image: base64Image,
-                    time: new Date().toLocaleDateString()
-                }, (error) => {
-                    if (error) {
-                        alert("Chyba při nahrávání designu.");
-                    } else {
-                        titleInput.value = '';
-                        fileInput.value = '';
-                        alert("Design byl úspěšně nahrán do 'Rozšiř to!'!");
+        // Načtení a správa hudebních souborů
+        async function nactiAdminHudbu() {
+            const adminDiv = document.getElementById('admin-seznam-hudby');
+            try {
+                const response = await fetch('./hudba/');
+                const text = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+                const links = doc.querySelectorAll('a');
+                
+                let mp3Files = [];
+                links.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && href.toLowerCase().endsWith('.mp3')) {
+                        const fileName = decodeURIComponent(href.split('/').pop());
+                        mp3Files.push(fileName);
                     }
                 });
-            };
-            reader.readAsDataURL(file);
-        }
 
-        function updateDesignTitle(key) {
-            const newTitle = document.getElementById('input_title_' + key).value.trim();
-            db.ref('promoDesigns/' + key).update({
-                title: newTitle
-            }, (error) => {
-                if (error) {
-                    alert("Chyba při aktualizaci názvu.");
-                } else {
-                    alert("Název designu byl úspěšně aktualizován!");
+                if (mp3Files.length === 0) {
+                    adminDiv.innerHTML = '<p style="font-size: 13px; color: #666;">Ve složce <code>hudba/</code> nejsou žádné MP3 soubory.</p>';
+                    return;
                 }
-            });
-        }
 
-        function deleteDesignAdmin(key) {
-            if (confirm("Opravdu trvale smazat tento design z galerie?")) {
-                db.ref('promoDesigns/' + key).remove().then(() => {
-                    alert("Design byl smazán.");
+                db.ref('hudbaNazvy').once('value', (snapshot) => {
+                    const customNames = snapshot.val() || {};
+                    adminDiv.innerHTML = "";
+
+                    mp3Files.forEach(fileName => {
+                        const currentName = customNames[fileName] || fileName.replace(/\.mp3$/i, '').replace(/[-_]/g, ' ');
+                        
+                        const row = document.createElement('div');
+                        row.style.cssText = "margin-bottom: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;";
+                        row.innerHTML = `
+                            <span style="font-size: 12px; color: #555; width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${fileName}">${fileName}</span>
+                            <input type="text" id="input-${fileName}" value="${currentName}" style="flex-grow: 1; padding: 6px; font-size: 13px;" placeholder="Upravit název...">
+                            <button onclick="ulozNazevPisen('${fileName}')" style="background: #0000EE; color: white; border: none; padding: 6px 12px; cursor: pointer; font-size: 12px; border-radius: 4px;">Uložit</button>
+                        `;
+                        adminDiv.appendChild(row);
+                    });
                 });
+
+            } catch (e) {
+                adminDiv.innerHTML = '<p style="font-size: 13px; color: red;">Nepodařilo se automaticky načíst složku hudba/.</p>';
             }
         }
 
-        function loadAdminData() {
-            db.ref('siteContent').once('value').then(snap => {
-                const data = snap.val() || {};
-                if (data.newsText) document.getElementById('editNews').value = data.newsText;
-                if (data.portalDesc) document.getElementById('editPortalDesc').value = data.portalDesc;
-                if (data.infoText) document.getElementById('editInfo').value = data.infoText;
-                if (data.licenseText) document.getElementById('editLicense').value = data.licenseText;
-                if (data.footerText) document.getElementById('editFooter').value = data.footerText;
-            });
+        function ulozNazevPisen(fileName) {
+            const novyNazev = document.getElementById(`input-${fileName}`).value;
+            const status = document.getElementById('adminHudbaStatus');
 
-            db.ref('promoDesigns').on('value', snap => {
-                const container = document.getElementById('adminDesignsListContainer');
-                container.innerHTML = '';
-                const designs = snap.val();
-                if (!designs) { container.innerHTML = '<span style="color: #666; font-size: 11px;">Žádné nahrané designy</span>'; return; }
-
-                Object.entries(designs).forEach(([key, d]) => {
-                    const row = document.createElement('div');
-                    row.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; border: 1px solid #ddd; padding: 6px; margin-bottom: 4px; gap: 8px;";
-                    row.innerHTML = `
-                        <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                            <img src="${d.image}" style="width: 30px; height: 30px; object-fit: cover; border: 1px solid #ccc;">
-                            <input type="text" id="input_title_${key}" value="${d.title || ''}" placeholder="Bez názvu" class="retro-input" style="padding: 4px;">
-                        </div>
-                        <div style="display: flex; gap: 4px; white-space: nowrap;">
-                            <button onclick="updateDesignTitle('${key}')" class="retro-button" style="padding: 3px 8px;">Uložit jméno</button>
-                            <button onclick="deleteDesignAdmin('${key}')" class="retro-button" style="padding: 3px 8px; background: #ffcccc; border-color: #ff9999; color: #990000;">Smazat</button>
-                        </div>
-                    `;
-                    container.appendChild(row);
-                });
-            });
-
-            db.ref('presence').on('value', snap => {
-                const container = document.getElementById('adminUsersListContainer');
-                container.innerHTML = '';
-                const users = snap.val();
-                if (!users) { container.innerHTML = '<span style="color: #666; font-size: 11px;">Žádní aktivní uživatelé</span>'; return; }
-
-                Object.values(users).forEach(u => {
-                    const row = document.createElement('div');
-                    row.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #eee;";
-                    row.innerHTML = `<span><b>${u.user}</b> (ID: ${u.userId})</span><button onclick="kickUser('${u.userId}')" class="retro-button" style="padding: 2px 6px; color: red;">Vyhodit</button>`;
-                    container.appendChild(row);
-                });
+            db.ref('hudbaNazvy/' + fileName.replace(/[.#$\/\[\]]/g, '_')).set(novyNazev).then(() => {
+                status.style.color = "green";
+                status.innerText = `✅ Název pro ${fileName} byl úspěšně upraven!`;
+                setTimeout(() => { status.innerText = ""; }, 3000);
+            }).catch((err) => {
+                status.style.color = "red";
+                status.innerText = `Chyba: ${err.message}`;
             });
         }
 
-        function saveSiteContent() {
-            db.ref('siteContent').set({
-                newsText: document.getElementById('editNews').value,
-                portalDesc: document.getElementById('editPortalDesc').value,
-                infoText: document.getElementById('editInfo').value,
-                licenseText: document.getElementById('editLicense').value,
-                footerText: document.getElementById('editFooter').value
-            }, () => {
-                alert("Změny na webu byly úspěšně uloženy!");
-            });
-        }
-
-        function kickUser(uid) {
-            db.ref('restrictions/' + uid).update({ kicked: true });
-            alert("Uživatel byl vyhozen.");
-        }
-
-        function clearChatData() {
-            if (confirm("Opravdu smazat všechny zprávy v chatu?")) {
-                db.ref('messages').remove();
-                alert("Chat byl vymazán.");
-            }
-        }
+        nactiAdminHudbu();
     </script>
 </body>
 </html>
