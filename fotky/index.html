@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fotky učitelů - GJW</title>
+    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 15px;
+            padding: 10px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .photo-box {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .photo-box img {
+            max-width: 100%;
+            height: auto;
+            max-height: 350px;
+            display: block;
+            border-radius: 2px;
+        }
+        .back-link {
+            color: #0000EE;
+            text-decoration: none;
+            font-size: 13px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .stred { text-align: center; color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
+    
+    <div id="galerie" class="gallery">
+        <p class="stred">Načítám fotky...</p>
+    </div>
+
+    <script>
+        async function nactiFotkyZGitHubu() {
+            const galerieDiv = document.getElementById('galerie');
+            
+            // Údaje o tvém GitHub repozitáři
+            const owner = "filipcerovsky0-max";
+            const repo = "gjw-chat";
+            const path = "fotky-ucitelu"; // Název složky v repozitáři (případně si uprav)
+
+            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error("Nepodařilo se načíst složku s fotkami.");
+                }
+                
+                const files = await response.json();
+                
+                // Vyfiltruje pouze obrázky (jpg, jpeg, png, webp, gif)
+                const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+                const photoFiles = files.filter(file => {
+                    if (file.type !== 'file') return false;
+                    const lowerName = file.name.toLowerCase();
+                    return imageExtensions.some(ext => lowerName.endsWith(ext));
+                });
+
+                galerieDiv.innerHTML = "";
+
+                if (photoFiles.length === 0) {
+                    galerieDiv.innerHTML = '<p class="stred">Ve složce zatím nejsou žádné fotky.</p>';
+                    return;
+                }
+
+                // Vykreslí čistě jenom fotky
+                photoFiles.forEach(file => {
+                    const box = document.createElement('div');
+                    box.className = 'photo-box';
+                    box.innerHTML = `<img src="${file.download_url}" alt="${file.name}">`;
+                    galerieDiv.appendChild(box);
+                });
+
+            } catch (error) {
+                galerieDiv.innerHTML = `<p class="stred" style="color: red;">Chyba při načítání fotek: ${error.message}</p>`;
+            }
+        }
+
+        nactiFotkyZGitHubu();
+    </script>
+</body>
+</html>
