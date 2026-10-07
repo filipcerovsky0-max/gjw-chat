@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="cs" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GJW Admin Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-black text-gray-200 h-full flex flex-col font-mono text-xs p-4">
+
+    <!-- Přihlášení do adminu -->
+    <div id="adminAuthBox" class="max-w-md mx-auto my-auto border border-zinc-800 bg-zinc-950 p-6 rounded-xl shadow-2xl space-y-4 w-full text-center">
+        <h1 class="font-bold text-zinc-100 text-sm tracking-widest">GJW COMMAND CENTER</h1>
+        <p class="text-[10px] text-zinc-500">Zadej administrátorské heslo</p>
+        <input type="password" id="adminPasswordInput" placeholder="heslo..." class="w-full bg-black border border-zinc-800 p-2.5 rounded text-white focus:outline-none focus:border-zinc-600">
+        <button onclick="verifyAdminPassword()" class="w-full border border-zinc-700 bg-zinc-900 py-2.5 rounded text-zinc-200 font-bold cursor-pointer hover:bg-zinc-800">Ověřit přístup</button>
+        <div id="adminLoginError" class="text-red-500 text-[10px] hidden font-bold">Špatné heslo!</div>
+        <a href="../" class="block text-[10px] text-blue-400 underline pt-2">&laquo; Zpět na hlavní web</a>
+    </div>
+
+    <!-- Hlavní Dashboard Command Center -->
+    <div id="adminDashboardBox" class="hidden max-w-4xl mx-auto w-full flex-1 flex flex-col space-y-4 overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+            <div>
+                <h1 class="font-bold text-zinc-100 text-sm">GJW Admin Command Center</h1>
+                <p class="text-[9px] text-zinc-500">Správa webu, textů, banů a chatu v reálném čase</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="clearChatData()" class="border border-red-800/80 bg-red-950/30 text-red-400 px-3 py-1.5 rounded cursor-pointer hover:bg-red-900/40">Smazat chat</button>
+                <a href="../" class="border border-zinc-700 bg-zinc-900 px-3 py-1.5 rounded text-zinc-300 hover:bg-zinc-800 no-underline">Odhlásit</a>
+            </div>
+        </div>
+
+        <!-- SEKCE 1: Editor textů na hlavní stránce -->
+        <div class="border border-zinc-800 p-4 bg-zinc-950 rounded-lg space-y-3">
+            <h2 class="font-bold text-yellow-400 text-xs">✏️ Editor textů na hlavní stránce (Index)</h2>
+            <p class="text-[10px] text-zinc-500">Zde můžeš okamžitě změnit jakýkoliv text na hlavní stránce. Změny se projeví hned po uložení.</p>
+            
+            <div class="space-y-2">
+                <div>
+                    <label class="block text-[10px] text-zinc-400 mb-1">Novinky (HTML):</label>
+                    <textarea id="editNews" rows="2" class="w-full bg-black border border-zinc-800 p-2 rounded text-white"></textarea>
+                </div>
+                <div>
+                    <label class="block text-[10px] text-zinc-400 mb-1">Popis portálu / chatu:</label>
+                    <input type="text" id="editPortalDesc" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-zinc-400 mb-1">Informácie (Email / text):</label>
+                    <textarea id="editInfo" rows="2" class="w-full bg-black border border-zinc-800 p-2 rounded text-white"></textarea>
+                </div>
+                <div>
+                    <label class="block text-[10px] text-zinc-400 mb-1">Licence:</label>
+                    <textarea id="editLicense" rows="2" class="w-full bg-black border border-zinc-800 p-2 rounded text-white"></textarea>
+                </div>
+                <div>
+                    <label class="block text-[10px] text-zinc-400 mb-1">Patička (Vyrobeno v...):</label>
+                    <input type="text" id="editFooter" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
+                </div>
+                <button onclick="saveSiteContent()" class="border border-green-700 bg-green-950/40 text-green-400 px-4 py-2 rounded font-bold cursor-pointer hover:bg-green-900/50">Uložit změny na webu</button>
+            </div>
+        </div>
+
+        <!-- SEKCE 2: Správa uživatelů a banů -->
+        <div class="border border-zinc-800 p-4 bg-zinc-950 rounded-lg space-y-3">
+            <h2 class="font-bold text-yellow-400 text-xs">🛡️ Moderace uživatelů a bany</h2>
+            <div id="adminUsersListContainer" class="space-y-1 max-h-40 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        if (sessionStorage.getItem('gjw_admin_logged') === 'true') {
+            document.getElementById('adminAuthBox').classList.add('hidden');
+            document.getElementById('adminDashboardBox').classList.remove('hidden');
+            loadAdminData();
+        }
+
+        function verifyAdminPassword() {
+            const input = document.getElementById('adminPasswordInput').value;
+            db.ref('admin/password').once('value').then(snap => {
+                let pass = snap.val() || '69_atillo_69';
+                if (input === pass) {
+                    sessionStorage.setItem('gjw_admin_logged', 'true');
+                    document.getElementById('adminAuthBox').classList.add('hidden');
+                    document.getElementById('adminDashboardBox').classList.remove('hidden');
+                    loadAdminData();
+                } else {
+                    document.getElementById('adminLoginError').classList.remove('hidden');
+                }
+            });
+        }
+
+        function loadAdminData() {
+            db.ref('siteContent').once('value').then(snap => {
+                const data = snap.val() || {};
+                if (data.newsText) document.getElementById('editNews').value = data.newsText;
+                if (data.portalDesc) document.getElementById('editPortalDesc').value = data.portalDesc;
+                if (data.infoText) document.getElementById('editInfo').value = data.infoText;
+                if (data.licenseText) document.getElementById('editLicense').value = data.licenseText;
+                if (data.footerText) document.getElementById('editFooter').value = data.footerText;
+            });
+
+            db.ref('presence').on('value', snap => {
+                const container = document.getElementById('adminUsersListContainer');
+                container.innerHTML = '';
+                const users = snap.val();
+                if (!users) { container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádní aktivní uživatelé</span>'; return; }
+
+                Object.values(users).forEach(u => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center bg-black border border-zinc-900 p-2 rounded";
+                    row.innerHTML = `<span>${u.user} (ID: ${u.userId})</span><button onclick="kickUser('${u.userId}')" class="border border-red-800 bg-red-950/20 text-red-400 px-2 py-0.5 rounded cursor-pointer">Vyhodit</button>`;
+                    container.appendChild(row);
+                });
+            });
+        }
+
+        function saveSiteContent() {
+            db.ref('siteContent').set({
+                newsText: document.getElementById('editNews').value,
+                portalDesc: document.getElementById('editPortalDesc').value,
+                infoText: document.getElementById('editInfo').value,
+                licenseText: document.getElementById('editLicense').value,
+                footerText: document.getElementById('editFooter').value
+            }, () => {
+                alert("Změny na webu byly úspěšně uloženy!");
+            });
+        }
+
+        function kickUser(uid) {
+            db.ref('restrictions/' + uid).update({ kicked: true });
+            alert("Uživatel byl vyhozen.");
+        }
+
+        function clearChatData() {
+            if (confirm("Opravdu smazat všechny zprávy v chatu?")) {
+                db.ref('messages').remove();
+                alert("Chat byl vymazán.");
+            }
+        }
+    </script>
+</body>
+</html>

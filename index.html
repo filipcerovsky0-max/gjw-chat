@@ -8,6 +8,10 @@
     <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
     <meta name="description" content="komický stránky pro studenty a zaměstnance Gymnázia Jiřího Wolkera v Prostějově. Přijď se podívat!">
     
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <style>
         body {
             background-color: #f0f0f0;
@@ -19,122 +23,20 @@
             max-width: 800px;
             margin-left: auto;
             margin-right: auto;
-            transition: background-color 0.3s, color 0.3s;
         }
-        /* Tmavý režim */
-        body.dark-mode {
-            background-color: #121212;
-            color: #ffffff;
-        }
-        body.dark-mode .oddeleni {
-            background: #333;
-        }
-        body.dark-mode .minioddeleni {
-            background: #222;
-        }
-        /* Automatické zcifernění loga v dark modu, aby bylo bílé */
-        body.dark-mode .logo {
-            filter: invert(1) grayscale(1) brightness(200%);
-        }
-        body.dark-mode h2, 
-        body.dark-mode #druhynadpis, 
-        body.dark-mode #mininadpis,
-        body.dark-mode .novinky,
-        body.dark-mode .tady, 
-        body.dark-mode .dva, 
-        body.dark-mode p,
-        body.dark-mode i {
-            color: #ffffff !important;
-        }
-        body.dark-mode #druhynadpis a, 
-        body.dark-mode .jaromil,
-        body.dark-mode a {
-            color: #61afef !important;
-        }
-        body.dark-mode .legal-text {
-            color: #cccccc !important;
-        }
-        body.dark-mode .tmavetlacitko {
-            background-color: #e0e0e0;
-            color: #121212;
-        }
-
-        .stred {
-            text-align: center;
-        }
-        .logo {
-            max-width: 100%;
-            height: auto;
-            transition: filter 0.3s;
-        }
-        .oddeleni {
-            border: 0;
-            height: 1px;
-            background: #ccc;
-            margin: 15px 0;
-        }
-        .minioddeleni {
-            border: 0;
-            height: 1px;
-            background: #e0e0e0;
-            margin: 8px 0;
-        }
-        #druhynadpis {
-            font-size: 16px;
-            font-weight: bold;
-            margin: 10px 0 5px 0;
-            color: #000000;
-        }
-        #druhynadpis a {
-            color: #0000EE;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        #druhynadpis a:hover {
-            text-decoration: underline;
-        }
-        #mininadpis {
-            font-size: 13px;
-            margin: 6px 0 2px 0;
-            font-weight: bold;
-            color: #000000;
-        }
-        .novinky {
-            margin: 6px 0;
-            font-size: 13px;
-        }
-        .tady, .dva {
-            font-size: 12px;
-            color: #555;
-            margin: 2px 0 10px 0;
-        }
-        .jaromil {
-            color: #0000EE;
-            text-decoration: none;
-        }
-        .jaromil:hover {
-            text-decoration: underline;
-        }
-        .tmavetlacitko {
-            background-color: #333;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-size: 13px;
-            border-radius: 4px;
-        }
-        .tmavetlacitko:hover {
-            background-color: #555;
-        }
-        .legal-text {
-            font-size: 11px;
-            color: #666;
-            line-height: 1.4;
-            margin: 5px 0 10px 0;
-        }
+        .stred { text-align: center; }
+        .logo { max-width: 100%; height: auto; }
+        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 15px 0; }
+        .minioddeleni { border: 0; height: 1px; background: #e0e0e0; margin: 8px 0; }
+        #druhynadpis { font-size: 16px; font-weight: bold; margin: 10px 0 5px 0; color: #000000; }
+        #druhynadpis a { color: #0000EE; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+        #druhynadpis a:hover { text-decoration: underline; }
+        #mininadpis { font-size: 13px; margin: 6px 0 2px 0; font-weight: bold; color: #000000; }
+        .novinky { margin: 6px 0; font-size: 13px; }
+        .tady, .dva { font-size: 12px; color: #555; margin: 2px 0 10px 0; }
+        .jaromil { color: #0000EE; text-decoration: none; }
+        .jaromil:hover { text-decoration: underline; }
+        .legal-text { font-size: 11px; color: #666; line-height: 1.4; margin: 5px 0 10px 0; }
     </style>
 </head>
 <body>
@@ -143,42 +45,42 @@
     <hr class="oddeleni">
     
     <h2 id="druhynadpis">Novinky</h2>
-    <p class="novinky"><strong>7/10/26</strong> - <a class="jaromil" href="./chat/"><b>SPUSTILI JSME DISKUZNÍ PORTÁL (CHAT)</b></a> - Přijď se podívat a pokecat!</p>
+    <p class="novinky" id="homeNewsText"><strong>7/10/26</strong> - <a class="jaromil" href="./chat/"><b>SPUSTILI JSME DISKUZNÍ PORTÁL (CHAT)</b></a> - Přijď se podívat a pokecat!</p>
     <br>
     <hr class="oddeleni">
 
     <h2 id="druhynadpis"><a href="./chat/"><img src="https://i.imgur.com/c8lHe3s.png" width="19" alt="Chat">Diskuzní Portál</a></h2>
-    <p class="tady">Chat pro celou školu v reálném čase</p>
+    <p class="tady" id="homePortalDesc">Chat pro celou školu v reálném čase</p>
     <hr class="oddeleni">
 
     <h2 id="druhynadpis">Informácie</h2>
-    <p class="dva">Máš nějaké informace které chceš zveřejnit? Pošli je na mail <strong><a href="mailto:anonym.gjw@proton.me">anonym.gjw@proton.me</a></strong></p>
+    <p class="dva" id="homeInfoText">Máš nějaké informace které chceš zveřejnit? Pošli je na mail <strong><a href="mailto:anonym.gjw@proton.me">anonym.gjw@proton.me</a></strong></p>
     
     <h2 id="mininadpis">Licence</h2>
-    <p class="legal-text">Veškerý obsah na této stránce je šířen pod licencí Creative Commons (BY 4.0). Stránka slouží jako neoficiální nezávislý studentský portál. Jakékoliv šíření materiálů podléhá autorským právům původních tvůrců.</p>
+    <p class="legal-text" id="homeLicenseText">Veškerý obsah na této stránce je šířen pod licencí Creative Commons (BY 4.0). Stránka slouží jako neoficiální nezávislý studentský portál. Jakékoliv šíření materiálů podléhá autorským právům původních tvůrců.</p>
     <hr class="minioddeleni">
     
     <h2 id="mininadpis">Je stránka pomalá?</h2>
-    <p class="legal-text">Pokud stránka načítá pomalu, ujistěte se, že máte stabilní připojení k internetu. Server běží v optimálním režimu.</p>
+    <p class="legal-text" id="homeSpeedText">Pokud stránka načítá pomalu, ujistěte se, že máte stabilní připojení k internetu. Server běží v optimálním režimu.</p>
 
-    <p class="stred"><button onclick="toggleDarkMode()" class="tmavetlacitko" id="darkModeBtn">Tmavý režim</button></p>
     <hr class="oddeleni">	
 
-    <p style="font-size: 13px;"><i>Vyrobeno v náhodný večer před třema písemkama. Neukládáme žádná osobní data, zatím.</i></p>
+    <p style="font-size: 13px;"><i id="homeFooterText">Vyrobeno v náhodný večer před třema písemkama. Neukládáme žádná osobní data, zatím.</i></p>
 
     <script>
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            localStorage.setItem('gjw_dark_mode', isDark ? 'enabled' : 'disabled');
-            document.getElementById('darkModeBtn').innerText = isDark ? 'Světlý režim' : 'Tmavý režim';
-        }
+        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        window.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('gjw_dark_mode') === 'enabled') {
-                document.body.classList.add('dark-mode');
-                document.getElementById('darkModeBtn').innerText = 'Světlý režim';
-            }
+        db.ref('siteContent').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            if (data.newsText) document.getElementById('homeNewsText').innerHTML = data.newsText;
+            if (data.portalDesc) document.getElementById('homePortalDesc').innerText = data.portalDesc;
+            if (data.infoText) document.getElementById('homeInfoText').innerHTML = data.infoText;
+            if (data.licenseText) document.getElementById('homeLicenseText').innerText = data.licenseText;
+            if (data.speedText) document.getElementById('homeSpeedText').innerText = data.speedText;
+            if (data.footerText) document.getElementById('homeFooterText').innerText = data.footerText;
         });
     </script>
 </body>
