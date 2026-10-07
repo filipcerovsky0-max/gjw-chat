@@ -34,8 +34,43 @@
 </head>
 <body class="h-full flex flex-col m-0 p-0 overflow-hidden">
 
-    <!-- Úplné přihlášení přes celou obrazovku -->
-    <div id="loginScreen" class="fixed inset-0 bg-[#f0f0f0] z-[99999] flex flex-col items-center justify-center p-4">
+    <!-- Ban obrazovka s reálným odpočtem -->
+    <div id="bannedScreen" class="fixed inset-0 bg-black/9א z-[99999] hidden flex-col items-center justify-center p-4 text-center text-white">
+        <div class="retro-box bg-white text-black p-6 max-w-sm w-full space-y-3">
+            <h1 class="text-sm font-bold text-red-600">MÁŠ AKTIVNÍ BAN</h1>
+            <div class="text-left space-y-1 text-xs">
+                <p>Důvod: <span id="bannedReasonText" class="font-bold">-</span></p>
+                <p>Trvání: <span id="bannedDurationText" class="font-bold">-</span></p>
+                <p id="bannedCountdownContainer" class="pt-1 text-red-700 hidden font-bold">Vyprší za: <span id="bannedCountdownTimer">-</span></p>
+            </div>
+            <p class="text-[10px] text-gray-500">Trest je vázán na tvé zařízení.</p>
+        </div>
+    </div>
+
+    <!-- Uživatelský profil modal pro admina -->
+    <div id="userProfileModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
+        <div class="retro-box bg-[#f0f0f0] p-4 w-full max-w-sm space-y-3 border-2 border-[#1d4372]">
+            <div class="flex justify-between items-center bg-[#1d4372] text-white px-2 py-1 -mx-2 -mt-2 mb-2 font-bold">
+                <span id="profileUsernameTitle">Uživatel</span>
+                <button onclick="closeUserProfileModal()" class="cursor-pointer px-1">X</button>
+            </div>
+            <p class="text-[11px]" id="profileUserIdSub">ID: -</p>
+            
+            <div class="space-y-2 pt-1 border-t border-gray-300">
+                <div class="flex gap-1">
+                    <button onclick="actionKickActive()" class="retro-button text-red-700 font-bold flex-1">Kick</button>
+                    <button onclick="actionMuteActive()" class="retro-button text-orange-700 font-bold flex-1">Mute</button>
+                </div>
+                <button onclick="actionBanActive()" class="retro-button text-red-900 font-bold w-full bg-red-100">Udělit Ban</button>
+            </div>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeUserProfileModal()" class="retro-button">Zavřít</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Přihlášení -->
+    <div id="loginScreen" class="fixed inset-0 bg-[#f0f0f0] z-[9999] flex flex-col items-center justify-center p-4">
         <div class="retro-box p-6 w-full max-w-sm space-y-3 shadow-md bg-white">
             <div class="text-center">
                 <img src="https://i.imgur.com/QvqvK3M.png" alt="Logo" class="max-h-20 mx-auto mb-2">
@@ -67,21 +102,6 @@
         </div>
     </div>
 
-    <!-- Uživatelský profil modal pro admina -->
-    <div id="userProfileModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
-        <div class="retro-box bg-[#f0f0f0] p-4 w-full max-w-sm space-y-2 border-2 border-[#1d4372]">
-            <div class="flex justify-between items-center bg-[#1d4372] text-white px-2 py-1 -mx-2 -mt-2 mb-2 font-bold">
-                <span id="profileUsernameTitle">Uživatel</span>
-                <button onclick="closeUserProfileModal()" class="cursor-pointer px-1">X</button>
-            </div>
-            <p class="text-[11px]" id="profileUserIdSub">ID: -</p>
-            <div class="flex gap-1 pt-2">
-                <button onclick="actionKick()" class="retro-button text-red-700 font-bold">Vyhodit</button>
-                <button onclick="closeUserProfileModal()" class="retro-button">Zavřít</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Hlavička chatu -->
     <header class="border-b border-gray-300 bg-[#e2e8f0] px-3 py-2 flex justify-between items-center shrink-0">
         <div class="flex items-center space-x-2">
@@ -97,12 +117,16 @@
 
     <!-- Tělo chatu -->
     <div class="flex-1 flex flex-col overflow-hidden relative bg-white w-full max-w-3xl mx-auto border-x border-gray-300">
+        <div id="mutedNoticeBox" class="hidden bg-red-100 border-b border-red-300 p-2 text-center text-red-700 text-xs font-bold">
+            Jsi ztlumen správcem! <span id="mutedCountdownContainer" class="font-normal">Zbývá: <span id="mutedCountdownTimer">-</span></span>
+        </div>
+
         <div id="chatContainer" class="flex-1 overflow-y-auto p-3 space-y-2 pb-20">
             <div id="emptyState" class="hidden h-full flex items-center justify-center text-gray-400 italic">Zatím žádné zprávy v této místnosti</div>
             <div id="messagesList" class="space-y-2 w-full"></div>
         </div>
 
-        <footer class="border-t border-gray-300 bg-[#f0f0f0] p-2 absolute bottom-0 left-0 right-0">
+        <footer id="activeInputControls" class="border-t border-gray-300 bg-[#f0f0f0] p-2 absolute bottom-0 left-0 right-0">
             <div class="flex items-center space-x-2 max-w-3xl mx-auto px-2">
                 <textarea id="messageInput" placeholder="Napiš zprávu... (Enter pro odeslání)" rows="1" class="retro-textarea flex-1 resize-none" onkeydown="handleKeydown(event)"></textarea>
                 <button onclick="sendMessage()" class="retro-button font-bold px-4 py-1.5">Odeslat</button>
@@ -115,22 +139,119 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        function getDeviceFingerprint() {
+            let fp = localStorage.getItem('gjw_device_fingerprint');
+            if (!fp) {
+                fp = 'device_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now();
+                localStorage.setItem('gjw_device_fingerprint', fp);
+            }
+            return fp;
+        }
+
+        let deviceFingerprint = getDeviceFingerprint();
         let currentUser = localStorage.getItem('gjw_saved_user') || null;
         let currentUserId = localStorage.getItem('gjw_saved_user_id') || null;
         if (!currentUserId) {
             currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
             localStorage.setItem('gjw_saved_user_id', currentUserId);
         }
-        let isAdmin = currentUser && currentUser.toLowerCase().startsWith('admin');
+
+        let isAdmin = sessionStorage.getItem('gjw_admin_session') === 'true';
+        let adminMode = sessionStorage.getItem('gjw_admin_mode') || 'observed'; // 'observed' nebo 'hidden'
         let activeProfileUid = null;
+        let activeProfileName = null;
+        let restrictionInterval = null;
 
         window.addEventListener('DOMContentLoaded', () => {
-            if (currentUser) {
+            if (sessionStorage.getItem('gjw_admin_session') === 'true') {
+                isAdmin = true;
+                currentUser = "admin (Admin)";
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('userSubtitle').innerText = currentUser;
+                renderMessages();
+            } else if (currentUser) {
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('userSubtitle').innerText = currentUser;
                 renderMessages();
             } else {
                 document.getElementById('loginScreen').style.display = 'flex';
+            }
+        });
+
+        // Sledování restrikcí a banů vázaných na zařízení
+        db.ref('restrictions').on('value', snap => {
+            const restrictions = snap.val() || {};
+            let myRest = restrictions[currentUserId];
+            
+            // Pokud není pod ID, zkontrolujeme fingerprint
+            if (!myRest) {
+                for (let uid in restrictions) {
+                    if (restrictions[uid].fingerprint === deviceFingerprint) {
+                        myRest = restrictions[uid];
+                        break;
+                    }
+                }
+            }
+
+            if (!myRest) {
+                document.getElementById('bannedScreen').style.display = 'none';
+                document.getElementById('mutedNoticeBox').classList.add('hidden');
+                document.getElementById('activeInputControls').style.display = 'block';
+                return;
+            }
+
+            if (myRest.kicked) {
+                alert("Byl jsi vyhozen správcem!");
+                db.ref('restrictions/' + (myRest.userId || currentUserId) + '/kicked').remove();
+                handleLogout();
+                return;
+            }
+
+            if (myRest.ban && (myRest.ban.permanent || Date.now() < myRest.ban.expiresAt)) {
+                const ban = myRest.ban;
+                document.getElementById('bannedReasonText').innerText = ban.reason || 'Bez důvodu';
+                document.getElementById('bannedDurationText').innerText = ban.permanent ? 'Natrvalo' : `Do ${new Date(ban.expiresAt).toLocaleString()}`;
+                
+                const countContainer = document.getElementById('bannedCountdownContainer');
+                const countTimer = document.getElementById('bannedCountdownTimer');
+
+                if (!ban.permanent && ban.expiresAt) {
+                    countContainer.classList.remove('hidden');
+                    if (restrictionInterval) clearInterval(restrictionInterval);
+                    restrictionInterval = setInterval(() => {
+                        const rem = ban.expiresAt - Date.now();
+                        if (rem <= 0) { clearInterval(restrictionInterval); location.reload(); return; }
+                        const d = Math.floor(rem / 86400000);
+                        const h = Math.floor((rem % 86400000) / 3600000);
+                        const m = Math.floor((rem % 3600000) / 60000);
+                        const s = Math.floor((rem % 60000) / 1000);
+                        countTimer.innerText = `${d}d ${h}h ${m}m ${s}s`;
+                    }, 1000);
+                }
+                document.getElementById('bannedScreen').style.display = 'flex';
+                return;
+            }
+
+            if (myRest.mute && (myRest.mute.permanent || Date.now() < myRest.mute.expiresAt)) {
+                const mute = myRest.mute;
+                const notice = document.getElementById('mutedNoticeBox');
+                const timer = document.getElementById('mutedCountdownTimer');
+                notice.classList.remove('hidden');
+                document.getElementById('activeInputControls').style.display = 'none';
+
+                if (!mute.permanent && mute.expiresAt) {
+                    if (restrictionInterval) clearInterval(restrictionInterval);
+                    restrictionInterval = setInterval(() => {
+                        const rem = mute.expiresAt - Date.now();
+                        if (rem <= 0) { clearInterval(restrictionInterval); location.reload(); return; }
+                        const m = Math.floor(rem / 60000);
+                        const s = Math.floor((rem % 60000) / 1000);
+                        timer.innerText = `${m}m ${s}s`;
+                    }, 1000);
+                }
+            } else {
+                document.getElementById('mutedNoticeBox').classList.add('hidden');
+                document.getElementById('activeInputControls').style.display = 'block';
             }
         });
 
@@ -141,7 +262,6 @@
             if (!nick) { err.innerText = "Zadej přezdívku!"; err.classList.remove('hidden'); return; }
             
             currentUser = nick + (cls ? ' (' + cls + ')' : '');
-            isAdmin = nick.toLowerCase() === 'admin';
             localStorage.setItem('gjw_saved_user', currentUser);
             
             document.getElementById('loginScreen').style.display = 'none';
@@ -149,6 +269,7 @@
 
             db.ref('messages').push({
                 userId: currentUserId,
+                fingerprint: deviceFingerprint,
                 user: currentUser,
                 text: `${currentUser} vstoupil do chatu`,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -159,6 +280,7 @@
 
         function handleLogout() {
             localStorage.removeItem('gjw_saved_user');
+            sessionStorage.removeItem('gjw_admin_session');
             location.reload();
         }
 
@@ -172,10 +294,13 @@
             if (!text) return;
             input.value = '';
 
+            const isGhost = isAdmin && adminMode === 'hidden';
+
             db.ref('messages').push({
                 userId: currentUserId,
+                fingerprint: deviceFingerprint,
                 user: currentUser,
-                isAdmin: isAdmin,
+                isAdmin: isAdmin && !isGhost,
                 text: text,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             });
@@ -184,8 +309,9 @@
         function openUserProfileModal(uid, username) {
             if (!isAdmin) return;
             activeProfileUid = uid;
+            activeProfileName = username;
             document.getElementById('profileUsernameTitle').innerText = username;
-            document.getElementById('profileUserIdSub').innerText = 'ID uživatele: ' + uid;
+            document.getElementById('profileUserIdSub').innerText = 'ID: ' + uid;
             document.getElementById('userProfileModal').classList.remove('hidden');
             document.getElementById('userProfileModal').classList.add('flex');
         }
@@ -195,11 +321,56 @@
             document.getElementById('userProfileModal').classList.add('hidden');
         }
 
-        function actionKick() {
+        function actionKickActive() {
             if (!activeProfileUid) return;
-            db.ref('restrictions/' + activeProfileUid).update({ kicked: true });
+            db.ref('restrictions/' + activeProfileUid).update({ kicked: true, fingerprint: deviceFingerprint, userId: activeProfileUid });
             alert("Uživatel byl vyhozen.");
             closeUserProfileModal();
+        }
+
+        function actionMuteActive() {
+            if (!activeProfileUid) return;
+            const val = prompt("Zadejte délku ztlumení (např. 30s, 10m, 2h, 1d nebo 'perm' pro natrvalo):");
+            if (!val) return;
+            const ms = parseDuration(val);
+            const permanent = val.toLowerCase() === 'perm';
+            
+            db.ref('restrictions/' + activeProfileUid).update({
+                mute: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms },
+                userId: activeProfileUid
+            });
+            alert("Uživatel byl ztlumen.");
+            closeUserProfileModal();
+        }
+
+        function actionBanActive() {
+            if (!activeProfileUid) return;
+            const val = prompt("Zadejte délku banu (např. 1h, 7d, 30d nebo 'perm' pro natrvalo):");
+            if (!val) return;
+            const reason = prompt("Zadejte důvod banu:") / "Porušení pravidel";
+            const ms = parseDuration(val);
+            const permanent = val.toLowerCase() === 'perm';
+
+            db.ref('restrictions/' + activeProfileUid).update({
+                ban: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms, reason: reason || 'Porušení pravidel', username: activeProfileName },
+                userId: activeProfileUid
+            });
+            alert("Uživatel byl zabanován.");
+            closeUserProfileModal();
+        }
+
+        function parseDuration(str) {
+            str = str.toLowerCase().trim();
+            if (str === 'perm') return 0;
+            const num = parseInt(str);
+            if (isNaN(num)) return 60000;
+            if (str.includes('s')) return num * 1000;
+            if (str.includes('m')) return num * 60000;
+            if (str.includes('h')) return num * 3600000;
+            if (str.includes('d')) return num * 86400000;
+            if (str.includes('w')) return num * 604800000;
+            if (str.includes('mo')) return num * 2592000000;
+            return num * 60000;
         }
 
         db.ref('messages').on('value', (snapshot) => {

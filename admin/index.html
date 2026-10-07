@@ -25,12 +25,25 @@
         <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
             <div>
                 <h1 class="font-bold text-zinc-100 text-sm">GJW Admin Command Center</h1>
-                <p class="text-[9px] text-zinc-500">Plná správa webu, textů, ID uživatelů a chatu</p>
+                <p class="text-[9px] text-zinc-500">Správa webu, textů, vstupů do chatu a moderace</p>
             </div>
             <div class="flex gap-2">
                 <button onclick="clearChatData()" class="border border-red-800/80 bg-red-950/30 text-red-400 px-3 py-1.5 rounded cursor-pointer hover:bg-red-900/40">Smazat chat</button>
                 <a href="../" class="border border-zinc-700 bg-zinc-900 px-3 py-1.5 rounded text-zinc-300 hover:bg-zinc-800 no-underline">Odhlásit</a>
             </div>
+        </div>
+
+        <!-- Vstup do chatu s volbou režimu -->
+        <div class="border border-zinc-800 p-4 bg-zinc-950 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div>
+                <h2 class="font-bold text-yellow-400 text-xs mb-1">💬 Vstup do chatu z adminu</h2>
+                <p class="text-[10px] text-zinc-500">Zvol si, jak se chceš připojit do aktivního chatu:</p>
+                <select id="adminModeSelect" class="bg-black border border-zinc-800 p-2 rounded text-white text-xs mt-2">
+                    <option value="observed">Viditelný admin (duhový nick, moderace kliknutím)</option>
+                    <option value="hidden">Ghost admin (zcela skrytý v zákulisí)</option>
+                </select>
+            </div>
+            <button onclick="enterChatAsAdmin()" class="border border-blue-700 bg-blue-950/40 text-blue-400 px-4 py-2.5 rounded font-bold cursor-pointer hover:bg-blue-900/50">Vstoupit do chatu &raquo;</button>
         </div>
 
         <!-- Editor textů na hlavní stránce -->
@@ -92,6 +105,13 @@
                     document.getElementById('adminLoginError').classList.remove('hidden');
                 }
             });
+        }
+
+        function enterChatAsAdmin() {
+            const mode = document.getElementById('adminModeSelect').value;
+            sessionStorage.setItem('gjw_admin_session', 'true');
+            sessionStorage.setItem('gjw_admin_mode', mode);
+            window.location.href = '../chat/';
         }
 
         function loadAdminData() {
