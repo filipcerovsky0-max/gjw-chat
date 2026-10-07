@@ -43,7 +43,7 @@
                 <p>Trvání: <span id="bannedDurationText" class="font-bold">-</span></p>
                 <p id="bannedCountdownContainer" class="pt-1 text-red-700 hidden font-bold">Vyprší za: <span id="bannedCountdownTimer">-</span></p>
             </div>
-            <p class="text-[10px] text-gray-500">Trest je vázán na tvé zařízení.</p>
+            <p class="text-[10px] text-gray-500">Trest je vázán na toto zařízení.</p>
         </div>
     </div>
 
@@ -178,17 +178,19 @@
             }
         });
 
+        // Kontrola restrikcí podle unikátního otisku zařízení
         db.ref('restrictions').on('value', snap => {
             const restrictions = snap.val() || {};
-            let myRest = restrictions[currentUserId];
+            let myRest = null;
             
-            if (!myRest) {
-                for (let uid in restrictions) {
-                    if (restrictions[uid].fingerprint === deviceFingerprint) {
-                        myRest = restrictions[uid];
-                        break;
-                    }
+            for (let uid in restrictions) {
+                if (restrictions[uid].fingerprint === deviceFingerprint) {
+                    myRest = restrictions[uid];
+                    break;
                 }
+            }
+            if (!myRest && restrictions[currentUserId]) {
+                myRest = restrictions[currentUserId];
             }
 
             if (!myRest) {
@@ -321,9 +323,18 @@
 
         function actionKickActive() {
             if (!activeProfileUid) return;
-            db.ref('restrictions/' + activeProfileUid).update({ kicked: true, fingerprint: deviceFingerprint, userId: activeProfileUid });
-            alert("Uživatel byl vyhozen.");
-            closeUserProfileModal();
+            db.ref('presence/' + activeProfileUid).once('value', snap => {
+                const pData = snap.val();
+                const targetFp = pData ? pData.fingerprint : 'unknown_fp';
+
+                db.ref('restrictions/' + activeProfileUid).set({
+                    kicked: true,
+                    fingerprint: targetFp,
+                    userId: activeProfileUid
+                });
+                alert("Uživatel byl vyhozen.");
+                closeUserProfileModal();
+            });
         }
 
         function actionMuteActive() {
@@ -333,12 +344,18 @@
             const ms = parseDuration(val);
             const permanent = val.toLowerCase() === 'perm';
             
-            db.ref('restrictions/' + activeProfileUid).update({
-                mute: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms },
-                userId: activeProfileUid
+            db.ref('presence/' + activeProfileUid).once('value', snap => {
+                const pData = snap.val();
+                const targetFp = pData ? pData.fingerprint : 'unknown_fp';
+
+                db.ref('restrictions/' + activeProfileUid).update({
+                    mute: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms },
+                    fingerprint: targetFp,
+                    userId: activeProfileUid
+                });
+                alert("Uživatel byl ztlumen.");
+                closeUserProfileModal();
             });
-            alert("Uživatel byl ztlumen.");
-            closeUserProfileModal();
         }
 
         function actionBanActive() {
@@ -349,12 +366,18 @@
             const ms = parseDuration(val);
             const permanent = val.toLowerCase() === 'perm';
 
-            db.ref('restrictions/' + activeProfileUid).update({
-                ban: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms, reason: reason, username: activeProfileName },
-                userId: activeProfileUid
+            db.ref('presence/' + activeProfileUid).once('value', snap => {
+                const pData = snap.val();
+                const targetFp = pData ? pData.fingerprint : 'unknown_fp';
+
+                db.ref('restrictions/' + activeProfileUid).update({
+                    ban: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms, reason: reason, username: activeProfileName },
+                    fingerprint: targetFp,
+                    userId: activeProfileUid
+                });
+                alert("Uživatel byl zabanován.");
+                closeUserProfileModal();
             });
-            alert("Uživatel byl zabanován.");
-            closeUserProfileModal();
         }
 
         function parseDuration(str) {
