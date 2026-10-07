@@ -45,14 +45,14 @@
 
     <div class="stred">
         <h1>🎵 Hudební koutek</h1>
-        <p>Poslouchej písničky, lepší než poslouchat učitele</p>
+        <p>Poslouchej písničky, lepší než poslouchat učitele (zrada pochopis pak)</p>
     </div>
 
     <hr class="oddeleni">
 
     <!-- Seznam písniček -->
     <div id="seznam-pisnicek">
-        <p class="stred" style="color: #666;">Načítám písničky z repozitáře...</p>
+        <p class="stred" style="color: #666;">Načítám písničky ze složky...</p>
     </div>
 
     <hr class="oddeleni">
@@ -62,10 +62,9 @@
         async function nactiHudbuZGitHubu() {
             const playlistDiv = document.getElementById('seznam-pisnicek');
             
-            // GitHub API pro tvojí složku 'hudba' v repozitáři
-            // (Zadej svůj GitHub uživatelský/organizační účet a název repozitáře, např. 'FilipCerovsky/gjw-chat')
-            const owner = "FilipCerovsky"; // <--- Tady si zkontroluj svůj GitHub uživatelský účet
-            const repo = "gjw-chat";       // <--- Tady si zkontroluj název repozitáře
+            // Správné údaje dle tvého GitHubu
+            const owner = "filipcerovsky0-max";
+            const repo = "gjw-chat";
             const path = "hudba";
 
             const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
@@ -84,7 +83,7 @@
                 playlistDiv.innerHTML = "";
 
                 if (mp3Files.length === 0) {
-                    playlistDiv.innerHTML = '<p class="stred">Ve složce hudba zatím nejsou žádné MP3 soubory.</p>';
+                    playlistDiv.innerHTML = '<p class="stred">Ve složce hudba/ na GitHubu zatím nejsou žádné MP3 soubory.</p>';
                     return;
                 }
 
@@ -105,16 +104,7 @@
                 });
 
             } catch (error) {
-                // Pokud by GitHub API zlobilo (např. limit požadavků), uděláme fallback na přímé zkoušení souboru, který známe
-                playlistDiv.innerHTML = `
-                    <div class="music-box">
-                        <p><b>🎵 Chodím</b></p>
-                        <audio controls preload="metadata">
-                            <source src="chodim.mp3" type="audio/mp3">
-                            Tvůj prohlížeč nepodporuje přehrávání audio souborů.
-                        </audio>
-                    </div>
-                `;
+                playlistDiv.innerHTML = `<p class="stred" style="color: red;">Chyba při načítání hudby: ${error.message}</p>`;
             }
         }
 
