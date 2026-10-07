@@ -2,10 +2,13 @@
 <html class="js sizes customelements history pointerevents postmessage postmessage-structuredclones webgl websockets cssanimations csscolumns csscolumns-width csscolumns-span csscolumns-fill csscolumns-gap csscolumns-rule csscolumns-rulecolor csscolumns-rulestyle csscolumns-rulewidth csscolumns-breakbefore csscolumns-breakafter csscolumns-breakinside flexbox picture srcset webworkers" lang="cs" style="height: 100%;">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta x-ua-compatible="IE=edge,chrome=1">
+    <title>Gymnázium Jiřího Wolkera - REŽIM DESTRUKCE</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Znič stránku školy! - GJW Portál</title>
     
+    <link rel="stylesheet" type="text/css" media="screen,projection" href="https://www.gjwprostejov.cz/styly/jquery-ui.css">
     <link rel="stylesheet" type="text/css" media="screen,projection" href="https://www.gjwprostejov.cz/styly/styly.min.css">
+    
     <style>
         /* CSS animace pro výbuch a mizení prvků */
         @keyframes exploduj {
@@ -15,52 +18,66 @@
         }
         .exploded {
             animation: exploduj 0.6s ease-in-out forwards !important;
-            pointer-events: none;
+            pointer-events: none !important;
         }
         /* Varovný horní pruh */
         #destructionBanner {
             position: fixed; top: 0; left: 0; right: 0; background: #990000; color: white;
-            text-align: center; padding: 8px; font-weight: bold; z-index: 999999; font-family: Arial, sans-serif; font-size: 13px;
+            text-align: center; padding: 10px; font-weight: bold; z-index: 999999; font-family: Arial, sans-serif; font-size: 14px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
         #destructionBanner a { color: #ffff00; text-decoration: underline; margin-left: 10px; }
+        body { margin-top: 45px !important; }
     </style>
 </head>
-<body id="body" class="l-body" style="position: relative; min-height: 100%; top: 0px; margin-top: 35px;">
+<body id="body" class="l-body" style="position: relative; min-height: 100%; top: 0px;">
 
     <div id="destructionBanner">
-        💥 Klikni na cokoliv na stránce školy a odbouchni to! 
+        💥klikni na cokoliv na stránce a vyhoď to do povětří!
         <a href="../">&laquo; Zpět na bezpečný portál</a>
     </div>
 
-    <!-- Původní obsah GJW webu ze zdrojáku -->
-    <header class="l-header js-fixed" style="margin-top: 35px;">
+    <!-- Kompletní originální struktura GJW webu -->
+    <nav class="l-nav c-top-nav">
+        <div class="o-wrapper">
+            <ul class="c-top-nav__list">
+                <li class="c-top-nav__item"><a href="https://gjwprostejov.bakalari.cz/" class="c-top-nav__link" target="_blank">Bakaláři</a></li>
+                <li class="c-top-nav__item"><a href="https://portal.office.com/" class="c-top-nav__link" target="_blank">Office 365</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="l-header js-fixed">
         <div class="c-header">
             <div class="c-branding">
-                <a href="#" class="c-branding__link destructible">
+                <a href="#" class="c-branding__link">
                     <span class="c-branding__title">Gymnázium<br>Jiřího Wolkera</span>
                 </a>
             </div>
         </div>
     </header>
 
-    <div class="l-main" style="padding: 20px; max-width: 1000px; margin: 0 auto;">
+    <div class="l-main">
         <main class="c-main">
             <div id="komponenta">
                 <div>
                     <h2>Aktuálně</h2>
                     <div class="c-articles">
-                        <article class="c-article destructible" style="padding: 10px; border: 1px solid #ccc; margin-bottom: 10px; background: white; cursor: pointer;">
+                        <article class="c-article">
                             <div class="c-article__body"><header><h3>Výběrový zimní sportovní kurz v Rakousku 2026</h3></header></div>
                             <div class="c-article__meta">středa 7.10.2026</div>
                         </article>
-                        <article class="c-article destructible" style="padding: 10px; border: 1px solid #ccc; margin-bottom: 10px; background: white; cursor: pointer;">
+                        <article class="c-article">
                             <div class="c-article__body"><header><h3>Gymnázium Jiřího Wolkera opět bodovalo v Talentu Olomouckého kraje</h3></header></div>
                             <div class="c-article__meta">neděle 4.10.2026</div>
                         </article>
-                        <article class="c-article destructible" style="padding: 10px; border: 1px solid #ccc; margin-bottom: 10px; background: white; cursor: pointer;">
+                        <article class="c-article">
                             <div class="c-article__body"><header><h3>Jsme Zelenou školou Olomouckého kraje</h3></header></div>
                             <div class="c-article__meta">čtvrtek 1.10.2026</div>
+                        </article>
+                        <article class="c-article">
+                            <div class="c-article__body"><header><h3>Postup do krajského kola atletického poháru</h3></header></div>
+                            <div class="c-article__meta">pátek 18.9.2026</div>
                         </article>
                     </div>
                 </div>
@@ -68,175 +85,44 @@
         </main>
     </div>
 
-    <footer class="l-footer" style="background: #222; color: white; padding: 20px; margin-top: 40px; text-align: center;">
-        <p class="destructible" style="cursor: pointer;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva vyhrazena (zatím).</p>
+    <footer class="l-footer">
+        <div class="c-footnote">
+            <section class="c-footnote__block">
+                <h2 class="c-footnote__heading">Kontakt</h2>
+                <address>Gymnázium Jiřího Wolkera<br>Kollárova 3<br>796 01 Prostějov</address>
+            </section>
+        </div>
+        <section class="c-footcopy"><p class="o-wrapper">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva vyhrazena.</p></section>
     </footer>
 
-    <!-- Interaktivní skript pro výbuchy -->
+    <!-- Interaktivní skript pro výbuchy po kliknutí -->
     <script>
         document.addEventListener('click', function(e) {
-            // Zabráníme výchozímu prokliknutí odkazů
             e.preventDefault();
             e.stopPropagation();
 
             let target = e.target;
             
-            // Najdeme nejbližší smysluplný blok (článek, nadpis, tlačítko atd.)
+            // Najdeme nejbližší rozumný kontejner (článek, nadpis, obrázek, blok), aby vybuchla celá část
             while (target && target !== document.body && target.id !== 'destructionBanner') {
-                if (target.tagName === 'ARTICLE' || target.tagName === 'H2' || target.tagName === 'H3' || target.tagName === 'HEADER' || target.tagName === 'FOOTER' || target.classList.contains('c-article')) {
+                if (target.tagName === 'ARTICLE' || target.tagName === 'SECTION' || target.tagName === 'NAV' || target.tagName === 'HEADER' || target.tagName === 'FOOTER' || target.tagName === 'H2' || target.tagName === 'H3') {
                     break;
                 }
                 target = target.parentElement;
             }
 
             if (!target || target === document.body || target.id === 'destructionBanner') {
-                target = e.target; // Pokud nic specifického nenajdeme, klikneme přímo na prvek
+                target = e.target;
             }
 
-            // Přidáme výbušnou třídu
+            // Spustíme výbušnou animaci
             target.classList.add('exploded');
 
-            // Po skončení animace prvek úplně odstraníme z DOMu
+            // Po dohrání animace prvek úplně skryjeme
             setTimeout(() => {
                 target.style.display = 'none';
             }, 600);
         }, true);
-    </script>
-</body>
-</html>
-```[cite: 5]
-
----
-
-### 2. Aktualizace kořenového `index.html` (Přidání do novinek a nové záložky)
-Uprav svůj hlavní soubor **`index.html`** tak, aby v sekci Novinky i v seznamu záložek přibyla nová sekce **„Znič stránku školy!“**:
-
-```html
-<!-- do taky -->
-<!DOCTYPE html>
-<html lang="cs">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Studenstvo GJW</title>
-        
-    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
-    <meta name="description" content="komi-tragicky portal studenstva Gjw">
-        
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <style>
-        body {
-            background-color: #f0f0f0;
-            color: #000000;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 14px;
-            margin: 15px;
-            padding: 10px;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-            box-sizing: border-box;
-        }
-        .stred { text-align: center; }
-        .logo-wrapper {
-            display: inline-flex;
-            align-items: baseline;
-            justify-content: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 5px;
-        }
-        .logo { max-width: 100%; height: auto; }
-        .logo-sub {
-            font-family: Arial, sans-serif;
-            font-size: 28px;
-            font-weight: bold;
-            font-style: italic;
-            color: #222;
-        }
-        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
-        .minioddeleni { border: 0; height: 1px; background: #e0e0e0; margin: 12px 0; }
-        #druhynadpis { font-size: 16px; font-weight: bold; margin: 15px 0 8px 0; color: #000000; }
-        #druhynadpis a { color: #0000EE; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-        #druhynadpis a:hover { text-decoration: underline; }
-        #mininadpis { font-size: 13px; margin: 10px 0 4px 0; font-weight: bold; color: #000000; }
-        .novinky { margin: 8px 0; font-size: 13px; line-height: 1.5; }
-        .tady, .dva { font-size: 12px; color: #555; margin: 4px 0 12px 0; line-height: 1.4; }
-        .jaromil { color: #0000EE; text-decoration: none; }
-        .jaromil:hover { text-decoration: underline; }
-        .legal-text { font-size: 11px; color: #666; line-height: 1.5; margin: 6px 0 12px 0; }
-        
-        @media (max-width: 600px) {
-            body { margin: 10px; padding: 5px; font-size: 15px; }
-            .novinky, .tady, .dva { font-size: 13px; }
-        }
-    </style>
-</head>
-<body>
-    <p class="stred">
-        <span class="logo-wrapper">
-            <img class="logo" src="https://i.imgur.com/QvqvK3M.png" alt="GJW Logo">
-            <span class="logo-sub">2.0</span>
-        </span>
-    </p>
-    <hr class="oddeleni">
-        
-    <h2 id="druhynadpis">Novinky</h2>
-    <div class="novinky" id="homeNewsText">
-        <strong>7/10/26</strong> - Přidali jsme: <a class="jaromil" href="./chat/"><b>Diskuzní portál (chat)</b></a>, <a class="jaromil" href="./temno/"><b>Temnou stránku školy</b></a> pro nahrávání důkazů, sekci <a class="jaromil" href="./rozsir/"><b>Rozšiř to!</b></a> s propagačními designy a zbrusu novou sekci <a class="jaromil" href="./znic/"><b>Znič stránku školy!</b></a> 💣.
-    </div>
-    <br>
-    <hr class="oddeleni">
-
-    <h2 id="druhynadpis"><a href="./chat/"><img src="https://i.imgur.com/c8lHe3s.png" width="19" alt="Chat">Diskuzní Portál</a></h2>
-    <p class="tady" id="homePortalDesc">Chat pro celou školu v reálném čase</p>
-    <hr class="oddeleni">
-
-    <!-- Temná stránka -->
-    <h2 id="druhynadpis"><a href="./temno/">🌑 Temná stránka školy</a></h2>
-    <p class="tady">Nahlédni pod pokličku toho, co se raději ututlává...</p>
-    <hr class="oddeleni">
-
-    <!-- Rozšiř to! -->
-    <h2 id="druhynadpis"><a href="./rozsir/">📢 Rozšiř to!</a></h2>
-    <p class="tady">Pomoz dostat portál mezi lidi. Stáhni si nebo vytiskni naše propagační designy!</p>
-    <hr class="oddeleni">
-
-    <!-- NOVÁ KATEGORIE: Znič stránku školy! -->
-    <h2 id="druhynadpis"><a href="./znic/">💣 Znič stránku školy!</a></h2>
-    <p class="tady">Interaktivní simulátor: na cokoliv klikneš, to efektně vybuchne a zmizí ze stránky!</p>
-    <hr class="oddeleni">
-
-    <h2 id="druhynadpis">Informácie</h2>
-    <p class="dva" id="homeInfoText">Máš nějaké informace které chceš zveřejnit? Pošli je na mail <strong><a href="mailto:anonym.gjw@proton.me">anonym.gjw@proton.me</a></strong></p>
-        
-    <h2 id="mininadpis">Licence</h2>
-    <p class="legal-text" id="homeLicenseText">Veškerý obsah na této stránce je šířen pod licencí Creative Commons (BY 4.0). Stránka slouží jako neoficiální nezávislý studentský portál.</p>
-    <hr class="minioddeleni">
-        
-    <h2 id="mininadpis">Je stránka pomalá?</h2>
-    <p class="legal-text" id="homeSpeedText">Pokud stránka načítá pomalu, ujisti se že jseš třeba připojenej k internetu ne ?</p>
-    <hr class="oddeleni">	
-
-    <p style="font-size: 13px;"><i id="homeFooterText">Vyrobeno v náhodný večer před třema písemkama. Neukládáme žádná osobní data, zatím.(vlastně chat ukládáme)</i></p>
-
-    <script>
-        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        db.ref('siteContent').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (!data) return;
-            if (data.newsText) document.getElementById('homeNewsText').innerHTML = data.newsText;
-            if (data.portalDesc) document.getElementById('homePortalDesc').innerText = data.portalDesc;
-            if (data.infoText) document.getElementById('homeInfoText').innerHTML = data.infoText;
-            if (data.licenseText) document.getElementById('homeLicenseText').innerText = data.licenseText;
-            if (data.speedText) document.getElementById('homeSpeedText').innerText = data.speedText;
-            if (data.footerText) document.getElementById('homeFooterText').innerText = data.footerText;
-        });
     </script>
 </body>
 </html>
