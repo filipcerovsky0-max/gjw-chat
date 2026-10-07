@@ -21,7 +21,7 @@
             margin-right: auto;
             transition: background-color 0.3s, color 0.3s;
         }
-        /* Tmavý režim - zajištění viditelnosti všech textů a odkazů */
+        /* Tmavý režim */
         body.dark-mode {
             background-color: #121212;
             color: #ffffff;
@@ -31,6 +31,10 @@
         }
         body.dark-mode .minioddeleni {
             background: #222;
+        }
+        /* Automatické zcifernění loga v dark modu, aby bylo bílé */
+        body.dark-mode .logo {
+            filter: invert(1) grayscale(1) brightness(200%);
         }
         body.dark-mode h2, 
         body.dark-mode #druhynadpis, 
@@ -61,6 +65,7 @@
         .logo {
             max-width: 100%;
             height: auto;
+            transition: filter 0.3s;
         }
         .oddeleni {
             border: 0;
