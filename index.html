@@ -53,8 +53,24 @@
         .jaromil { color: #0000EE; text-decoration: none; }
         .jaromil:hover { text-decoration: underline; }
         .legal-text { font-size: 11px; color: #666; line-height: 1.5; margin: 6px 0 12px 0; }
+        
+        .retro-box { background: #ffffff; border: 1px solid #b0b0a8; padding: 10px; margin-bottom: 15px; }
+        .retro-button {
+            background: #e2e8f0; border: 1px solid #94a3b8; padding: 4px 10px;
+            font-family: Arial, sans-serif; font-size: 12px; cursor: pointer; color: #000; border-radius: 3px;
+        }
+        .retro-button:hover { background: #cbd5e1; }
+        .retro-input {
+            background: #ffffff; border: 1px solid #94a3b8; padding: 5px;
+            font-family: Arial, sans-serif; font-size: 12px; color: #000; border-radius: 3px; width: 100%; box-sizing: border-box;
+        }
+        .gallery-item {
+            background: #fff; border: 1px solid #ccc; padding: 8px; margin-bottom: 10px;
+        }
+        .gallery-item img {
+            max-width: 100%; height: auto; display: block; margin-top: 5px;
+        }
                 
-        /* Úprava pro mobilní zařízení – lepší rozestupy */
         @media (max-width: 600px) {
             body {
                 margin: 10px;
@@ -85,6 +101,24 @@
     <p class="tady" id="homePortalDesc">Chat pro celou školu v reálném čase</p>
     <hr class="oddeleni">
 
+    <!-- NOVÁ SEKCE: Temná stránka školy -->
+    <h2 id="druhynadpis">🌑 Temná stránka školy</h2>
+    <p class="tady" id="homeDarkDesc">O temné stránce školy již víme, ale víme toho skutečně tolik? Sem můžeme nahrávat všechny důkazy o temné stránce školy v případě, že by chtěli důkazy odstranit.</p>
+    
+    <div class="retro-box">
+        <h3 style="font-size: 13px; margin: 0 0 8px 0; font-weight: bold;">Nahrát nový důkaz:</h3>
+        <div style="space-y: 6px;">
+            <input type="text" id="darkCaptionInput" placeholder="Popisek důkazu..." class="retro-input" style="margin-bottom: 6px;">
+            <input type="file" id="darkFileInput" accept="image/*" class="retro-input" style="margin-bottom: 6px;">
+            <button onclick="uploadDarkEvidence()" class="retro-button font-bold">Nahrát do galerie</button>
+        </div>
+    </div>
+
+    <div id="darkGalleryList" class="space-y-3">
+        <!-- Zde se dynamicky načtou fotky -->
+    </div>
+    <hr class="oddeleni">
+
     <h2 id="druhynadpis">Informácie</h2>
     <p class="dva" id="homeInfoText">Máš nějaké informace které chceš zveřejnit? Pošli je na mail <strong><a href="mailto:anonym.gjw@proton.me">anonym.gjw@proton.me</a></strong></p>
         
@@ -112,6 +146,62 @@
             if (data.licenseText) document.getElementById('homeLicenseText').innerText = data.licenseText;
             if (data.speedText) document.getElementById('homeSpeedText').innerText = data.speedText;
             if (data.footerText) document.getElementById('homeFooterText').innerText = data.footerText;
+        });
+
+        // Nahrávání důkazů do Temné stránky školy
+        function uploadDarkEvidence() {
+            const captionInput = document.getElementById('darkCaptionInput');
+            const fileInput = document.getElementById('darkFileInput');
+            const caption = captionInput.value.trim() || "Bez popisku";
+            
+            if (fileInput.files.length === 0) {
+                alert("Vyberte prosím obrázek!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                
+                db.ref('darkEvidence').push({
+                    caption: caption,
+                    image: base64Image,
+                    time: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }, (error) => {
+                    if (error) {
+                        alert("Chyba při nahrávání.");
+                    } else {
+                        captionInput.value = '';
+                        fileInput.value = '';
+                        alert("Důkaz úspěšně nahrán do temné stránky!");
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Načtení fotek galerie z Firebase
+        db.ref('darkEvidence').on('value', (snapshot) => {
+            const data = snapshot.val();
+            const galleryList = document.getElementById('darkGalleryList');
+            galleryList.innerHTML = '';
+            
+            if (!data) {
+                galleryList.innerHTML = '<p class="tady italic text-gray-500">Zatím nebyly nahrány žádné důkazy.</p>';
+                return;
+            }
+
+            Object.entries(data).reverse().forEach(([key, item]) => {
+                const div = document.createElement('div');
+                div.className = "gallery-item";
+                div.innerHTML = `
+                    <div style="font-weight: bold; font-size: 13px; color: #1d4372; margin-bottom: 4px;">${item.caption}</div>
+                    <img src="${item.image}" alt="Důkaz">
+                    <div style="font-size: 10px; color: #777; margin-top: 4px; text-align: right;">Nahráno: ${item.time}</div>
+                `;
+                galleryList.appendChild(div);
+            });
         });
     </script>
 </body>
