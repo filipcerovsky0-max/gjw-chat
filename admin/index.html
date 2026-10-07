@@ -78,6 +78,15 @@
             gap: 10px;
         }
         
+        .clickable-name {
+            cursor: pointer;
+            color: #0000EE;
+            text-decoration: underline;
+        }
+        .clickable-name:hover {
+            color: #ff0000;
+        }
+        
         @keyframes rainbow {
             0% { color: red; }
             14% { color: orange; }
@@ -101,7 +110,6 @@
             margin-top: 15px;
         }
         
-        /* Přihlašovací overlay – zablokuje přístup dokud uživatel nezadá správné heslo */
         #loginOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 9999; display: flex;
@@ -111,13 +119,13 @@
             background: #fff; padding: 25px; border-radius: 8px; width: 320px; text-align: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        #adminMainContent { display: none; } /* Původně skryté, ukáže se po přihlášení */
+        #adminMainContent { display: none; }
         #status { font-weight: bold; margin-left: 10px; color: green; }
     </style>
 </head>
 <body>
 
-    <!-- PŘIHLAŠOVACÍ FORMULÁŘ (Zablokuje vstup dál) -->
+    <!-- PŘIHLAŠOVACÍ FORMULÁŘ -->
     <div id="loginOverlay">
         <div class="login-box">
             <h2 style="margin-top:0; font-family:'Papyrus',fantasy,sans-serif;">🔐 Zabezpečený Admin</h2>
@@ -128,14 +136,14 @@
         </div>
     </div>
 
-    <!-- HLAVNÍ OBSAH ADMINISTRACE (Viditelný až po správném heslu) -->
+    <!-- HLAVNÍ OBSAH ADMINISTRACE -->
     <div id="adminMainContent">
         <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
         <hr class="oddeleni">
 
         <div class="stred">
             <h1>⚡ GJW Master Control Admin Panel</h1>
-            <p>Vstup do chatu, Ghost mód, správa banů/mute/kicků, úprava názvů a sekcí.</p>
+            <p>Interaktivní správa chatu, Ghost mód, banování dle zařízení (Fingerprint ID).</p>
         </div>
 
         <hr class="oddeleni">
@@ -153,48 +161,44 @@
             <span id="status"></span>
         </div>
 
-        <!-- SEKCE 2: Vstup do chatu & Ghost mód & Zprávy -->
+        <!-- SEKCE 2: Živý chat & Ghost / Viditelný režim -->
         <div class="admin-section">
-            <h2>💬 Vstup do chatu & Ghost mód</h2>
-            <p>Napiš zprávu do chatu jako administrátor nebo aktivuj Ghost mód:</p>
+            <h2>💬 Živý chat (Klikací jména a správa zpráv)</h2>
+            <p>Kliknutím na jméno kohokoliv v chatu ho můžeš rovnou vytrestat. Zde můžeš také psát zprávy nebo aktivovat Ghost mód:</p>
             
             <div style="background: #f4f4f4; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
                 <input type="text" id="adminChatName" value="ADMIN ⚡" placeholder="Admin jméno..." style="margin-bottom: 5px;">
-                <textarea id="adminChatInput" placeholder="Napsat zprávu do chatu..." style="min-height: 40px; margin-bottom: 5px;"></textarea>
+                <textarea id="adminChatInput" placeholder="Napsat zprávu do chatu jako admin..." style="min-height: 40px; margin-bottom: 5px;"></textarea>
                 <div>
                     <label><input type="checkbox" id="adminRainbowCheck" checked> Duhový Rainbow Nick ✨</label>
-                    <label style="margin-left: 15px;"><input type="checkbox" id="ghostModeCheck"> 👻 Ghost mód (neviditelný pozorovatel)</label>
+                    <label style="margin-left: 15px;"><input type="checkbox" id="ghostModeCheck"> 👻 Ghost mód (neviditelný v chatu / offline stav)</label>
                 </div>
                 <button class="btn" style="margin-top: 8px;" onclick="odeslatAdminZpravu()">Odeslat zprávu do chatu</button>
             </div>
 
-            <div style="margin-bottom: 10px;">
-                <input type="text" id="sysMsgInput" placeholder="Nebo pošli systémové hlášení...">
-                <button class="btn btn-warning" onclick="odeslatSystemovouZpravu()">Odeslat systémovou zprávu</button>
-            </div>
-
-            <div id="chatMessagesList" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; background: #fff;">
+            <div id="chatMessagesList" style="max-height: 350px; overflow-y: auto; border: 1px solid #ddd; background: #fff;">
                 <p style="padding: 10px; text-align: center;">Načítám zprávy...</p>
             </div>
         </div>
 
-        <!-- SEKCE 3: Správa Uživatelů, Banů, Mute a Kicků -->
+        <!-- SEKCE 3: Správa Uživatelů podle Fingerprint ID / Zařízení -->
         <div class="admin-section">
-            <h2>🔨 Správa uživatelů, Banů, Mute & Kick</h2>
-            <p>Rozklikni uživatele a uděl mu trest:</p>
+            <h2>🔨 Správa uživatelů (Vázáno na zařízení / Fingerprint)</h2>
+            <p>Seznam všech uživatelů podle jejich jedinečného ID zařízení. Kliknutím na uživatele upravíš jeho tresty:</p>
             <div id="usersList" style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; background: #fff; margin-bottom: 15px;">
                 <p style="padding: 10px; text-align: center;">Načítám uživatele...</p>
             </div>
 
+            <!-- MODAL OKNO PRO TRESTY A FINGERPRINT -->
             <div id="userDetailModal" class="modal" style="display:none;">
                 <h3 id="modalUserName" style="margin-top:0;">Detail uživatele</h3>
-                <p><b>ID / Jméno:</b> <span id="modalUserId"></span></p>
+                <p><b>Fingerprint / ID zařízení:</b> <span id="modalUserId" style="font-family: monospace; color: #b30000;"></span></p>
                 
                 <div style="margin-top: 10px;">
                     <label><b>Typ trestu:</b></label>
                     <select id="trestTyp">
-                        <option value="mute">Mute (Ztlumení psaní)</option>
-                        <option value="ban">Ban (Zákaz vstupu)</option>
+                        <option value="mute">Mute (Ztlumení psaní na zařízení)</option>
+                        <option value="ban">Ban (Zákaz vstupu ze zařízení)</option>
                         <option value="kick">Kick (Okamžité vyhození)</option>
                     </select>
                 </div>
@@ -221,9 +225,8 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let aktivniUzivatelJmeno = null;
+        let aktivniUzivatelId = null;
 
-        // Ověření hesla přímo z Firebase z uzlu admin/password
         function overitHeslo() {
             const zadebaneHeslo = document.getElementById('adminPasswordInput').value;
             const errorP = document.getElementById('loginError');
@@ -232,7 +235,6 @@
 
             db.ref('admin/password').once('value', (snap) => {
                 const spravneHeslo = snap.val();
-                console.log("Zadáno:", zadebaneHeslo, "Firebase:", spravneHeslo);
 
                 if (zadebaneHeslo && zadebaneHeslo.trim() === String(spravneHeslo).trim()) {
                     document.getElementById('loginOverlay').style.display = "none";
@@ -263,7 +265,7 @@
                 if (snap.val()) document.getElementById('newsText').value = snap.val();
             });
 
-            // 2. Načtení zpráv
+            // 2. Načtení zpráv (včetně propojení na fingerprint uživatele)
             db.ref('messages').on('value', (snapshot) => {
                 const chatList = document.getElementById('chatMessagesList');
                 chatList.innerHTML = "";
@@ -278,16 +280,16 @@
                     const row = document.createElement('div');
                     row.className = 'chat-row';
                     const stav = msg.seen ? "👁️ Viděno" : "🔴 Neviděno";
-                    const ghostTag = msg.ghost ? " 👻[GHOST]" : "";
+                    const fingerprintId = msg.fingerprint || msg.userId || 'neznami-id';
                     
                     row.innerHTML = `
                         <div>
-                            <span class="${msg.rainbow ? 'rainbow-nick' : ''}"><b>${msg.name || 'Anonym'}:</b></span> 
-                            <span>${msg.text || ''}${ghostTag}</span>
-                            <br><small style="color: #888;">Stav: ${stav}</small>
+                            <span class="clickable-name ${msg.rainbow ? 'rainbow-nick' : ''}" onclick="otevritDetailUto('${fingerprintId}', '${msg.name || 'Anonym'}')"><b>${msg.name || 'Anonym'}</b></span> 
+                            <span>: ${msg.text || ''}</span>
+                            <br><small style="color: #888;">ID zařízení: ${fingerprintId} | Stav: ${stav}</small>
                         </div>
                         <div>
-                            <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="prepnoutVidene('${key}', ${!msg.seen})">Přepnout viditelnost</button>
+                            <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="prepnoutVidene('${key}', ${!msg.seen})">Viditelnost</button>
                             <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="smazZpravu('${key}')">Smazat</button>
                         </div>
                     `;
@@ -295,23 +297,23 @@
                 });
             });
 
-            // 3. Načtení uživatelů
+            // 3. Načtení uživatelů podle zařízení (Fingerprint)
             db.ref('users').on('value', (snapshot) => {
                 const usersList = document.getElementById('usersList');
                 usersList.innerHTML = "";
                 const users = snapshot.val();
                 if (!users) {
-                    usersList.innerHTML = '<p style="padding: 10px; text-align: center;">Žádní uživatelé.</p>';
+                    usersList.innerHTML = '<p style="padding: 10px; text-align: center;</">Žádní zaregistrovaní uživatelé zařízení.</p>';
                     return;
                 }
 
-                Object.keys(users).forEach(uid => {
-                    const user = users[uid];
+                Object.keys(users).forEach(fingerprintId => {
+                    const user = users[fingerprintId];
                     const row = document.createElement('div');
                     row.className = 'user-row';
                     row.innerHTML = `
-                        <span><b class="${user.rainbow ? 'rainbow-nick' : ''}">${user.name || uid}</b> (Stav: ${user.status || 'Aktivní'})</span>
-                        <button class="btn" onclick="otevritDetailUto('${uid}', '${user.name || uid}')">Rozkliknout a spravovat</button>
+                        <span><b class="clickable-name ${user.rainbow ? 'rainbow-nick' : ''}" onclick="otevritDetailUto('${fingerprintId}', '${user.name || fingerprintId}')">${user.name || fingerprintId}</b> <br><small style="color:#666;">ID: ${fingerprintId}</small></span>
+                        <span>Stav: <b>${user.status || 'Aktivní'}</b> <button class="btn" style="margin-left: 10px;" onclick="otevritDetailUto('${fingerprintId}', '${user.name || fingerprintId}')">Spravovat</button></span>
                     `;
                     usersList.appendChild(row);
                 });
@@ -335,64 +337,53 @@
 
             if (!text) return;
 
+            // Pokud je zapnutý Ghost mód, zpráva se může poslat jako neviditelný / systémový prvek nebo admin prvek bez upozornění
             db.ref('messages').push({
                 name: name,
                 text: text,
                 rainbow: rainbow,
                 ghost: ghost,
                 seen: true,
+                fingerprint: "ADMIN_DEVICE_MASTER",
                 timestamp: Date.now()
             });
 
             document.getElementById('adminChatInput').value = "";
         }
 
-        function odeslatSystemovouZpravu() {
-            const text = document.getElementById('sysMsgInput').value;
-            if (!text) return;
-            db.ref('messages').push({
-                name: "SYSTEM ⚠️",
-                text: text,
-                isSystem: true,
-                seen: true,
-                timestamp: Date.now()
-            });
-            document.getElementById('sysMsgInput').value = "";
-        }
-
         function smazZpravu(id) { db.ref('messages/' + id).remove(); }
         function prepnoutVidene(id, stav) { db.ref('messages/' + id + '/seen').set(stav); }
 
-        function otevritDetailUto(uid, jmeno) {
-            aktivniUzivatelJmeno = uid;
+        function otevritDetailUto(fingerprintId, jmeno) {
+            aktivniUzivatelId = fingerprintId;
             document.getElementById('modalUserName').innerText = "Správa uživatele: " + jmeno;
-            document.getElementById('modalUserId').innerText = uid;
+            document.getElementById('modalUserId').innerText = fingerprintId;
             document.getElementById('userDetailModal').style.display = "block";
         }
 
         function zavritModal() {
             document.getElementById('userDetailModal').style.display = "none";
-            aktivniUzivatelJmeno = null;
+            aktivniUzivatelId = null;
         }
 
         function aplikovatTrest() {
-            if (!aktivniUzivatelJmeno) return;
+            if (!aktivniUzivatelId) return;
             const typ = document.getElementById('trestTyp').value;
             const dobaMinut = parseInt(document.getElementById('trestDoba').value) || 0;
             const rainbow = document.getElementById('rainbowToggle').checked;
             const expiration = dobaMinut > 0 ? Date.now() + (dobaMinut * 60000) : 0;
 
             if (typ === 'ban') {
-                db.ref('bans/' + aktivniUzivatelJmeno).set({ expires: expiration });
-                db.ref('users/' + aktivniUzivatelJmeno + '/status').set('ZABANOVÁN');
+                db.ref('bans/' + aktivniUzivatelId).set({ expires: expiration, active: true });
+                db.ref('users/' + aktivniUzivatelId + '/status').set('ZABANOVÁN');
             } else if (typ === 'mute') {
-                db.ref('mutes/' + aktivniUzivatelJmeno).set({ expires: expiration });
-                db.ref('users/' + aktivniUzivatelJmeno + '/status').set('ZTLUMEN (MUTE)');
+                db.ref('mutes/' + aktivniUzivatelId).set({ expires: expiration, active: true });
+                db.ref('users/' + aktivniUzivatelId + '/status').set('ZTLUMEN (MUTE)');
             } else if (typ === 'kick') {
-                db.ref('users/' + aktivniUzivatelJmeno + '/status').set('VYKOPNUT');
+                db.ref('users/' + aktivniUzivatelId + '/status').set('VYKOPNUT');
             }
-            db.ref('users/' + aktivniUzivatelJmeno + '/rainbow').set(rainbow);
-            alert("Trest aplikován!");
+            db.ref('users/' + aktivniUzivatelId + '/rainbow').set(rainbow);
+            alert("Trest pro zařízení " + aktivniUzivatelId + " byl úspěšně aplikován!");
             zavritModal();
         }
     </script>
