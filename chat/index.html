@@ -178,7 +178,6 @@
             }
         });
 
-        // Kontrola restrikcí podle unikátního otisku zařízení
         db.ref('restrictions').on('value', snap => {
             const restrictions = snap.val() || {};
             let myRest = null;
@@ -306,6 +305,13 @@
             });
         }
 
+        function deleteMessage(firebaseKey) {
+            if (!isAdmin) return;
+            if (confirm("Opravdu smazat tuto zprávu?")) {
+                db.ref('messages/' + firebaseKey).remove();
+            }
+        }
+
         function openUserProfileModal(uid, username) {
             if (!isAdmin) return;
             activeProfileUid = uid;
@@ -401,18 +407,33 @@
             if (!data) { document.getElementById('emptyState').classList.remove('hidden'); return; }
             document.getElementById('emptyState').classList.add('hidden');
 
-            Object.values(data).forEach(msg => {
+            Object.entries(data).forEach(([key, msg]) => {
                 const div = document.createElement('div');
                 if (msg.isSystem) {
-                    div.className = "text-center text-gray-500 text-[11px] italic my-1";
-                    div.innerText = `-- ${msg.text} --`;
+                    div.className = "text-center text-gray-500 text-[11px] italic my-1 flex items-center justify-center gap-2";
+                    div.innerHTML = `<span>-- ${msg.text} --</span>`;
+                    if (isAdmin) {
+                        const delBtn = document.createElement('button');
+                        delBtn.innerText = "[smazat]";
+                        delBtn.className = "text-red-600 cursor-pointer hover:underline text-[10px]";
+                        delBtn.onclick = () => deleteMessage(key);
+                        div.appendChild(delBtn);
+                    }
                 } else {
-                    div.className = "bg-white border border-gray-300 p-2 rounded shadow-sm text-xs";
+                    div.className = "bg-white border border-gray-300 p-2 rounded shadow-sm text-xs relative group";
                     const nameHtml = msg.isAdmin 
                         ? `<span class="rainbow-admin cursor-pointer" onclick="openUserProfileModal('${msg.userId}', '${msg.user}')">${msg.user}</span>`
                         : `<span class="font-bold text-blue-900 cursor-pointer underline" onclick="openUserProfileModal('${msg.userId}', '${msg.user}')">${msg.user}</span>`;
                     
                     div.innerHTML = `<div class="flex justify-between text-[11px] mb-0.5"><span>${nameHtml}</span><span class="text-gray-400 font-normal">${msg.time}</span></div><div>${msg.text}</div>`;
+                    
+                    if (isAdmin) {
+                        const delBtn = document.createElement('button');
+                        delBtn.innerText = "Smazat";
+                        delBtn.className = "absolute top-1 right-2 text-[10px] text-red-600 hidden group-hover:inline-block cursor-pointer bg-red-50 px-1 border border-red-200 rounded";
+                        delBtn.onclick = () => deleteMessage(key);
+                        div.appendChild(delBtn);
+                    }
                 }
                 messagesList.appendChild(div);
             });
