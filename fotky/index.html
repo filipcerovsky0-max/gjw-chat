@@ -20,23 +20,32 @@
         .gallery {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 20px;
             justify-content: center;
             margin-top: 20px;
         }
         .photo-box {
             background: #fff;
             border: 1px solid #ccc;
-            padding: 8px;
-            border-radius: 4px;
+            padding: 10px;
+            border-radius: 6px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            text-align: center;
+            max-width: 300px;
         }
         .photo-box img {
             max-width: 100%;
             height: auto;
-            max-height: 350px;
+            max-height: 250px;
             display: block;
-            border-radius: 2px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .photo-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #333;
+            margin: 5px 0 0 0;
         }
         .back-link {
             color: #0000EE;
@@ -59,53 +68,38 @@
     </div>
 
     <script>
-        async function nactiFotkyZGitHubu() {
+        // TADY SI JEDNODUŠE DOPISUJEŠ SVÉ FOTKY A JEJICH NÁZVY:
+        const seznamFotek = [
+            { soubor: "cold asf.jpg", nazev: "cold asf" },
+            { soubor: "idk co tu dela.jpg", nazev: "idk co tu dela" }
+{ soubor: "coldjpg.jpg", nazev: "studene" }
+{ soubor: "sedlak.jpg", nazev: "sedlak" }
+{ soubor: "subirov.jpg", nazev: "subirov" }
+{ soubor: "je v katakombach.jpg", nazev: "je v katakombach" }
+{ soubor: "taky je v katakombach.jpg", nazev: "bracho co tu delas" }
+        ];
+
+        function nactiGalerii() {
             const galerieDiv = document.getElementById('galerie');
-            
-            // Údaje o tvém GitHub repozitáři
-            const owner = "filipcerovsky0-max";
-            const repo = "gjw-chat";
-            const path = "fotky-ucitelu"; // Název složky v repozitáři (případně si uprav)
+            galerieDiv.innerHTML = "";
 
-            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error("Nepodařilo se načíst složku s fotkami.");
-                }
-                
-                const files = await response.json();
-                
-                // Vyfiltruje pouze obrázky (jpg, jpeg, png, webp, gif)
-                const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
-                const photoFiles = files.filter(file => {
-                    if (file.type !== 'file') return false;
-                    const lowerName = file.name.toLowerCase();
-                    return imageExtensions.some(ext => lowerName.endsWith(ext));
-                });
-
-                galerieDiv.innerHTML = "";
-
-                if (photoFiles.length === 0) {
-                    galerieDiv.innerHTML = '<p class="stred">Ve složce zatím nejsou žádné fotky.</p>';
-                    return;
-                }
-
-                // Vykreslí čistě jenom fotky
-                photoFiles.forEach(file => {
-                    const box = document.createElement('div');
-                    box.className = 'photo-box';
-                    box.innerHTML = `<img src="${file.download_url}" alt="${file.name}">`;
-                    galerieDiv.appendChild(box);
-                });
-
-            } catch (error) {
-                galerieDiv.innerHTML = `<p class="stred" style="color: red;">Chyba při načítání fotek: ${error.message}</p>`;
+            if (seznamFotek.length === 0) {
+                galerieDiv.innerHTML = '<p class="stred">Zatím tu nejsou žádné fotky.</p>';
+                return;
             }
+
+            seznamFotek.forEach(foto => {
+                const box = document.createElement('div');
+                box.className = 'photo-box';
+                box.innerHTML = `
+                    <img src="${foto.soubor}" alt="${foto.nazev}">
+                    <p class="photo-title">📷 ${foto.nazev}</p>
+                `;
+                galerieDiv.appendChild(box);
+            });
         }
 
-        nactiFotkyZGitHubu();
+        nactiGalerii();
     </script>
 </body>
 </html>
