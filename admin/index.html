@@ -41,21 +41,21 @@
         <h2>GJW COMMAND CENTER</h2>
         <p class="text-xs" style="margin-bottom: 10px; color: #555;">Zadej administrátorské heslo</p>
         <input type="password" id="adminPasswordInput" placeholder="heslo..." class="retro-input" style="margin-bottom: 8px;" onkeydown="if(event.key==='Enter') verifyAdminPassword()">
-        <button onclick="verifyAdminPassword()" class="retro-button w-full font-bold" style="width: 100%;">Ověřit přístup</button>
+        <button onclick="verifyAdminPassword()" class="retro-button font-bold" style="width: 100%;">Ověřit přístup</button>
         <div id="adminLoginError" class="text-red-600 text-xs hidden font-bold" style="margin-top: 8px; color: red;">Špatné heslo!</div>
         <div style="margin-top: 12px;"><a href="../">&laquo; Zpět na hlavní web</a></div>
     </div>
 
     <!-- Hlavní Dashboard -->
     <div id="adminDashboardBox" class="hidden">
-        <div class="retro-box flex justify-between items-center" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="retro-box" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h1 style="margin: 0;">GJW Admin Command Center</h1>
                 <p style="font-size: 11px; color: #666; margin: 2px 0 0 0;">Správa webu, chatu a propagačních designů</p>
             </div>
             <div>
                 <button onclick="clearChatData()" class="retro-button" style="background: #ffcccc; border-color: #ff9999; color: #990000;">Smazat chat</button>
-                <a href="../" class="retro-button" style="text-decoration: none; display: inline-block; margin-left: 5px;">Odhlásit</a>
+                <button onclick="handleAdminLogout()" class="retro-button" style="margin-left: 5px;">Odhlásit</button>
             </div>
         </div>
 
@@ -89,7 +89,7 @@
 
             <div>
                 <label style="font-weight: bold; display: block; margin-bottom: 6px;">Aktivní nahrané designy:</label>
-                <div id="adminDesignsListContainer" style="max-height: 200px; overflow-y: auto; space-y: 6px;">
+                <div id="adminDesignsListContainer" style="max-height: 200px; overflow-y: auto;">
                     <span style="color: #666; font-style: italic;">Načítám designy...</span>
                 </div>
             </div>
@@ -98,7 +98,7 @@
         <!-- Editor textů na hlavní stránce -->
         <div class="retro-box">
             <h2>✏️ Editor textů na hlavní stránce</h2>
-            <div style="space-y: 8px;">
+            <div>
                 <label style="font-weight: bold; display: block; margin-top: 6px;">Novinky (HTML):</label>
                 <textarea id="editNews" rows="2" class="retro-textarea"></textarea>
 
@@ -130,6 +130,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // Kontrola přihlášení při načtení
         if (sessionStorage.getItem('gjw_admin_secure_logged') === 'true') {
             document.getElementById('adminAuthBox').classList.add('hidden');
             document.getElementById('adminDashboardBox').classList.remove('hidden');
@@ -158,6 +159,11 @@
                     document.getElementById('adminLoginError').classList.remove('hidden');
                 }
             });
+        }
+
+        function handleAdminLogout() {
+            sessionStorage.removeItem('gjw_admin_secure_logged');
+            location.reload();
         }
 
         function enterChatAsAdmin() {
