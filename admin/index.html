@@ -25,7 +25,7 @@
         <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
             <div>
                 <h1 class="font-bold text-zinc-100 text-sm">GJW Admin Command Center</h1>
-                <p class="text-[9px] text-zinc-500">Správa webu, textů, vstupů do chatu a moderace</p>
+                <p class="text-[9px] text-zinc-500">Správa webu, textů, vstupů do chatu, moderace a designů</p>
             </div>
             <div class="flex gap-2">
                 <button onclick="clearChatData()" class="border border-red-800/80 bg-red-950/30 text-red-400 px-3 py-1.5 rounded cursor-pointer hover:bg-red-900/40">Smazat chat</button>
@@ -44,6 +44,23 @@
                 </select>
             </div>
             <button onclick="enterChatAsAdmin()" class="border border-blue-700 bg-blue-950/40 text-blue-400 px-4 py-2.5 rounded font-bold cursor-pointer hover:bg-blue-900/50">Vstoupit do chatu &raquo;</button>
+        </div>
+
+        <!-- NOVÁ SEKCE: Nahrávání designů do "Rozšiř to!" -->
+        <div class="border border-zinc-800 p-4 bg-zinc-950 rounded-lg space-y-3">
+            <h2 class="font-bold text-yellow-400 text-xs">📢 Nahrát design do "Rozšiř to!"</h2>
+            <p class="text-[10px] text-zinc-500">Přidej nový plakátek, QR kód nebo banner, který se okamžitě objeví ve veřejné galerii.</p>
+            <div class="space-y-2">
+                <div>
+                    <label class="block text-[10px] text-zinc-400 mb-1">Název designu:</label>
+                    <input type="text" id="designTitleInput" placeholder="např. Hlavní QR Plakát A4" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-zinc-400 mb-1">Soubor obrázku:</label>
+                    <input type="file" id="designFileInput" accept="image/*" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
+                </div>
+                <button onclick="uploadDesignAdmin()" class="border border-green-700 bg-green-950/40 text-green-400 px-4 py-2 rounded font-bold cursor-pointer hover:bg-green-900/50">Nahrát design</button>
+            </div>
         </div>
 
         <!-- Editor textů na hlavní stránce -->
@@ -112,6 +129,38 @@
             sessionStorage.setItem('gjw_admin_session', 'true');
             sessionStorage.setItem('gjw_admin_mode', mode);
             window.location.href = '../chat/';
+        }
+
+        function uploadDesignAdmin() {
+            const titleInput = document.getElementById('designTitleInput');
+            const fileInput = document.getElementById('designFileInput');
+            const title = titleInput.value.trim() || "Bez názvu";
+
+            if (fileInput.files.length === 0) {
+                alert("Vyberte prosím obrázek designu!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+
+                db.ref('promoDesigns').push({
+                    title: title,
+                    image: base64Image,
+                    time: new Date().toLocaleDateString()
+                }, (error) => {
+                    if (error) {
+                        alert("Chyba při nahrávání designu.");
+                    } else {
+                        titleInput.value = '';
+                        fileInput.value = '';
+                        alert("Design byl úspěšně nahrán do 'Rozšiř to!'!");
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
         }
 
         function loadAdminData() {
