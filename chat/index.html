@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="cs" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>GJW Chat</title>
+    <meta name="description" content="Oficiální chat pro všechny studenty a učitele z Gymnázia Jiřího Wolkera v Prostějově.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        .rainbow-admin {
+            background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-black text-gray-200 h-full flex flex-col font-mono text-xs">
+
+    <!-- Ban obrazovka -->
+    <div id="bannedScreen" class="fixed inset-0 bg-black z-[9999] hidden flex-col items-center justify-center p-4 text-center space-y-3">
+        <div class="border border-red-600 p-4 max-w-xs w-full space-y-2 bg-zinc-950 rounded-lg shadow-xl">
+            <h1 class="text-sm font-bold text-red-500">MÁŠ AKTIVNÍ BAN</h1>
+            <div class="text-left space-y-1 text-gray-400">
+                <p>Důvod: <span id="bannedReasonText" class="text-white">-</span></p>
+                <p>Trvání: <span id="bannedDurationText" class="text-white">-</span></p>
+                <p id="bannedCountdownContainer" class="pt-1 text-yellow-400 hidden">Zpět za: <span id="bannedCountdownTimer">-</span></p>
+            </div>
+            <p class="text-[9px] text-zinc-500">Po uplynutí trestu můžeš zpátky do chatu.</p>
+        </div>
+    </div>
+
+    <!-- Úprava zprávy -->
+    <div id="editModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+        <div class="border border-zinc-800 bg-zinc-950 p-4 w-full max-w-sm space-y-3 rounded-lg shadow-2xl">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
+                <span class="font-bold text-zinc-200">Upravit zprávu</span>
+                <button onclick="closeEditModal()" class="text-zinc-500 hover:text-white cursor-pointer px-1">✕</button>
+            </div>
+            <textarea id="editModalInput" rows="3" class="w-full bg-black border border-zinc-800 p-2 rounded text-white focus:outline-none focus:border-zinc-600 resize-none"></textarea>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeEditModal()" class="border border-zinc-700 px-3 py-1.5 rounded text-zinc-400 hover:bg-zinc-900 cursor-pointer">Zrušit</button>
+                <button onclick="saveEditedMessage()" class="border border-zinc-500 bg-zinc-900 px-3 py-1.5 rounded text-white hover:bg-zinc-800 cursor-pointer">Uložit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Uživatelský profil (pro admina) -->
+    <div id="userProfileModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+        <div class="border border-zinc-800 bg-zinc-950 p-4 w-full max-w-sm max-h-[80vh] flex flex-col space-y-3 rounded-lg shadow-2xl">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
+                <div>
+                    <span id="profileUsernameTitle" class="font-bold text-zinc-200">Uživatel</span>
+                    <p id="profileUserIdSub" class="text-[9px] text-zinc-500">-</p>
+                </div>
+                <button onclick="closeUserProfileModal()" class="text-zinc-500 hover:text-white cursor-pointer px-1">✕</button>
+            </div>
+            <p class="text-[10px] text-zinc-400">Moderace uživatele:</p>
+            <div class="flex gap-1.5 flex-wrap">
+                <button onclick="actionKickActiveProfile()" class="border border-yellow-800/60 bg-yellow-950/30 text-yellow-400 px-2.5 py-1 rounded cursor-pointer hover:bg-yellow-900/40">Kick</button>
+                <button onclick="actionMuteActiveProfile()" class="border border-orange-800/60 bg-orange-950/30 text-orange-400 px-2.5 py-1 rounded cursor-pointer hover:bg-orange-900/40">Mute</button>
+                <button onclick="actionBanActiveProfile()" class="border border-red-800/60 bg-red-950/30 text-red-400 px-2.5 py-1 rounded cursor-pointer hover:bg-red-900/40">Ban</button>
+                <button onclick="actionRenameActiveProfile()" class="border border-blue-800/60 bg-blue-950/30 text-blue-400 px-2.5 py-1 rounded cursor-pointer hover:bg-blue-900/40">Jméno</button>
+            </div>
+            <div id="profileUserMessagesList" class="flex-1 overflow-y-auto border border-zinc-900 p-2 space-y-2 bg-black rounded max-h-40"></div>
+            <div class="flex justify-end pt-1">
+                <button onclick="closeUserProfileModal()" class="border border-zinc-700 px-3 py-1.5 rounded text-zinc-400 hover:bg-zinc-900 cursor-pointer">Zavřít</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="imageLightbox" class="fixed inset-0 bg-black/95 z-50 hidden flex-col items-center justify-center p-4">
+        <button onclick="closeLightbox()" class="absolute top-4 right-4 border border-zinc-700 bg-zinc-900 px-3 py-1.5 rounded text-zinc-300 hover:bg-zinc-800 cursor-pointer">Zavřít</button>
+        <img id="lightboxImg" class="max-w-full max-h-[85vh] object-contain rounded border border-zinc-800 shadow-2xl">
+    </div>
+
+    <!-- Přihlášení (Homepage chatu) -->
+    <div id="loginScreen" class="fixed inset-0 bg-black z-50 flex flex-col justify-between p-4 overflow-y-auto">
+        <div class="flex-1 flex items-center justify-center w-full py-6">
+            <div class="border border-zinc-800 bg-zinc-950 p-6 w-full max-w-sm space-y-4 rounded-xl shadow-2xl">
+                
+                <div class="-mx-6 -mt-6 mb-4 bg-black overflow-hidden flex justify-center rounded-t-xl border-b border-zinc-800">
+                    <img src="https://i.imgur.com/QvqvK3M.png" alt="Logo" class="w-full h-auto max-h-56 object-contain bg-black">
+                </div>
+
+                <div class="text-center space-y-2">
+                    <div id="logoTrigger" onclick="handleLogoClick()" class="font-bold tracking-wider cursor-pointer py-1 text-sm text-zinc-100 hover:text-white">GJW-CHAT</div>
+                    <p class="text-[10px] text-zinc-500">oficiální chat pro všechny z GJW</p>
+                    <div class="space-y-3 pt-2 text-left">
+                        <div>
+                            <label class="block text-[10px] text-zinc-400 mb-1">Přezdívka:</label>
+                            <input type="text" id="loginNickname" placeholder="zadej nickname..." class="w-full bg-black border border-zinc-800 p-2.5 rounded text-white focus:outline-none focus:border-zinc-600" maxlength="20" autocomplete="off">
+                            <p class="text-[9px] text-zinc-600 mt-1">Max. 20 znaků</p>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-zinc-400 mb-1">Třída:</label>
+                            <select id="loginClass" class="w-full bg-black border border-zinc-800 p-2.5 rounded text-white focus:outline-none focus:border-zinc-600">
+                                <option value="">(bez třídy / učitel)</option>
+                                <option value="O1.A">O1.A</option><option value="O1.B">O1.B</option>
+                                <option value="O2.A">O2.A</option><option value="O2.B">O2.B</option>
+                                <option value="O3.A">O3.A</option><option value="O3.B">O3.B</option>
+                                <option value="O4.A">O4.A</option><option value="O4.B">O4.B</option>
+                                <option value="O5.A">O5.A</option><option value="O5.B">O5.B</option>
+                                <option value="O6.A">O6.A</option><option value="O6.B">O6.B</option>
+                                <option value="O7.A">O7.A</option><option value="O7.B">O7.B</option>
+                                <option value="O8.A">O8.A</option><option value="O8.B">O8.B</option>
+                            </select>
+                            <p class="text-[9px] text-zinc-600 mt-1">vyber si třídu</p>
+                        </div>
+                        <button onclick="handleLogin()" class="w-full border border-zinc-700 bg-zinc-900 py-2.5 rounded hover:bg-zinc-800 text-zinc-200 font-bold cursor-pointer transition-colors">Vstoupit do chatu</button>
+                        <div id="loginError" class="text-red-500 text-[10px] text-center hidden font-bold"></div>
+                    </div>
+                    <div class="pt-3 border-t border-zinc-900 text-[9px] text-zinc-600 text-center flex justify-between items-center">
+                        <a href="../" class="text-blue-400 underline">&laquo; Zpět na hlavní web</a>
+                        <span>GJW Prostějov</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPageScreen" class="fixed inset-0 bg-black z-50 hidden flex-col items-center justify-center p-4">
+        <div class="border border-zinc-800 bg-zinc-950 p-5 w-full max-w-3xl max-h-[90vh] flex flex-col space-y-4 rounded-xl shadow-2xl">
+            <div id="adminAuthBox" class="space-y-3 my-auto max-w-xs mx-auto text-center">
+                <h1 class="font-bold text-zinc-200 text-sm">Admin Control Room</h1>
+                <p class="text-[10px] text-zinc-500">Zadej administrátorské heslo</p>
+                <input type="password" id="adminPasswordInput" placeholder="heslo..." class="w-full bg-black border border-zinc-800 p-2.5 rounded text-white focus:outline-none focus:border-zinc-600">
+                <button onclick="verifyAdminPassword()" class="w-full border border-zinc-700 bg-zinc-900 py-2 rounded text-zinc-200 font-bold cursor-pointer hover:bg-zinc-800">Ověřit</button>
+                <div id="adminLoginError" class="text-red-500 text-[10px] hidden font-bold">Špatné heslo</div>
+                <a href="./" class="block text-[10px] text-blue-400 underline pt-1">Zpět na chat</a>
+            </div>
+
+            <div id="adminDashboardBox" class="hidden flex-1 overflow-y-auto space-y-3 pr-1">
+                <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                    <div>
+                        <span class="font-bold text-zinc-200 text-sm">Admin Dashboard</span>
+                        <p class="text-[9px] text-zinc-500">Správa uživatelů, banů a logů</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="clearChatData()" class="border border-red-800/80 bg-red-950/30 text-red-400 px-3 py-1 rounded cursor-pointer hover:bg-red-900/40">Clear All</button>
+                        <a href="./" class="border border-zinc-700 bg-zinc-900 px-3 py-1 rounded text-zinc-300 hover:bg-zinc-800 no-underline">Odhlásit</a>
+                    </div>
+                </div>
+
+                <div class="border border-zinc-900 p-3 bg-black rounded flex flex-col sm:flex-row justify-between items-center gap-2">
+                    <div>
+                        <span class="text-[10px] text-zinc-400 block mb-1">Režim vstupu:</span>
+                        <select id="adminModeSelect" class="bg-black border border-zinc-800 p-1.5 rounded text-white text-xs">
+                            <option value="observed">Viditelný admin (duhový nick)</option>
+                            <option value="hidden">Ghost admin (zcela skrytý)</option>
+                        </select>
+                    </div>
+                    <button onclick="openChatFromAdmin()" class="border border-zinc-700 bg-zinc-900 px-3 py-1.5 rounded text-zinc-200 cursor-pointer hover:bg-zinc-800">Vstoupit do chatu</button>
+                </div>
+
+                <div class="border border-zinc-900 p-3 bg-black rounded space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-yellow-400">Připojení uživatelé v chatu</span>
+                        <input type="text" id="adminUserSearchInput" placeholder="hledat..." oninput="renderAdminUsersList()" class="bg-black border border-zinc-800 p-1 rounded w-32 text-white">
+                    </div>
+                    <div id="adminUsersListContainer" class="space-y-1 max-h-32 overflow-y-auto"></div>
+                </div>
+
+                <div class="border border-zinc-900 p-3 bg-black rounded space-y-1">
+                    <span class="font-bold text-red-400 block">Aktivní bany a restrikce</span>
+                    <div id="adminBansLogContainer" class="space-y-1 max-h-24 overflow-y-auto bg-zinc-950 p-2 rounded"></div>
+                </div>
+
+                <div class="border border-zinc-900 p-3 bg-black rounded space-y-1">
+                    <span class="font-bold text-yellow-400 block">Odeslané obrázky</span>
+                    <div id="adminImageLogContainer" class="space-y-1 max-h-24 overflow-y-auto bg-zinc-950 p-2 rounded"></div>
+                </div>
+
+                <div class="border border-zinc-900 p-3 bg-black rounded space-y-1">
+                    <span class="font-bold text-yellow-400 block">Memy (Custom emotikony)</span>
+                    <input type="file" id="adminEmojiUploadInput" accept="image/*" class="hidden" onchange="handleAdminUploadEmoji(event)">
+                    <button onclick="document.getElementById('adminEmojiUploadInput').click()" class="border border-zinc-700 bg-zinc-900 px-3 py-1.5 rounded text-zinc-300 cursor-pointer hover:bg-zinc-800 mt-1">Nahrát nový obrázek</button>
+                    <div id="adminEmojiList" class="flex flex-wrap gap-1.5 pt-1.5"></div>
+                </div>
+
+                <div class="border border-zinc-900 p-3 bg-black rounded space-y-1">
+                    <span class="font-bold text-zinc-400 block">Systémové logy</span>
+                    <div id="adminLogContainer" class="bg-zinc-950 p-2 rounded max-h-24 overflow-y-auto text-[10px] text-zinc-500"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hlavní hlavička chatu -->
+    <header class="border-b border-zinc-900 bg-black px-4 py-2.5 flex justify-between items-center shrink-0">
+        <div class="flex items-center space-x-2">
+            <a href="../" class="text-zinc-400 hover:text-white mr-1" title="Hlavní web">&larr;</a>
+            <span id="headerLogoTrigger" onclick="handleLogoClick()" class="font-bold cursor-pointer text-zinc-100 hover:text-white">GJW-Chat</span>
+            <span id="userSubtitle" class="text-zinc-500">-</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <div class="border border-zinc-800 px-2.5 py-1 text-[10px] flex items-center gap-1.5 text-zinc-400 rounded bg-zinc-950">
+                <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                <span>Online: <span id="onlineCountBadge" class="text-green-400 font-mono">1</span></span>
+            </div>
+            <button id="adminHeaderBtn" onclick="openAdminModalFromChat()" class="hidden border border-amber-800/60 bg-amber-950/30 text-amber-400 px-2.5 py-1 rounded cursor-pointer hover:bg-amber-900/40">Admin</button>
+            <button onclick="handleLogout()" class="border border-zinc-700 bg-zinc-900 px-2.5 py-1 rounded text-zinc-400 hover:bg-zinc-800 hover:text-white cursor-pointer">Odhlásit</button>
+        </div>
+    </header>
+
+    <!-- Chat tělo -->
+    <div class="flex-1 flex flex-col overflow-hidden relative bg-black">
+        <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-3 pb-32">
+            <div id="emptyState" class="hidden h-full flex items-center justify-center text-zinc-600">Zatím žádné zprávy v této místnosti</div>
+            <div id="messagesList" class="space-y-2.5 max-w-xl mx-auto w-full"></div>
+        </div>
+
+        <button id="scrollToBottomBtn" onclick="scrollToBottom(true)" class="fixed bottom-20 right-4 border border-zinc-700 bg-zinc-900 px-3 py-1.5 rounded text-[10px] text-zinc-300 opacity-0 pointer-events-none cursor-pointer shadow-lg hover:bg-zinc-800">Nové zprávy</button>
+
+        <!-- Footer -->
+        <footer class="border-t border-zinc-900 bg-black p-3 shrink-0 fixed bottom-0 left-0 right-0 z-40">
+            <div class="max-w-xl mx-auto flex flex-col space-y-2">
+                
+                <div id="mutedNoticeBox" class="hidden w-full border border-red-900/60 bg-red-950/30 p-2 text-center text-red-400 rounded space-y-0.5">
+                    <span id="mutedNoticeText">Jsi ztlumen.</span>
+                    <div id="mutedCountdownContainer" class="text-yellow-400 hidden">Zbývá: <span id="mutedCountdownTimer">-</span></div>
+                </div>
+
+                <div id="activeInputControls" class="space-y-2">
+                    <div id="imageSourcePopup" class="hidden absolute bottom-14 left-0 border border-zinc-800 bg-zinc-950 p-1.5 shadow-xl rounded w-36 z-50 flex flex-col space-y-1">
+                        <button onclick="triggerFileInput(false)" class="text-left p-1.5 text-zinc-300 hover:bg-zinc-900 rounded cursor-pointer">Galerie</button>
+                        <button onclick="triggerFileInput(true)" class="text-left p-1.5 text-zinc-300 hover:bg-zinc-900 rounded cursor-pointer">Vyfotit</button>
+                    </div>
+
+                    <div id="emojiPickerPopup" class="hidden absolute bottom-14 left-12 border border-zinc-800 bg-zinc-950 p-2.5 shadow-xl rounded w-52 max-h-40 overflow-y-auto z-50">
+                        <div class="text-[10px] text-zinc-400 font-bold pb-1.5 border-b border-zinc-800 mb-1.5">Rychlé memy</div>
+                        <div id="emojiPickerContent" class="flex flex-wrap gap-1.5"></div>
+                    </div>
+
+                    <input type="file" id="imageInputGallery" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                    <input type="file" id="imageInputCamera" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
+
+                    <div id="imagePreviewContainer" class="hidden p-2 border border-zinc-800 bg-zinc-950 rounded flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <img id="imagePreview" class="h-9 w-9 object-cover rounded border border-zinc-800">
+                            <span class="text-[10px] text-zinc-300 font-bold">Obrázek přiložen</span>
+                        </div>
+                        <button onclick="clearImagePreview()" class="border border-zinc-700 px-2 py-1 rounded text-zinc-400 hover:text-white cursor-pointer">Zrušit</button>
+                    </div>
+
+                    <div class="flex items-end space-x-2">
+                        <button onclick="toggleImageSourceMenu()" class="border border-zinc-800 bg-zinc-900 p-2.5 rounded text-zinc-300 cursor-pointer hover:bg-zinc-800" title="Přiložit obrázek">📷</button>
+                        <button onclick="toggleMemePicker()" class="border border-zinc-800 bg-zinc-900 px-3 py-2.5 font-bold rounded text-zinc-300 cursor-pointer hover:bg-zinc-800" title="Memy">MEME</button>
+                        <textarea id="messageInput" placeholder="Napiš zprávu... (Enter pro odeslání)" rows="1" class="flex-1 bg-black border border-zinc-800 p-2.5 rounded text-white focus:outline-none focus:border-zinc-600 resize-none max-h-24" onkeydown="handleKeydown(event)"></textarea>
+                        <button onclick="sendMessage()" class="border border-zinc-700 bg-zinc-900 px-4 py-2.5 font-bold rounded text-zinc-200 cursor-pointer hover:bg-zinc-800">Odeslat</button>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function getDeviceFingerprint() {
+            let fp = localStorage.getItem('gjw_device_fingerprint');
+            if (!fp) {
+                fp = 'device_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now() + '_' + screen.width + 'x' + screen.height;
+                localStorage.setItem('gjw_device_fingerprint', fp);
+            }
+            return fp;
+        }
+
+        let currentUser = localStorage.getItem('gjw_saved_user') || null;
+        let currentUserId = localStorage.getItem('gjw_saved_user_id') || null;
+
+        if (!currentUserId || currentUserId === 'undefined' || currentUserId === 'null') {
+            currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('gjw_saved_user_id', currentUserId);
+        }
+
+        let deviceFingerprint = getDeviceFingerprint();
+        let isAdmin = false;
+        let selectedImageBase64 = null;
+        let isUserAtBottom = true;
+        let clientPublicIp = 'Neznámá IP';
+        let logoClicks = 0;
+        let logoClickTimer = null;
+        let cloudMessages = [];
+        let cloudEmojis = [];
+        let cloudRestrictions = {};
+        let activePresenceList = {};
+        let editingMessageId = null;
+        let activeProfileUserId = null;
+        let activeProfileUsername = null;
+        let activeProfileFingerprint = null;
+        let restrictionCountdownInterval = null;
+
+        const chatContainer = document.getElementById('chatContainer');
+        const messagesList = document.getElementById('messagesList');
+        const emptyState = document.getElementById('emptyState');
+        const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => { clientPublicIp = data.ip; })
+            .catch(() => {});
+
+        const connectedRef = db.ref('.info/connected');
+        const presenceRef = db.ref('presence');
+
+        connectedRef.on('value', (snap) => {
+            if (snap.val() === true && currentUser && currentUserId && currentUserId !== 'undefined') {
+                const myPresenceRef = presenceRef.child(currentUserId);
+                myPresenceRef.onDisconnect().remove();
+                myPresenceRef.set({
+                    userId: currentUserId,
+                    fingerprint: deviceFingerprint,
+                    user: currentUser,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                const heartbeatInterval = setInterval(() => {
+                    if (currentUserId && currentUser) {
+                        myPresenceRef.update({ timestamp: firebase.database.ServerValue.TIMESTAMP, user: currentUser });
+                    }
+                }, 10000);
+
+                window.addEventListener('beforeunload', () => {
+                    clearInterval(heartbeatInterval);
+                    myPresenceRef.remove();
+                });
+            }
+        });
+
+        presenceRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            let activeCount = 0;
+            const now = Date.now();
+            activePresenceList = {};
+            
+            if (data) {
+                for (let uid in data) {
+                    const val = data[uid];
+                    if (val && val.userId && val.user && val.userId !== 'undefined' && val.timestamp && (now - val.timestamp < 20000)) {
+                        activeCount++;
+                        activePresenceList[uid] = val;
+
+                        if (uid === currentUserId && val.user !== currentUser) {
+                            currentUser = val.user;
+                            localStorage.setItem('gjw_saved_user', currentUser);
+                            const subtitle = document.getElementById('userSubtitle');
+                            if (subtitle) subtitle.innerText = currentUser;
+                        }
+                    } else {
+                        presenceRef.child(uid).remove();
+                    }
+                }
+            }
+            if (activeCount < 1 && currentUser) activeCount = 1;
+            const badge = document.getElementById('onlineCountBadge');
+            if (badge) badge.innerText = activeCount;
+
+            if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                renderAdminUsersList();
+            }
+        });
+
+        db.ref('messages').on('value', (snapshot) => {
+            const data = snapshot.val();
+            cloudMessages = data ? Object.values(data) : [];
+            renderMessages();
+            if (!document.getElementById('userProfileModal').classList.contains('hidden') && activeProfileUserId) {
+                renderUserProfileModalContent(activeProfileUserId);
+            }
+        });
+
+        db.ref('emojis').on('value', (snapshot) => {
+            const data = snapshot.val();
+            cloudEmojis = data ? Object.values(data) : [];
+            if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                renderAdminEmojis();
+            }
+            renderEmojiPickerList();
+        });
+
+        db.ref('restrictions').on('value', (snapshot) => {
+            const restrictionsData = snapshot.val() || {};
+            cloudRestrictions = restrictionsData;
+            
+            if (currentUserId && restrictionsData[currentUserId] && restrictionsData[currentUserId].newName) {
+                const updatedName = restrictionsData[currentUserId].newName;
+                if (updatedName !== currentUser) {
+                    currentUser = updatedName;
+                    localStorage.setItem('gjw_saved_user', currentUser);
+                    const subtitle = document.getElementById('userSubtitle');
+                    if (subtitle) subtitle.innerText = currentUser;
+                    
+                    presenceRef.child(currentUserId).update({ user: currentUser });
+                }
+            }
+
+            checkLiveRestrictions();
+            if (!document.getElementById('adminDashboardBox').classList.contains('hidden')) {
+                renderAdminUsersList();
+                renderAdminBansLog();
+                renderAdminImageLog();
+                renderAdminLogs();
+            }
+        });
+
+        function getStorageAuditLog() {
+            try { return JSON.parse(localStorage.getItem('gjw_chat_audit') || '[]'); } catch(e) { return []; }
+        }
+        function saveStorageAuditLog(logs) {
+            localStorage.setItem('gjw_chat_audit', JSON.stringify(logs));
+        }
+
+        function checkLiveRestrictions() {
+            if (isAdmin) return;
+
+            let matchedRest = null;
+            if (currentUserId && cloudRestrictions[currentUserId]) {
+                matchedRest = cloudRestrictions[currentUserId];
+            } else {
+                for (let uid in cloudRestrictions) {
+                    if (cloudRestrictions[uid].fingerprint === deviceFingerprint) {
+                        matchedRest = cloudRestrictions[uid];
+                        break;
+                    }
+                }
+            }
+
+            const bannedScreen = document.getElementById('bannedScreen');
+            const noticeBox = document.getElementById('mutedNoticeBox');
+            const activeControls = document.getElementById('activeInputControls');
+
+            if (restrictionCountdownInterval) {
+                clearInterval(restrictionCountdownInterval);
+                restrictionCountdownInterval = null;
+            }
+
+            if (!matchedRest) {
+                bannedScreen.classList.remove('flex');
+                bannedScreen.classList.add('hidden');
+                noticeBox.classList.add('hidden');
+                activeControls.classList.remove('hidden');
+                return;
+            }
+
+            if (matchedRest.kicked) {
+                const kickKey = 'gjw_kicked_notified_' + (matchedRest.userId || currentUserId);
+                if (sessionStorage.getItem(kickKey) !== 'true') {
+                    sessionStorage.setItem(kickKey, 'true');
+                    
+                    if (currentUserId) {
+                        db.ref('restrictions/' + currentUserId + '/kicked').remove();
+                        presenceRef.child(currentUserId).remove();
+                    }
+
+                    alert("Byl jsi vyhozen správcem!");
+                    handleLogout();
+                    return;
+                }
+            }
+
+            if (matchedRest.ban) {
+                const ban = matchedRest.ban;
+                if (ban.permanent || Date.now() < ban.expiresAt) {
+                    document.getElementById('bannedReasonText').innerText = ban.reason || 'Bez udaného důvodu';
+                    document.getElementById('bannedDurationText').innerText = ban.permanent ? 'Natrvalo' : `Do ${new Date(ban.expiresAt).toLocaleString()}`;
+                    
+                    const countdownContainer = document.getElementById('bannedCountdownContainer');
+                    const countdownTimer = document.getElementById('bannedCountdownTimer');
+
+                    if (!ban.permanent && ban.expiresAt) {
+                        countdownContainer.classList.remove('hidden');
+                        restrictionCountdownInterval = setInterval(() => {
+                            const remaining = ban.expiresAt - Date.now();
+                            if (remaining <= 0) {
+                                clearInterval(restrictionCountdownInterval);
+                                location.reload();
+                                return;
+                            }
+                            const mins = Math.floor(remaining / 60000);
+                            const secs = Math.floor((remaining % 60000) / 1000);
+                            countdownTimer.innerText = `${mins}m ${secs}s`;
+                        }, 1000);
+                    } else {
+                        countdownContainer.classList.add('hidden');
+                    }
+
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    bannedScreen.classList.remove('hidden');
+                    bannedScreen.classList.add('flex');
+                    return;
+                }
+            }
+            bannedScreen.classList.remove('flex');
+            bannedScreen.classList.add('hidden');
+
+            const noticeText = document.getElementById('mutedNoticeText');
+            const mutedCountdownContainer = document.getElementById('mutedCountdownContainer');
+            const mutedCountdownTimer = document.getElementById('mutedCountdownTimer');
+
+            if (matchedRest.mute) {
+                if (matchedRest.mute.permanent) {
+                    noticeText.innerText = `Jsi ztlumen natrvalo.`;
+                    mutedCountdownContainer.classList.add('hidden');
+                    noticeBox.classList.remove('hidden');
+                    activeControls.classList.add('hidden');
+                } else if (Date.now() < matchedRest.mute.expiresAt) {
+                    noticeText.innerText = `Jsi ztlumen správcem.`;
+                    mutedCountdownContainer.classList.remove('hidden');
+
+                    restrictionCountdownInterval = setInterval(() => {
+                        const remaining = matchedRest.mute.expiresAt - Date.now();
+                        if (remaining <= 0) {
+                            clearInterval(restrictionCountdownInterval);
+                            db.ref('restrictions/' + (matchedRest.userId || currentUserId) + '/mute').remove();
+                            location.reload();
+                            return;
+                        }
+                        const mins = Math.floor(remaining / 60000);
+                        const secs = Math.floor((remaining % 60000) / 1000);
+                        mutedCountdownTimer.innerText = `${mins}m ${secs}s`;
+                    }, 1000);
+
+                    noticeBox.classList.remove('hidden');
+                    activeControls.classList.add('hidden');
+                } else {
+                    db.ref('restrictions/' + (matchedRest.userId || currentUserId) + '/mute').remove();
+                    noticeBox.classList.add('hidden');
+                    activeControls.classList.remove('hidden');
+                }
+            } else {
+                noticeBox.classList.add('hidden');
+                activeControls.classList.remove('hidden');
+            }
+        }
+
+        const emojiPopup = document.getElementById('emojiPickerPopup');
+        const imageSourcePopup = document.getElementById('imageSourcePopup');
+
+        function toggleMemePicker() {
+            imageSourcePopup.classList.add('hidden');
+            emojiPopup.classList.toggle('hidden');
+            if (!emojiPopup.classList.contains('hidden')) renderEmojiPickerList();
+        }
+
+        function toggleImageSourceMenu() {
+            emojiPopup.classList.add('hidden');
+            imageSourcePopup.classList.toggle('hidden');
+        }
+
+        function triggerFileInput(isCamera) {
+            imageSourcePopup.classList.add('hidden');
+            if (isCamera) document.getElementById('imageInputCamera').click();
+            else document.getElementById('imageInputGallery').click();
+        }
+
+        function renderEmojiPickerList() {
+            const content = document.getElementById('emojiPickerContent');
+            if (!content) return;
+            content.innerHTML = '';
+            if (cloudEmojis.length === 0) {
+                content.innerHTML = '<span class="text-zinc-600 text-[9px]">Žádné vlastní memy</span>';
+                return;
+            }
+            cloudEmojis.forEach(imgSrc => {
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.className = "w-7 h-7 object-contain cursor-pointer border border-zinc-800 bg-black p-0.5 rounded hover:border-zinc-500";
+                img.onclick = () => {
+                    insertEmojiIntoMessage(imgSrc);
+                    emojiPopup.classList.add('hidden');
+                };
+                content.appendChild(img);
+            });
+        }
+
+        chatContainer.addEventListener('scroll', () => {
+            const threshold = 80;
+            isUserAtBottom = chatContainer.scrollHeight - (chatContainer.scrollTop + chatContainer.clientHeight) <= threshold;
+            if (!isUserAtBottom) scrollToBottomBtn.classList.remove('opacity-0', 'pointer-events-none');
+            else scrollToBottomBtn.classList.add('opacity-0', 'pointer-events-none');
+        });
+
+        function scrollToBottom(smooth = false) {
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+            scrollToBottomBtn.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const path = window.location.pathname;
+            if (path.includes('admin')) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('adminPageScreen').classList.remove('hidden');
+                document.getElementById('adminPageScreen').classList.add('flex');
+                if (sessionStorage.getItem('gjw_admin_logged') === 'true') {
+                    document.getElementById('adminAuthBox').classList.add('hidden');
+                    document.getElementById('adminDashboardBox').classList.remove('hidden');
+                    showAdminDashboard();
+                }
+                return;
+            }
+
+            if (currentUser && currentUserId && currentUserId !== 'undefined') {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('userSubtitle').innerText = currentUser;
+                renderMessages();
+                scrollToBottom(false);
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('loginScreen').classList.add('flex');
+            }
+        });
+
+        function handleLogoClick() {
+            logoClicks++;
+            clearTimeout(logoClickTimer);
+            if (logoClicks >= 3) {
+                logoClicks = 0;
+                window.location.href = './admin';
+            } else {
+                logoClickTimer = setTimeout(() => { logoClicks = 0; }, 600);
+            }
+        }
+
+        function openAdminModalFromChat() {
+            window.location.href = './admin';
+        }
+
+        function verifyAdminPassword() {
+            const inputVal = document.getElementById('adminPasswordInput').value;
+            db.ref('admin/password').once('value').then(snapshot => {
+                let cloudPassword = snapshot.val();
+                if (!cloudPassword) {
+                    cloudPassword = '69_atillo_69';
+                    db.ref('admin/password').set(cloudPassword);
+                }
+
+                if (inputVal === cloudPassword) {
+                    sessionStorage.setItem('gjw_admin_logged', 'true');
+                    document.getElementById('adminAuthBox').classList.add('hidden');
+                    document.getElementById('adminDashboardBox').classList.remove('hidden');
+                    showAdminDashboard();
+                } else {
+                    document.getElementById('adminLoginError').classList.remove('hidden');
+                }
+            }).catch(() => {
+                document.getElementById('adminLoginError').classList.remove('hidden');
+            });
+        }
+
+        function showAdminDashboard() {
+            renderAdminUsersList();
+            renderAdminBansLog();
+            renderAdminImageLog();
+            renderAdminEmojis();
+            renderAdminLogs();
+        }
+
+        function renderAdminUsersList() {
+            const container = document.getElementById('adminUsersListContainer');
+            if (!container) return;
+            const searchVal = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase().trim();
+            container.innerHTML = '';
+
+            let users = Object.values(activePresenceList);
+            if (searchVal) {
+                users = users.filter(u => (u.user || '').toLowerCase().includes(searchVal) || (u.userId || '').toLowerCase().includes(searchVal));
+            }
+
+            if (users.length === 0) {
+                container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádní aktivní uživatelé v chatu</span>';
+                return;
+            }
+
+            users.forEach(u => {
+                const rest = cloudRestrictions[u.userId] || {};
+                const isBanned = rest.ban && (rest.ban.permanent || Date.now() < rest.ban.expiresAt);
+                const isMuted = rest.mute && (rest.mute.permanent || Date.now() < rest.mute.expiresAt);
+
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center bg-black border border-zinc-900 p-2 rounded gap-1 mb-1";
+                row.innerHTML = `
+                    <div>
+                        <div class="text-zinc-200">${u.user} ${isBanned ? '<span class="text-red-500 font-bold">[BAN]</span>' : ''} ${isMuted ? '<span class="text-orange-500 font-bold">[MUTE]</span>' : ''}</div>
+                        <div class="text-[9px] text-zinc-600">ID: ${u.userId}</div>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="adminChangeNickname('${u.userId}', '${u.user}')" class="border border-zinc-700 px-1.5 py-0.5 rounded text-zinc-400 hover:text-white cursor-pointer">Jméno</button>
+                        <button onclick="kickUserDirect('${u.userId}', '${u.user}', '${u.fingerprint}')" class="border border-yellow-800 bg-yellow-950/20 text-yellow-400 px-1.5 py-0.5 rounded cursor-pointer">Kick</button>
+                        <button onclick="promptMuteUser('${u.userId}', '${u.user}', '${u.fingerprint}')" class="border border-orange-800 bg-orange-950/20 text-orange-400 px-1.5 py-0.5 rounded cursor-pointer">Mute</button>
+                        <button onclick="promptBanUser('${u.userId}', '${u.user}', '${u.fingerprint}')" class="border border-red-800 bg-red-950/20 text-red-400 px-1.5 py-0.5 rounded cursor-pointer">Ban</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function renderAdminBansLog() {
+            const container = document.getElementById('adminBansLogContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            let count = 0;
+            for (let uid in cloudRestrictions) {
+                const rest = cloudRestrictions[uid];
+                if (rest.ban && (rest.ban.permanent || Date.now() < rest.ban.expiresAt)) {
+                    count++;
+                    const ban = rest.ban;
+                    const row = document.createElement('div');
+                    row.className = "border border-zinc-900 p-1.5 bg-black text-[10px] rounded mb-1";
+                    row.innerHTML = `<span class="text-red-400 font-bold">${ban.username}</span>: ${ban.reason || 'Bez důvodu'}`;
+                    container.appendChild(row);
+                }
+            }
+            if (count === 0) container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádné aktivní bany</span>';
+        }
+
+        function renderAdminImageLog() {
+            const container = document.getElementById('adminImageLogContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            const imgs = cloudMessages.filter(m => m.image);
+            if (imgs.length === 0) {
+                container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádné odeslané obrázky</span>';
+                return;
+            }
+            imgs.reverse().forEach(msg => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between border border-zinc-900 p-1.5 bg-black text-[10px] rounded mb-1";
+                row.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <img src="${msg.image}" class="w-6 h-6 object-cover rounded border border-zinc-800 cursor-pointer" onclick="openLightbox('${msg.image}')">
+                        <span class="text-zinc-300">${msg.user}</span>
+                    </div>
+                    <button onclick="deleteMessage('${msg.id}')" class="text-red-400 hover:text-red-300 cursor-pointer">Smazat</button>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function renderAdminLogs() {
+            const container = document.getElementById('adminLogContainer');
+            if (!container) return;
+            const audit = getStorageAuditLog();
+            container.innerHTML = '';
+            if (audit.length === 0) {
+                container.innerHTML = 'Žádné systémové záznamy';
+                return;
+            }
+            [...audit].reverse().forEach(item => {
+                const div = document.createElement('div');
+                div.className = "border-b border-zinc-900 pb-0.5 mb-0.5 text-zinc-500";
+                div.innerHTML = `[${item.action}] ${item.user || 'N/A'} - IP: ${item.publicIp || 'N/A'}`;
+                container.appendChild(div);
+            });
+        }
+
+        function adminChangeNickname(targetUid, oldName) {
+            const newName = prompt("Zadej nové jméno uživatele:", oldName);
+            if (!newName || !newName.trim()) return;
+            const trimmedNewName = newName.trim();
+
+            db.ref('messages').once('value', (snapshot) => {
+                const val = snapshot.val();
+                if (!val) return;
+                for (let key in val) {
+                    if (val[key].userId === targetUid) {
+                        db.ref('messages/' + key).update({ user: trimmedNewName });
+                    }
+                }
+            });
+
+            db.ref('presence/' + targetUid).update({ user: trimmedNewName });
+            db.ref('restrictions/' + targetUid).update({ newName: trimmedNewName });
+
+            alert("Přezdívka byla úspěšně změněna.");
+            if (isAdmin) showAdminDashboard();
+        }
+
+        function kickUserDirect(targetUid, username, userFp) {
+            sessionStorage.removeItem('gjw_kicked_notified_' + targetUid);
+            db.ref('restrictions/' + targetUid).update({ kicked: true, fingerprint: userFp || deviceFingerprint, userId: targetUid });
+            alert("Uživatel byl vyhozen.");
+            if (isAdmin) showAdminDashboard();
+        }
+
+        function promptMuteUser(targetUid, username, userFp) {
+            const mins = prompt("Zadej délku mute v minutách (0 pro zrušení):");
+            if (mins === null) return;
+            if (mins === '0') {
+                db.ref('restrictions/' + targetUid + '/mute').remove();
+                if (isAdmin) showAdminDashboard();
+                return;
+            }
+            const ms = parseInt(mins) * 60 * 1000;
+            db.ref('restrictions/' + targetUid).update({ mute: { permanent: false, expiresAt: Date.now() + ms }, fingerprint: userFp || deviceFingerprint, userId: targetUid });
+            alert("Uživatel byl ztlumen.");
+            if (isAdmin) showAdminDashboard();
+        }
+
+        function promptBanUser(targetUid, username, userFp) {
+            const mins = prompt("Zadej délku banu v minutách (0 pro zrušení):");
+            if (mins === null) return;
+            if (mins === '0') {
+                db.ref('restrictions/' + targetUid + '/ban').remove();
+                if (isAdmin) showAdminDashboard();
+                return;
+            }
+            const reason = prompt("Zadej důvod banu:") || "Porušení pravidel chatu";
+            const ms = parseInt(mins) * 60 * 1000;
+            db.ref('restrictions/' + targetUid).update({ ban: { permanent: false, expiresAt: Date.now() + ms, reason, username: username || 'Uživatel' }, fingerprint: userFp || deviceFingerprint, userId: targetUid });
+            alert("Uživatel byl zabanován.");
+            if (isAdmin) showAdminDashboard();
+        }
+
+        function actionKickActiveProfile() {
+            if (!activeProfileUserId) return;
+            kickUserDirect(activeProfileUserId, activeProfileUsername, activeProfileFingerprint);
+            closeUserProfileModal();
+        }
+
+        function actionMuteActiveProfile() {
+            if (!activeProfileUserId) return;
+            promptMuteUser(activeProfileUserId, activeProfileUsername, activeProfileFingerprint);
+            closeUserProfileModal();
+        }
+
+        function actionBanActiveProfile() {
+            if (!activeProfileUserId) return;
+            promptBanUser(activeProfileUserId, activeProfileUsername, activeProfileFingerprint);
+            closeUserProfileModal();
+        }
+
+        function actionRenameActiveProfile() {
+            if (!activeProfileUserId) return;
+            adminChangeNickname(activeProfileUserId, activeProfileUsername);
+            closeUserProfileModal();
+        }
+
+        function openUserProfileModal(uid, username, fingerprint) {
+            if (!isAdmin) return;
+            activeProfileUserId = uid;
+            activeProfileUsername = username;
+            activeProfileFingerprint = fingerprint || deviceFingerprint;
+            document.getElementById('profileUsernameTitle').innerText = username;
+            document.getElementById('profileUserIdSub').innerText = 'ID: ' + uid;
+            renderUserProfileModalContent(uid);
+            document.getElementById('userProfileModal').classList.remove('hidden');
+            document.getElementById('userProfileModal').classList.add('flex');
+        }
+
+        function closeUserProfileModal() {
+            activeProfileUserId = null;
+            activeProfileUsername = null;
+            activeProfileFingerprint = null;
+            document.getElementById('userProfileModal').classList.remove('flex');
+            document.getElementById('userProfileModal').classList.add('hidden');
+        }
+
+        function renderUserProfileModalContent(uid) {
+            const container = document.getElementById('profileUserMessagesList');
+            if (!container) return;
+            container.innerHTML = '';
+            const userMsgs = cloudMessages.filter(m => m.userId === uid && !m.isSystem);
+            userMsgs.reverse().forEach(msg => {
+                const row = document.createElement('div');
+                row.className = "border border-zinc-900 p-1.5 bg-black space-y-1 text-[10px] rounded mb-1";
+                row.innerHTML = `<div class="flex justify-between text-[9px] text-zinc-500"><span>${msg.time}</span><button onclick="deleteMessage('${msg.id}')" class="text-red-400 hover:text-red-300 cursor-pointer">Smazat</button></div><div class="text-zinc-300">${msg.text || ''}</div>`;
+                container.appendChild(row);
+            });
+        }
+
+        function handleAdminUploadEmoji(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                db.ref('emojis').push(e.target.result);
+                alert("Obrázek nahrán.");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderAdminEmojis() {
+            const list = document.getElementById('adminEmojiList');
+            if (!list) return;
+            list.innerHTML = '';
+            cloudEmojis.forEach((img, idx) => {
+                const wrap = document.createElement('div');
+                wrap.className = "relative border border-zinc-800 p-0.5 bg-black rounded";
+                wrap.innerHTML = `<img src="${img}" class="w-7 h-7 object-contain rounded"><button onclick="deleteEmoji(${idx})" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-4 h-4 text-[9px] flex items-center justify-center cursor-pointer hover:bg-red-500">&times;</button>`;
+                list.appendChild(wrap);
+            });
+        }
+
+        function deleteEmoji(idx) {
+            db.ref('emojis').once('value', s => {
+                const val = s.val();
+                if (val) {
+                    const keys = Object.keys(val);
+                    if (keys[idx]) { db.ref('emojis/' + keys[idx]).remove(); }
+                }
+            });
+        }
+
+        function insertEmojiIntoMessage(imgSrc) {
+            const input = document.getElementById('messageInput');
+            input.value += ` [meme:${imgSrc}] `;
+            input.focus();
+        }
+
+        function parseMessageText(text) {
+            if (!text) return '';
+            let formatted = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="underline text-blue-400 hover:text-blue-300">$1</a>');
+            return formatted.replace(/\[meme:(data:image\/[^\]]+)\]/g, '<img src="$1" class="inline-block w-6 h-6 object-contain align-middle mx-1 cursor-pointer rounded border border-zinc-800 bg-zinc-950 p-0.5" onclick="openLightbox(\'$1\')">');
+        }
+
+        function openLightbox(img) {
+            document.getElementById('lightboxImg').src = img;
+            document.getElementById('imageLightbox').classList.remove('hidden');
+            document.getElementById('imageLightbox').classList.add('flex');
+        }
+
+        function closeLightbox() {
+            document.getElementById('imageLightbox').classList.remove('flex');
+            document.getElementById('imageLightbox').classList.add('hidden');
+        }
+
+        function openChatFromAdmin() {
+            currentUser = 'admin (Admin)';
+            currentUserId = 'admin_uid';
+            isAdmin = true;
+            document.getElementById('adminPageScreen').classList.remove('flex');
+            document.getElementById('adminPageScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminHeaderBtn').classList.remove('hidden');
+            renderMessages();
+            scrollToBottom(false);
+        }
+
+        function handleLogin() {
+            const nick = document.getElementById('loginNickname').value.trim();
+            const cls = document.getElementById('loginClass').value;
+            const err = document.getElementById('loginError');
+
+            if (!nick) { err.innerText = "Zadej svou přezdívku!"; err.classList.remove('hidden'); return; }
+            if (nick.toLowerCase() === 'admin') { err.innerText = "Tato přezdívka je zakázaná!"; err.classList.remove('hidden'); return; }
+
+            if (!currentUserId || currentUserId === 'undefined') {
+                currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
+            }
+            currentUser = nick + (cls ? ' (' + cls + ')' : '');
+
+            let isBanned = false;
+            const userRest = cloudRestrictions[currentUserId];
+            if (userRest && userRest.ban && (userRest.ban.permanent || Date.now() < userRest.ban.expiresAt)) isBanned = true;
+
+            if (isBanned) {
+                document.getElementById('bannedReasonText').innerText = userRest.ban.reason || '-';
+                document.getElementById('bannedDurationText').innerText = 'Aktivní ban na zařízení';
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('bannedScreen').classList.remove('hidden');
+                document.getElementById('bannedScreen').classList.add('flex');
+                return;
+            }
+
+            isAdmin = false;
+            localStorage.setItem('gjw_saved_user', currentUser);
+            localStorage.setItem('gjw_saved_user_id', currentUserId);
+
+            const audit = getStorageAuditLog();
+            audit.push({ action: 'USER_LOGIN', userId: currentUserId, fingerprint: deviceFingerprint, user: currentUser, publicIp: clientPublicIp, time: new Date().toLocaleString() });
+            saveStorageAuditLog(audit);
+
+            db.ref('messages').push({
+                id: 'msg_' + Date.now(),
+                userId: currentUserId,
+                user: 'Systém',
+                text: `${currentUser} se k nám dnes připojil do chatuuuu`,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isSystem: true
+            });
+
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('userSubtitle').innerText = currentUser;
+            
+            db.ref('presence/' + currentUserId).set({
+                userId: currentUserId,
+                fingerprint: deviceFingerprint,
+                user: currentUser,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            renderMessages();
+            scrollToBottom(false);
+        }
+
+        function handleLogout() {
+            if (currentUserId && currentUserId !== 'undefined') {
+                db.ref('presence/' + currentUserId).remove();
+            }
+            localStorage.removeItem('gjw_saved_user');
+            localStorage.removeItem('gjw_saved_user_id');
+            sessionStorage.removeItem('gjw_admin_logged');
+            location.href = './';
+        }
+
+        function handleKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                selectedImageBase64 = e.target.result;
+                document.getElementById('imagePreview').src = selectedImageBase64;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearImagePreview() {
+            selectedImageBase64 = null;
+            document.getElementById('imageInputGallery').value = '';
+            document.getElementById('imageInputCamera').value = '';
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text && !selectedImageBase64) return;
+
+            const t = text;
+            const img = selectedImageBase64;
+            input.value = '';
+            clearImagePreview();
+
+            db.ref('messages').push({
+                id: 'msg_' + Date.now(),
+                userId: currentUserId,
+                user: currentUser,
+                isAdmin: isAdmin,
+                text: t,
+                image: img,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                edited: false
+            });
+
+            renderMessages();
+            scrollToBottom(true);
+        }
+
+        function renderMessages() {
+            messagesList.innerHTML = '';
+            if (cloudMessages.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            cloudMessages.forEach(msg => {
+                const div = document.createElement('div');
+                if (msg.isSystem) {
+                    div.className = "text-center my-2 text-zinc-600 text-[10px]";
+                    div.innerText = `-- ${msg.text} --`;
+                    messagesList.appendChild(div);
+                    return;
+                }
+
+                const isAuthor = currentUserId && msg.userId === currentUserId;
+                div.className = `flex flex-col space-y-1 ${isAuthor ? 'items-end' : 'items-start'} my-2`;
+
+                const meta = document.createElement('div');
+                meta.className = "text-[10px] text-zinc-500 px-1 flex gap-2 items-center";
+                
+                const nameSpan = document.createElement('span');
+                if (msg.isAdmin) {
+                    nameSpan.className = "rainbow-admin text-xs font-bold";
+                    nameSpan.innerText = msg.user;
+                } else {
+                    nameSpan.className = "text-zinc-400 font-bold";
+                    nameSpan.innerText = msg.user;
+                    if (isAdmin) {
+                        nameSpan.className += " cursor-pointer underline text-blue-400 hover:text-blue-300";
+                        nameSpan.onclick = () => openUserProfileModal(msg.userId, msg.user);
+                    }
+                }
+                meta.appendChild(nameSpan);
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = "text-[9px] text-zinc-600";
+                timeSpan.innerText = msg.time + (msg.edited ? ' (upraveno)' : '');
+                meta.appendChild(timeSpan);
+                div.appendChild(meta);
+
+                const box = document.createElement('div');
+                box.className = `max-w-md border border-zinc-800 p-2.5 rounded-lg shadow-sm ${isAuthor ? 'bg-zinc-900 text-white border-zinc-700' : 'bg-zinc-950 text-zinc-200'}`;
+                if (msg.text) {
+                    const txt = document.createElement('div');
+                    txt.className = "whitespace-pre-wrap break-words leading-relaxed";
+                    txt.innerHTML = parseMessageText(msg.text);
+                    box.appendChild(txt);
+                }
+                if (msg.image) {
+                    const image = document.createElement('img');
+                    image.src = msg.image;
+                    image.className = "mt-2 rounded-md max-h-48 object-cover cursor-pointer border border-zinc-800 hover:opacity-95 transition-opacity";
+                    image.onclick = () => openLightbox(msg.image);
+                    box.appendChild(image);
+                }
+                div.appendChild(box);
+
+                const actions = document.createElement('div');
+                actions.className = "text-[9px] text-zinc-600 px-1 flex gap-3";
+                if (isAuthor || (isAdmin && msg.isAdmin)) {
+                    const editBtn = document.createElement('button');
+                    editBtn.innerText = "Upravit";
+                    editBtn.className = "hover:text-yellow-400 cursor-pointer";
+                    editBtn.onclick = () => openEditModal(msg.id, msg.text || '');
+                    actions.appendChild(editBtn);
+                }
+                if (isAuthor || isAdmin) {
+                    const del = document.createElement('button');
+                    del.innerText = "Smazat";
+                    del.className = "hover:text-red-400 cursor-pointer";
+                    del.onclick = () => deleteMessage(msg.id);
+                    actions.appendChild(del);
+                }
+                div.appendChild(actions);
+
+                messagesList.appendChild(div);
+            });
+
+            if (isUserAtBottom) scrollToBottom(false);
+        }
+
+        function openEditModal(id, currentText) {
+            editingMessageId = id;
+            document.getElementById('editModalInput').value = currentText;
+            document.getElementById('editModal').classList.remove('hidden');
+            document.getElementById('editModal').classList.add('flex');
+        }
+
+        function closeEditModal() {
+            editingMessageId = null;
+            document.getElementById('editModal').classList.remove('flex');
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        function saveEditedMessage() {
+            const newText = document.getElementById('editModalInput').value.trim();
+            if (!editingMessageId || !newText) return;
+
+            db.ref('messages').once('value', s => {
+                const val = s.val();
+                if (!val) return;
+                for (let key in val) {
+                    if (val[key].id === editingMessageId) {
+                        db.ref('messages/' + key).update({ text: newText, edited: true });
+                        break;
+                    }
+                }
+                closeEditModal();
+            });
+        }
+
+        function deleteMessage(id) {
+            db.ref('messages').once('value', s => {
+                const val = s.val();
+                if (!val) return;
+                for (let key in val) {
+                    if (val[key].id === id) db.ref('messages/' + key).remove();
+                }
+            });
+        }
+
+        function clearChatData() {
+            if (!confirm("Opravdu smazat celou historii zpráv, memy a restrikce?")) return;
+            db.ref('messages').remove();
+            db.ref('restrictions').remove();
+            db.ref('emojis').remove();
+            db.ref('presence').remove();
+            showAdminDashboard();
+        }
+    </script>
+</body>
+</html>
