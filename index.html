@@ -97,9 +97,6 @@
     <!-- Párek v rohlíku -->
     <h2 id="druhynadpis"><a href="./parek/">🌭 Párek v rohlíku</a></h2>
     <p class="tady">Gjw by nebylo Gjw bez párků v rohlíku</p>
-    <div class="stred" style="margin: 15px 0;">
-        <img src="parek.jpg" alt="Párek v rohlíku" style="max-width: 100%; max-height: 250px; border-radius: 4px;">
-    </div>
     <hr class="oddeleni">
 
     <h2 id="druhynadpis">Informácie</h2>
@@ -119,14 +116,14 @@
     <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
 
     <script>
-        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        const firebaseConfig = { databaseURL: "https://gjg-chat-default-rtdb.europe-west1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         db.ref('siteContent').on('value', (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
-            if (data.newsText) document.getElementById('homeNewsText').innerHTML = data.newsText;
+            if (data.newsText) document.getElementById('homeNewsText').innerHTML = data.newsTest;
             if (data.portalDesc) document.getElementById('homePortalDesc').innerText = data.portalDesc;
             if (data.infoText) document.getElementById('homeInfoText').innerHTML = data.infoText;
             if (data.licenseText) document.getElementById('homeLicenseText').innerText = data.licenseText;
