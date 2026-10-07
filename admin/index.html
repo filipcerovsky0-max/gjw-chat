@@ -46,14 +46,14 @@
             <button onclick="enterChatAsAdmin()" class="border border-blue-700 bg-blue-950/40 text-blue-400 px-4 py-2.5 rounded font-bold cursor-pointer hover:bg-blue-900/50">Vstoupit do chatu &raquo;</button>
         </div>
 
-        <!-- Správa designů v "Rozšiř to!" (Nahrávání + Mazání) -->
+        <!-- Správa designů v "Rozšiř to!" (Nahrávání, Editace jména + Mazání) -->
         <div class="border border-zinc-800 p-4 bg-zinc-950 rounded-lg space-y-3">
             <h2 class="font-bold text-yellow-400 text-xs">📢 Správa designů v "Rozšiř to!"</h2>
-            <p class="text-[10px] text-zinc-500">Přidej nový plakátek nebo spravuj (smaž) stávající designy.</p>
+            <p class="text-[10px] text-zinc-500">Přidej nový plakátek, upravuj názvy (lze nechat prázdné) nebo designy maž.</p>
             <div class="space-y-2 border-b border-zinc-900 pb-3">
                 <div>
-                    <label class="block text-[10px] text-zinc-400 mb-1">Název designu:</label>
-                    <input type="text" id="designTitleInput" placeholder="např. Hlavní QR Plakát A4" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
+                    <label class="block text-[10px] text-zinc-400 mb-1">Název designu (volitelné):</label>
+                    <input type="text" id="designTitleInput" placeholder="např. Hlavní QR Plakát A4 (lze nechat prázdné)" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
                 </div>
                 <div>
                     <label class="block text-[10px] text-zinc-400 mb-1">Soubor obrázku:</label>
@@ -63,8 +63,8 @@
             </div>
             
             <div class="space-y-2 pt-1">
-                <label class="block text-[10px] text-zinc-400 font-bold">Aktivní nahrané designy:</label>
-                <div id="adminDesignsListContainer" class="space-y-1 max-h-40 overflow-y-auto">
+                <label class="block text-[10px] text-zinc-400 font-bold">Aktivní nahrané designy (úprava názvů a mazání):</label>
+                <div id="adminDesignsListContainer" class="space-y-2 max-h-60 overflow-y-auto">
                     <span class="text-zinc-600 text-[10px]">Načítám designy...</span>
                 </div>
             </div>
@@ -141,7 +141,7 @@
         function uploadDesignAdmin() {
             const titleInput = document.getElementById('designTitleInput');
             const fileInput = document.getElementById('designFileInput');
-            const title = titleInput.value.trim() || "Bez názvu";
+            const title = titleInput.value.trim(); // Může být prázdné
 
             if (fileInput.files.length === 0) {
                 alert("Vyberte prosím obrázek designu!");
@@ -170,6 +170,19 @@
             reader.readAsDataURL(file);
         }
 
+        function updateDesignTitle(key) {
+            const newTitle = document.getElementById('input_title_' + key).value.trim();
+            db.ref('promoDesigns/' + key).update({
+                title: newTitle
+            }, (error) => {
+                if (error) {
+                    alert("Chyba při aktualizaci názvu.");
+                } else {
+                    alert("Název designu byl úspěšně aktualizován!");
+                }
+            });
+        }
+
         function deleteDesignAdmin(key) {
             if (confirm("Opravdu trvale smazat tento design z galerie?")) {
                 db.ref('promoDesigns/' + key).remove().then(() => {
@@ -188,7 +201,7 @@
                 if (data.footerText) document.getElementById('editFooter').value = data.footerText;
             });
 
-            // Načtení designů do administrace pro možnost mazání
+            // Načtení designů do administrace s políčkem pro úpravu jména
             db.ref('promoDesigns').on('value', snap => {
                 const container = document.getElementById('adminDesignsListContainer');
                 container.innerHTML = '';
@@ -197,50 +210,6 @@
 
                 Object.entries(designs).forEach(([key, d]) => {
                     const row = document.createElement('div');
-                    row.className = "flex justify-between items-center bg-black border border-zinc-900 p-2 rounded";
-                    row.innerHTML = `<span><b>${d.title}</b></span><button onclick="deleteDesignAdmin('${key}')" class="border border-red-800 bg-red-950/20 text-red-400 px-2 py-0.5 rounded cursor-pointer">Smazat</button>`;
-                    container.appendChild(row);
-                });
-            });
-
-            db.ref('presence').on('value', snap => {
-                const container = document.getElementById('adminUsersListContainer');
-                container.innerHTML = '';
-                const users = snap.val();
-                if (!users) { container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádní aktivní uživatelé</span>'; return; }
-
-                Object.values(users).forEach(u => {
-                    const row = document.createElement('div');
-                    row.className = "flex justify-between items-center bg-black border border-zinc-900 p-2 rounded";
-                    row.innerHTML = `<span><b>${u.user}</b> <span class="text-zinc-500">(ID: ${u.userId})</span></span><button onclick="kickUser('${u.userId}')" class="border border-red-800 bg-red-950/20 text-red-400 px-2 py-0.5 rounded cursor-pointer">Vyhodit</button>`;
-                    container.appendChild(row);
-                });
-            });
-        }
-
-        function saveSiteContent() {
-            db.ref('siteContent').set({
-                newsText: document.getElementById('editNews').value,
-                portalDesc: document.getElementById('editPortalDesc').value,
-                infoText: document.getElementById('editInfo').value,
-                licenseText: document.getElementById('editLicense').value,
-                footerText: document.getElementById('editFooter').value
-            }, () => {
-                alert("Změny na webu byly úspěšně uloženy!");
-            });
-        }
-
-        function kickUser(uid) {
-            db.ref('restrictions/' + uid).update({ kicked: true });
-            alert("Uživatel byl vyhozen.");
-        }
-
-        function clearChatData() {
-            if (confirm("Opravdu smazat všechny zprávy v chatu?")) {
-                db.ref('messages').remove();
-                alert("Chat byl vymazán.");
-            }
-        }
-    </script>
-</body>
-</html>
+                    row.className = "flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black border border-zinc-900 p-2.5 rounded gap-2";
+                    row.innerHTML = `
+                        <div class="flex items-center gap-2 w-full sm:w

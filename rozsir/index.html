@@ -147,9 +147,13 @@
                 const card = document.createElement('div');
                 card.className = "design-card";
                 card.onclick = () => openModal(item.image, item.title);
+                
+                // Pokud je název prázdný, titulek pod fotkou vůbec nevykreslíme
+                const titleHtml = item.title ? `<div class="design-title">${item.title}</div>` : '';
+
                 card.innerHTML = `
-                    <img src="${item.image}" alt="${item.title}">
-                    <div class="design-title">${item.title}</div>
+                    <img src="${item.image}" alt="${item.title || 'Design'}">
+                    ${titleHtml}
                 `;
                 container.appendChild(card);
             });
@@ -163,7 +167,7 @@
 
             modalImg.src = imgSrc;
             downloadBtn.href = imgSrc;
-            modalTitle.innerText = title;
+            modalTitle.innerText = title || '';
             overlay.style.display = 'flex';
         }
 
