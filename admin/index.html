@@ -1,107 +1,127 @@
 <!DOCTYPE html>
-<html lang="cs" class="h-full">
+<html lang="cs">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GJW Admin Command Center</title>
-    <script src="https://www.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            margin: 20px;
+            padding: 0;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .retro-box { background: #ffffff; border: 1px solid #b0b0a8; padding: 12px; margin-bottom: 15px; }
+        .retro-button {
+            background: #e2e8f0; border: 1px solid #94a3b8; padding: 5px 12px;
+            font-family: Arial, sans-serif; font-size: 12px; cursor: pointer; color: #000; border-radius: 3px;
+        }
+        .retro-button:hover { background: #cbd5e1; }
+        .retro-input, .retro-select, .retro-textarea {
+            background: #ffffff; border: 1px solid #94a3b8; padding: 6px;
+            font-family: Arial, sans-serif; font-size: 12px; color: #000; border-radius: 3px; width: 100%; box-sizing: border-box;
+        }
+        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 15px 0; }
+        h1, h2 { font-size: 15px; font-weight: bold; margin: 0 0 8px 0; color: #000; }
+        a { color: #0000EE; text-decoration: underline; }
+        .hidden { display: none !important; }
+    </style>
 </head>
-<body class="bg-black text-gray-200 h-full flex flex-col font-mono text-xs p-4">
+<body>
 
-    <!-- Zabezpečené přihlášení heslem -->
-    <div id="adminAuthBox" class="max-w-md mx-auto my-auto border border-zinc-800 bg-zinc-950 p-6 rounded-xl shadow-2xl space-y-4 w-full text-center">
-        <h1 class="font-bold text-zinc-100 text-sm tracking-widest">GJW COMMAND CENTER</h1>
-        <p class="text-[10px] text-zinc-500">Zadej administrátorské heslo</p>
-        <input type="password" id="adminPasswordInput" placeholder="heslo..." class="w-full bg-black border border-zinc-800 p-2.5 rounded text-white focus:outline-none focus:border-zinc-600" onkeydown="if(event.key==='Enter') verifyAdminPassword()">
-        <button onclick="verifyAdminPassword()" class="w-full border border-zinc-700 bg-zinc-900 py-2.5 rounded text-zinc-200 font-bold cursor-pointer hover:bg-zinc-800">Ověřit přístup</button>
-        <div id="adminLoginError" class="text-red-500 text-[10px] hidden font-bold">Špatné heslo!</div>
-        <a href="../" class="block text-[10px] text-blue-400 underline pt-2">&laquo; Zpět na hlavní web</a>
+    <!-- Přihlašovací box -->
+    <div id="adminAuthBox" class="retro-box" style="max-width: 350px; margin: 100px auto; text-align: center;">
+        <h2>GJW COMMAND CENTER</h2>
+        <p class="text-xs" style="margin-bottom: 10px; color: #555;">Zadej administrátorské heslo</p>
+        <input type="password" id="adminPasswordInput" placeholder="heslo..." class="retro-input" style="margin-bottom: 8px;" onkeydown="if(event.key==='Enter') verifyAdminPassword()">
+        <button onclick="verifyAdminPassword()" class="retro-button w-full font-bold" style="width: 100%;">Ověřit přístup</button>
+        <div id="adminLoginError" class="text-red-600 text-xs hidden font-bold" style="margin-top: 8px; color: red;">Špatné heslo!</div>
+        <div style="margin-top: 12px;"><a href="../">&laquo; Zpět na hlavní web</a></div>
     </div>
 
-    <!-- Plnohodnotný Dashboard -->
-    <div id="adminDashboardBox" class="hidden max-w-4xl mx-auto w-full flex-1 flex flex-col space-y-4 overflow-y-auto">
-        <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+    <!-- Hlavní Dashboard -->
+    <div id="adminDashboardBox" class="hidden">
+        <div class="retro-box flex justify-between items-center" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h1 class="font-bold text-zinc-100 text-sm">GJW Admin Command Center</h1>
-                <p class="text-[9px] text-zinc-500">Správa webu, textů, vstupů do chatu, moderace a designů</p>
+                <h1 style="margin: 0;">GJW Admin Command Center</h1>
+                <p style="font-size: 11px; color: #666; margin: 2px 0 0 0;">Správa webu, chatu a propagačních designů</p>
             </div>
-            <div class="flex gap-2">
-                <button onclick="clearChatData()" class="border border-red-800/80 bg-red-950/30 text-red-400 px-3 py-1.5 rounded cursor-pointer hover:bg-red-900/40">Smazat chat</button>
-                <a href="../" class="border border-zinc-700 bg-zinc-900 px-3 py-1.5 rounded text-zinc-300 hover:bg-zinc-800 no-underline">Odhlásit</a>
+            <div>
+                <button onclick="clearChatData()" class="retro-button" style="background: #ffcccc; border-color: #ff9999; color: #990000;">Smazat chat</button>
+                <a href="../" class="retro-button" style="text-decoration: none; display: inline-block; margin-left: 5px;">Odhlásit</a>
             </div>
         </div>
 
-        <!-- Vstup do chatu s volbou režimu -->
-        <div class="border border-zinc-800 p-4 bg-zinc-950 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-3">
-            <div>
-                <h2 class="font-bold text-yellow-400 text-xs mb-1">💬 Vstup do chatu z adminu</h2>
-                <p class="text-[10px] text-zinc-500">Zvol si, jak se chceš připojit do aktivního chatu:</p>
-                <select id="adminModeSelect" class="bg-black border border-zinc-800 p-2 rounded text-white text-xs mt-2">
+        <!-- Vstup do chatu -->
+        <div class="retro-box">
+            <h2>💬 Vstup do chatu</h2>
+            <p style="font-size: 12px; color: #555; margin-bottom: 8px;">Zvol si režim připojení do chatu:</p>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <select id="adminModeSelect" class="retro-select" style="flex: 1;">
                     <option value="observed">Viditelný admin (duhový nick, moderace kliknutím)</option>
                     <option value="hidden">Ghost admin (zcela skrytý v zákulisí)</option>
                 </select>
+                <button onclick="enterChatAsAdmin()" class="retro-button font-bold" style="white-space: nowrap;">Vstoupit do chatu &raquo;</button>
             </div>
-            <button onclick="enterChatAsAdmin()" class="border border-blue-700 bg-blue-950/40 text-blue-400 px-4 py-2.5 rounded font-bold cursor-pointer hover:bg-blue-900/50">Vstoupit do chatu &raquo;</button>
         </div>
 
         <!-- Správa designů v "Rozšiř to!" -->
-        <div class="border border-zinc-800 p-4 bg-zinc-950 rounded-lg space-y-3">
-            <h2 class="font-bold text-yellow-400 text-xs">📢 Správa designů v "Rozšiř to!"</h2>
-            <p class="text-[10px] text-zinc-500">Přidej nový plakátek, upravuj názvy (lze nechat prázdné) nebo designy maž.</p>
-            <div class="space-y-2 border-b border-zinc-900 pb-3">
-                <div>
-                    <label class="block text-[10px] text-zinc-400 mb-1">Název designu (volitelné):</label>
-                    <input type="text" id="designTitleInput" placeholder="např. Hlavní QR Plakát A4 (lze nechat prázdné)" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
-                </div>
-                <div>
-                    <label class="block text-[10px] text-zinc-400 mb-1">Soubor obrázku:</label>
-                    <input type="file" id="designFileInput" accept="image/*" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
-                </div>
-                <button onclick="uploadDesignAdmin()" class="border border-green-700 bg-green-950/40 text-green-400 px-4 py-2 rounded font-bold cursor-pointer hover:bg-green-900/50">Nahrát design</button>
-            </div>
+        <div class="retro-box">
+            <h2>📢 Správa designů v "Rozšiř to!"</h2>
+            <p style="font-size: 12px; color: #555; margin-bottom: 8px;">Přidej nový plakátek, uprav názvy (lze nechat prázdné) nebo designy maž.</p>
             
-            <div class="space-y-2 pt-1">
-                <label class="block text-[10px] text-zinc-400 font-bold">Aktivní nahrané designy (úprava názvů a mazání):</label>
-                <div id="adminDesignsListContainer" class="space-y-2 max-h-60 overflow-y-auto">
-                    <span class="text-zinc-600 text-[10px]">Načítám designy...</span>
+            <div style="margin-bottom: 12px; border-bottom: 1px solid #ddd; padding-bottom: 12px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 4px;">Název designu (volitelné):</label>
+                <input type="text" id="designTitleInput" placeholder="např. Hlavní QR Plakát A4 (lze nechat prázdné)" class="retro-input" style="margin-bottom: 6px;">
+                
+                <label style="font-weight: bold; display: block; margin-bottom: 4px;">Soubor obrázku:</label>
+                <input type="file" id="designFileInput" accept="image/*" class="retro-input" style="margin-bottom: 8px;">
+                
+                <button onclick="uploadDesignAdmin()" class="retro-button font-bold">Nahrát design</button>
+            </div>
+
+            <div>
+                <label style="font-weight: bold; display: block; margin-bottom: 6px;">Aktivní nahrané designy:</label>
+                <div id="adminDesignsListContainer" style="max-height: 200px; overflow-y: auto; space-y: 6px;">
+                    <span style="color: #666; font-style: italic;">Načítám designy...</span>
                 </div>
             </div>
         </div>
 
         <!-- Editor textů na hlavní stránce -->
-        <div class="border border-zinc-800 p-4 bg-zinc-950 rounded-lg space-y-3">
-            <h2 class="font-bold text-yellow-400 text-xs">✏️ Editor textů na hlavní stránce (Index)</h2>
-            <div class="space-y-2">
-                <div>
-                    <label class="block text-[10px] text-zinc-400 mb-1">Novinky (HTML):</label>
-                    <textarea id="editNews" rows="2" class="w-full bg-black border border-zinc-800 p-2 rounded text-white"></textarea>
-                </div>
-                <div>
-                    <label class="block text-[10px] text-zinc-400 mb-1">Popis portálu / chatu:</label>
-                    <input type="text" id="editPortalDesc" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
-                </div>
-                <div>
-                    <label class="block text-[10px] text-zinc-400 mb-1">Informácie (Email / text):</label>
-                    <textarea id="editInfo" rows="2" class="w-full bg-black border border-zinc-800 p-2 rounded text-white"></textarea>
-                </div>
-                <div>
-                    <label class="block text-[10px] text-zinc-400 mb-1">Licence:</label>
-                    <textarea id="editLicense" rows="2" class="w-full bg-black border border-zinc-800 p-2 rounded text-white"></textarea>
-                </div>
-                <div>
-                    <label class="block text-[10px] text-zinc-400 mb-1">Patička (Vyrobeno v...):</label>
-                    <input type="text" id="editFooter" class="w-full bg-black border border-zinc-800 p-2 rounded text-white">
-                </div>
-                <button onclick="saveSiteContent()" class="border border-green-700 bg-green-950/40 text-green-400 px-4 py-2 rounded font-bold cursor-pointer hover:bg-green-900/50">Uložit změny na webu</button>
+        <div class="retro-box">
+            <h2>✏️ Editor textů na hlavní stránce</h2>
+            <div style="space-y: 8px;">
+                <label style="font-weight: bold; display: block; margin-top: 6px;">Novinky (HTML):</label>
+                <textarea id="editNews" rows="2" class="retro-textarea"></textarea>
+
+                <label style="font-weight: bold; display: block; margin-top: 6px;">Popis portálu / chatu:</label>
+                <input type="text" id="editPortalDesc" class="retro-input">
+
+                <label style="font-weight: bold; display: block; margin-top: 6px;">Informácie (Email / text):</label>
+                <textarea id="editInfo" rows="2" class="retro-textarea"></textarea>
+
+                <label style="font-weight: bold; display: block; margin-top: 6px;">Licence:</label>
+                <textarea id="editLicense" rows="2" class="retro-textarea"></textarea>
+
+                <label style="font-weight: bold; display: block; margin-top: 6px;">Patička (Vyrobeno v...):</label>
+                <input type="text" id="editFooter" class="retro-input" style="margin-bottom: 10px;">
+
+                <button onclick="saveSiteContent()" class="retro-button font-bold">Uložit změny na webu</button>
             </div>
         </div>
 
-        <!-- Správa uživatelů a ID -->
-        <div class="border border-zinc-800 p-4 bg-zinc-950 rounded-lg space-y-3">
-            <h2 class="font-bold text-yellow-400 text-xs">🛡️ Aktivní uživatelé a User ID</h2>
-            <div id="adminUsersListContainer" class="space-y-1 max-h-40 overflow-y-auto"></div>
+        <!-- Aktivní uživatelé -->
+        <div class="retro-box">
+            <h2>🛡️ Aktivní uživatelé a moderace</h2>
+            <div id="adminUsersListContainer" style="max-height: 150px; overflow-y: auto;"></div>
         </div>
     </div>
 
@@ -129,8 +149,6 @@
                     document.getElementById('adminLoginError').classList.remove('hidden');
                 }
             }).catch(err => {
-                console.error("Firebase error:", err);
-                // Fallback pro případ výpadku databáze, aby to šlo otevřít
                 if (input === '69_atillo_69') {
                     sessionStorage.setItem('gjw_admin_secure_logged', 'true');
                     document.getElementById('adminAuthBox').classList.add('hidden');
@@ -216,19 +234,19 @@
                 const container = document.getElementById('adminDesignsListContainer');
                 container.innerHTML = '';
                 const designs = snap.val();
-                if (!designs) { container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádné nahrané designy</span>'; return; }
+                if (!designs) { container.innerHTML = '<span style="color: #666; font-size: 11px;">Žádné nahrané designy</span>'; return; }
 
                 Object.entries(designs).forEach(([key, d]) => {
                     const row = document.createElement('div');
-                    row.className = "flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black border border-zinc-900 p-2.5 rounded gap-2";
+                    row.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; border: 1px solid #ddd; padding: 6px; margin-bottom: 4px; gap: 8px;";
                     row.innerHTML = `
-                        <div class="flex items-center gap-2 w-full sm:w-auto flex-1">
-                            <img src="${d.image}" class="w-8 h-8 object-cover border border-zinc-800 shrink-0">
-                            <input type="text" id="input_title_${key}" value="${d.title || ''}" placeholder="Bez názvu" class="bg-black border border-zinc-800 p-1.5 rounded text-white text-[11px] w-full">
+                        <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                            <img src="${d.image}" style="width: 30px; height: 30px; object-fit: cover; border: 1px solid #ccc;">
+                            <input type="text" id="input_title_${key}" value="${d.title || ''}" placeholder="Bez názvu" class="retro-input" style="padding: 4px;">
                         </div>
-                        <div class="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
-                            <button onclick="updateDesignTitle('${key}')" class="border border-blue-700 bg-blue-950/30 text-blue-400 px-2.5 py-1 rounded cursor-pointer hover:bg-blue-900/40">Uložit jméno</button>
-                            <button onclick="deleteDesignAdmin('${key}')" class="border border-red-800 bg-red-950/20 text-red-400 px-2.5 py-1 rounded cursor-pointer hover:bg-red-900/40">Smazat</button>
+                        <div style="display: flex; gap: 4px; white-space: nowrap;">
+                            <button onclick="updateDesignTitle('${key}')" class="retro-button" style="padding: 3px 8px;">Uložit jméno</button>
+                            <button onclick="deleteDesignAdmin('${key}')" class="retro-button" style="padding: 3px 8px; background: #ffcccc; border-color: #ff9999; color: #990000;">Smazat</button>
                         </div>
                     `;
                     container.appendChild(row);
@@ -239,12 +257,12 @@
                 const container = document.getElementById('adminUsersListContainer');
                 container.innerHTML = '';
                 const users = snap.val();
-                if (!users) { container.innerHTML = '<span class="text-zinc-600 text-[10px]">Žádní aktivní uživatelé</span>'; return; }
+                if (!users) { container.innerHTML = '<span style="color: #666; font-size: 11px;">Žádní aktivní uživatelé</span>'; return; }
 
                 Object.values(users).forEach(u => {
                     const row = document.createElement('div');
-                    row.className = "flex justify-between items-center bg-black border border-zinc-900 p-2 rounded";
-                    row.innerHTML = `<span><b>${u.user}</b> <span class="text-zinc-500">(ID: ${u.userId})</span></span><button onclick="kickUser('${u.userId}')" class="border border-red-800 bg-red-950/20 text-red-400 px-2 py-0.5 rounded cursor-pointer">Vyhodit</button>`;
+                    row.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #eee;";
+                    row.innerHTML = `<span><b>${u.user}</b> (ID: ${u.userId})</span><button onclick="kickUser('${u.userId}')" class="retro-button" style="padding: 2px 6px; color: red;">Vyhodit</button>`;
                     container.appendChild(row);
                 });
             });
