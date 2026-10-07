@@ -1,3 +1,4 @@
+<!-- co se cumis do zdrojaku okamzite vypadni nebo se te najdu -->
 <!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -70,7 +71,7 @@
         
     <h2 id="druhynadpis">Novinky</h2>
     <div class="novinky" id="homeNewsText">
-        <strong>7/10/26</strong> - Přidali jsme: <a class="jaromil" href="./chat/"><b>Diskuzní portál (chat)</b></a>, <a class="jaromil" href="./temno/"><b>Temnou stránku školy</b></a> pro nahrávání důkazů, sekci <a class="jaromil" href="./rozsir/"><b>Rozšiř to!</b></a> s propagačními designy, sekci <a class="jaromil" href="./znic/"><b>Znič stránku školy!</b></a> 💣 a nově také sekci <a class="jaromil" href="./parek/"><b>Párek v rohlíku</b></a> 🌭.
+        <strong>7/10/26</strong> - Přidali jsme: <a class="jaromil" href="./chat/"><b>Diskuzní portál (chat)</b></a>, <a class="jaromil" href="./temno/"><b>Temnou stránku školy</b></a> pro nahrávání důkazů, sekci <a class="jaromil" href="./rozsir/"><b>Rozšiř to!</b></a> s propagačními designy, sekci <a class="jaromil" href="./znic/"><b>Znič stránku školy!</b></a> 💣, sekci <a class="jaromil" href="./parek/"><b>Párek v rohlíku</b></a> 🌭 a nově <a class="jaromil" href="./ucitele/"><b>Pošli učiteli hezký den</b></a> ☀️.
     </div>
     <br>
     <hr class="oddeleni">
@@ -96,7 +97,12 @@
 
     <!-- Párek v rohlíku -->
     <h2 id="druhynadpis"><a href="./parek/">🌭 Párek v rohlíku</a></h2>
-    <p class="tady"></p>
+    <p class="tady">Gjw by nebylo Gjw bez párků v rohlíku</p>
+    <hr class="oddeleni">
+
+    <!-- Pošli učiteli hezký den -->
+    <h2 id="druhynadpis"><a href="./ucitele/">☀️ Pošli učiteli hezký den</a></h2>
+    <p class="tady">Pošli učitelům anonymní pozdrav a zvedni jim náladu</p>
     <hr class="oddeleni">
 
     <h2 id="druhynadpis">Informácie</h2>
@@ -116,14 +122,14 @@
     <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
 
     <script>
-        const firebaseConfig = { databaseURL: "https://gjg-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         db.ref('siteContent').on('value', (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
-            if (data.newsText) document.getElementById('homeNewsText').innerHTML = data.newsTest;
+            if (data.newsText) document.getElementById('homeNewsText').innerHTML = data.newsText;
             if (data.portalDesc) document.getElementById('homePortalDesc').innerText = data.portalDesc;
             if (data.infoText) document.getElementById('homeInfoText').innerHTML = data.infoText;
             if (data.licenseText) document.getElementById('homeLicenseText').innerText = data.licenseText;

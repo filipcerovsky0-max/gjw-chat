@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pošli hezký den učitelům - GJW</title>
+    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <!-- Firebase SDK (kompatibilní verze) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            margin: 15px;
+            padding: 10px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .stred { text-align: center; }
+        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
+        h1 { font-size: 20px; font-weight: bold; margin: 15px 0; color: #000000; }
+        p { font-size: 14px; line-height: 1.5; color: #333; }
+        .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .ucitel-box {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            padding: 10px 12px;
+            margin: 8px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .ucitel-jmeno {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .ucitel-info {
+            font-size: 12px;
+            color: #666;
+        }
+        .ucitel-btn {
+            background-color: #cc0000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            font-family: 'Papyrus', fantasy, sans-serif;
+            cursor: pointer;
+            border-radius: 4px;
+            width: 250px;
+            text-align: center;
+        }
+        .ucitel-btn:hover {
+            background-color: #aa0000;
+        }
+        #status {
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
+    <hr class="oddeleni">
+
+    <div class="stred">
+        <h1>Pošli učiteli hezký den</h1>
+    </div>
+
+    <hr class="oddeleni">
+
+    <!-- Seznam učitelů -->
+    <div id="seznam-ucitelu">
+        <!-- Dynamicky se naplní ze skriptu -->
+    </div>
+
+    <div id="status"></div>
+
+    <hr class="oddeleni">
+    <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
+
+    <script>
+        // Inicializace Firebase
+        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Kompletní seznam učitelů
+        const ucitele = [
+            { id: "apltauerova", jmeno: "Apltauerová-Žáková Iveta", email: "i.apltauerova@gjwprostejov.cz" },
+            { id: "balintova", jmeno: "Bálintová Zuzana", email: "z.balintova@gjwprostejov.cz" },
+            { id: "beckova", jmeno: "Becková Eva", email: "e.beckova@gjwprostejov.cz" },
+            { id: "berard", jmeno: "Berard Marion", email: "m.berard@gjwprostejov.cz" },
+            { id: "cekulova", jmeno: "Cekulová Adéla", email: "a.cekulova@gjwprostejov.cz" },
+            { id: "corrigan", jmeno: "Corrigan Johana", email: "j.corrigan@gjwprostejov.cz" },
+            { id: "dankovicova", jmeno: "Dankovičová Ludmila", email: "l.dankovicova@gjwprostejov.cz" },
+            { id: "divisova", jmeno: "Divišová Kateřina", email: "k.divisova@gjwprostejov.cz" },
+            { id: "dolezelova", jmeno: "Doleželová Marcela", email: "m.dolezelova@gjwprostejov.cz" },
+            { id: "dopita", jmeno: "Dopita Lukáš", email: "l.dopita@gjwprostejov.cz" },
+            { id: "grecmanova", jmeno: "Grecmanová Jitka", email: "j.grecmanova@gjwprostejov.cz" },
+            { id: "hadrova", jmeno: "Hádrová Lenka", email: "l.hadrova@gjwprostejov.cz" },
+            { id: "haluza", jmeno: "Haluza Jakub", email: "j.haluza@gjwprostejov.cz" },
+            { id: "hlavacek", jmeno: "Hlaváček Josef", email: "j.hlavacek@gjwprostejov.cz" },
+            { id: "hnilicova", jmeno: "Hnilicová Michaela", email: "m.hnilicova@gjwprostejov.cz" },
+            { id: "hnizdilova", jmeno: "Hnízdilová Hana", email: "h.hnizdilova@gjwprostejov.cz" },
+            { id: "chasakova", jmeno: "Chasáková Tereza", email: "t.chasakova@gjwprostejov.cz" },
+            { id: "chytilova", jmeno: "Chytilová Monika", email: "m.chytilova@gjwprostejov.cz" },
+            { id: "jestrabova", jmeno: "Jestřábová Lucie", email: "l.jestrabova@gjwprostejov.cz" },
+            { id: "jirickova", jmeno: "Jiříčková Pavla", email: "p.jirickova@gjwprostejov.cz" },
+            { id: "jurakova", jmeno: "Juráková Ivana", email: "i.jurakova@gjwprostejov.cz" },
+            { id: "klic", jmeno: "Klíč Bronislav", email: "b.klic@gjwprostejov.cz" },
+            { id: "kolarik", jmeno: "Kolařík Tomáš", email: "t.kolarik@gjwprostejov.cz" },
+            { id: "krahulcova", jmeno: "Krahulcová Iveta", email: "i.krahulcova@gjwprostejov.cz" },
+            { id: "krychtalkova", jmeno: "Krychtálková Kamila, Ph.D.", email: "k.krychtalkova@gjwprostejov.cz" },
+            { id: "lakoma", jmeno: "Lakomá Šárka", email: "s.lakoma@gjwprostejov.cz" },
+            { id: "marcan", jmeno: "Marčan Libor", email: "l.marcan@gjwprostejov.cz" },
+            { id: "marek", jmeno: "Marek Michal", email: "m.marek@gjwprostejov.cz" },
+            { id: "markova", jmeno: "Marková Magdalena", email: "m.markova@gjwprostejov.cz" },
+            { id: "matousek", jmeno: "Matoušek Lukáš, MBA", email: "l.matousek@gjwprostejov.cz" },
+            { id: "mikulkova", jmeno: "Mikulková Alena", email: "a.mikulkova@gjwprostejov.cz" },
+            { id: "mlatecek", jmeno: "Mlateček Ivan", email: "i.mlatecek@gjwprostejov.cz" },
+            { id: "moudra", jmeno: "Moudrá Renata", email: "r.moudra@gjwprostejov.cz" },
+            { id: "muller", jmeno: "Müller Michal", email: "m.muller@gjwprostejov.cz" },
+            { id: "nevlud", jmeno: "Nevlud Pavel", email: "p.nevlud@gjwprostejov.cz" },
+            { id: "novotna", jmeno: "Novotná Jana", email: "j.novotna@gjwprostejov.cz" },
+            { id: "opavska", jmeno: "Opavská Helena", email: "h.opavska@gjwprostejov.cz" },
+            { id: "oriskova", jmeno: "Oříšková Hana", email: "h.oriskova@gjwprostejov.cz" },
+            { id: "pechova", jmeno: "Pechová Ilona", email: "i.pechova@gjwprostejov.cz" },
+            { id: "pribylova", jmeno: "Přibylová Petra", email: "p.pribylova@gjwprostejov.cz" },
+            { id: "prikryl", jmeno: "Přikryl Tomáš", email: "t.prikryl@gjwprostejov.cz" },
+            { id: "prikrylova", jmeno: "Přikrylová Dita", email: "d.prikrylova@gjwprostejov.cz" },
+            { id: "racek", jmeno: "Raček Ondřej", email: "o.racek@gjwprostejov.cz" },
+            { id: "raskova", jmeno: "Rašková Hana", email: "h.raskova@gjwprostejov.cz" },
+            { id: "ropova", jmeno: "Ropová Denisa", email: "d.ropova@gjwprostejov.cz" },
+            { id: "rysava", jmeno: "Ryšavá Lucie", email: "l.rysava@gjwprostejov.cz" },
+            { id: "sadilkova", jmeno: "Sadílková Zdeňka", email: "z.sadilkova@gjwprostejov.cz" },
+            { id: "sedlacek", jmeno: "Sedláček Petr", email: "p.sedlacek@gjwprostejov.cz" },
+            { id: "schwartzhoff", jmeno: "Schwartzhoff Steven", email: "s.schwartzhoff@gjwprostejov.cz" },
+            { id: "stankova", jmeno: "Staňková Alena", email: "a.stankova@gjwprostejov.cz" },
+            { id: "stridecky", jmeno: "Střídecký František", email: "f.stridecky@gjwprostejov.cz" },
+            { id: "svobodova_g", jmeno: "Svobodová Gabriela", email: "g.svobodova@gjwprostejov.cz" },
+            { id: "svobodova_r", jmeno: "Svobodová Radka", email: "r.svobodova@gjwprostejov.cz" },
+            { id: "svozilova", jmeno: "Svozilová Helena", email: "h.svozilova@gjwprostejov.cz" },
+            { id: "siskova", jmeno: "Šišková Jana", email: "j.siskova@gjwprostejov.cz" },
+            { id: "skvaril", jmeno: "Škvařil Luděk", email: "l.skvaril@gjwprostejov.cz" },
+            { id: "subert", jmeno: "Šubert Radim, Ph.D.", email: "r.subert@gjwprostejov.cz" },
+            { id: "valouskova", jmeno: "Valoušková Barbora", email: "b.valouskova@gjwprostejov.cz" },
+            { id: "vanca", jmeno: "Vanča Jaromír", email: "j.vanca@gjwprostejov.cz" },
+            { id: "vecera", jmeno: "Večeřa Filip", email: "f.vecera@gjwprostejov.cz" },
+            { id: "volek_r", jmeno: "Volek René", email: "r.volek@gjwprostejov.cz" },
+            { id: "volek_robert", jmeno: "Volek Robert", email: "r.volek11@gmail.com" }
+        ];
+
+        const seznamDiv = document.getElementById('seznam-ucitelu');
+        const statusDiv = document.getElementById('status');
+
+        ucitele.forEach(ucitel => {
+            const box = document.createElement('div');
+            box.className = 'ucitel-box';
+            
+            box.innerHTML = `
+                <div>
+                    <div class="ucitel-jmeno">${ucitel.jmeno}</div>
+                    <div class="ucitel-info">Počet: <span id="count-${ucitel.id}">0</span></div>
+                </div>
+                <button class="ucitel-btn" id="btn-${ucitel.id}" onclick="posliPozdrav('${ucitel.id}', '${ucitel.jmeno}', '${ucitel.email}')">${ucitel.jmeno}</button>
+            `;
+            seznamDiv.appendChild(box);
+
+            // Živé načítání počtu z Firebase
+            db.ref('pozdravy/' + ucitel.id).on('value', (snapshot) => {
+                const data = snapshot.val();
+                const pocet = data ? Object.keys(data).length : 0;
+                document.getElementById(`count-${ucitel.id}`).innerText = pocet;
+            });
+        });
+
+        function posliPozdrav(id, jmeno, email) {
+            const btn = document.getElementById(`btn-${id}`);
+            btn.innerText = "Anonymně odesláno";
+            btn.disabled = true;
+            btn.style.backgroundColor = "#555";
+
+            db.ref('pozdravy/' + id).push({
+                text: "Přeji krásný den",
+                email: email,
+                cas: Date.now()
+            }).then(() => {
+                statusDiv.style.color = "green";
+                statusDiv.innerText = `Odesláno pro ${jmeno} (${email})`;
+                setTimeout(() => { 
+                    statusDiv.innerText = ""; 
+                    btn.innerText = jmeno;
+                    btn.disabled = false;
+                    btn.style.backgroundColor = "#cc0000";
+                }, 3000);
+            }).catch((error) => {
+                statusDiv.style.color = "red";
+                statusDiv.innerText = `Chyba: ${error.message}`;
+                btn.innerText = jmeno;
+                btn.disabled = false;
+                btn.style.backgroundColor = "#cc0000";
+            });
+        }
+    </script>
+</body>
+</html>
