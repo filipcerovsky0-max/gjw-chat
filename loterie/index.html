@@ -33,6 +33,8 @@
             margin: 20px 0;
             text-align: center;
         }
+        
+        /* Tlačítka ve fontu Papyrus */
         .btn-loterie {
             background-color: #222;
             color: #fff;
@@ -48,18 +50,65 @@
         .btn-loterie:hover {
             background-color: #444;
         }
+
+        .btn-ucitel {
+            background-color: #b30000;
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-family: 'Papyrus', fantasy, sans-serif;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 8px 5px;
+        }
+        .btn-ucitel:hover {
+            background-color: #800000;
+        }
+        .btn-clear {
+            background-color: #444;
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-family: 'Papyrus', fantasy, sans-serif;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 8px 5px;
+        }
+        .btn-clear:hover {
+            background-color: #222;
+        }
+
+        /* Výsledky a texty v Comic Sans MS */
         #vysledek {
             font-size: 22px;
             font-weight: bold;
             margin-top: 20px;
             color: #b30000;
-            font-family: 'Papyrus', fantasy, sans-serif;
+            font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif;
         }
         #komentar {
             font-size: 14px;
             color: #555;
             margin-top: 8px;
-            font-family: 'Papyrus', fantasy, sans-serif;
+            font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif;
+        }
+
+        #vysledekUcitel {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #b30000;
+            font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif;
+        }
+        #komentarUcitel {
+            font-size: 14px;
+            color: #555;
+            margin-top: 8px;
+            font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif;
         }
     </style>
 </head>
@@ -74,6 +123,7 @@
 
     <hr class="oddeleni">
 
+    <!-- 1. PŮVODNÍ LOSOVÁNÍ (VYZKOUŠENÍ) -->
     <div class="loterie-box">
         <p><b>Klikni na losuj a zjisti co te dnes ceka</b></p>
         <button class="btn-loterie" onclick="losujVyzkouseni()">losuj</button>
@@ -83,11 +133,25 @@
     </div>
 
     <hr class="oddeleni">
+
+    <!-- 2. NOVÉ LOSOVÁNÍ (KDO BUDE DNESNÍ SVINE?) -->
+    <div class="loterie-box">
+        <p><b>Kdo bude dnesni svine ?</b></p>
+        <div>
+            <button class="btn-ucitel" onclick="losujUcitele()">Kdo bude dnešní svině ?</button>
+            <button class="btn-clear" onclick="vyčistitPolicko()">Libo vyčistit ?</button>
+        </div>
+        
+        <div id="vysledekUcitel"></div>
+        <div id="komentarUcitel"></div>
+    </div>
+
+    <hr class="oddeleni">
     <p style="font-size: 11px; color: #666; text-align: center; font-family: 'Papyrus', fantasy, sans-serif;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
 
     <script>
+        // 1. Skript pro původní vyzkoušení
         function losujVyzkouseni() {
-            // Generuje náhodné číslo od 0 do 4
             const cislo = Math.floor(Math.random() * 5);
             const vysledekDiv = document.getElementById('vysledek');
             const komentarDiv = document.getElementById('komentar');
@@ -114,6 +178,36 @@
 
             vysledekDiv.innerText = text;
             komentarDiv.innerText = komentar;
+        }
+
+        // 2. Skript pro výběr učitele
+        const ucitele = [
+            "Raček Ondřej", "Rašková Hana", "Ropová Denisa", "Ryšavá Lucie", "Sadílková Zdeňka", 
+            "Sedláček Petr", "Schwartzhoff Steven", "Staňková Alena", "Střídecký František", 
+            "Svobodová Gabriela", "Svobodová Radka", "Svozilová Helena", "Šišková Jana", 
+            "Škvařil Luděk", "Šubert Radim, Ph.D.", "Valoušková Barbora", "Vanča Jaromír", 
+            "Večeřa Filip", "Volek René", "Volek Robert", "Apltauerová-Žáková Iveta", 
+            "Bálintová Zuzana", "Becková Eva", "Berard Marion", "Cekulová Adéla", 
+            "Divišová Kateřina", "Doleželová Marcela", "Dopita Lukáš", "Grecmanová Jitka", 
+            "Hádrová Lenka", "Haluza Jakub", "Hnízdilová Hana", "Chasáková Tereza", 
+            "Chytilová Monika", "Jestřábová Lucie", "Jiříčková Pavla", "Juráková Ivana", 
+            "Klíč Bronislav", "Kolařík Tomáš", "Krahulcová Iveta"
+        ];
+
+        function losujUcitele() {
+            const randomIndex = Math.floor(Math.random() * ucitele.length);
+            const vylosovany = ucitele[randomIndex];
+            
+            const vysledekDiv = document.getElementById('vysledekUcitel');
+            const komentarDiv = document.getElementById('komentarUcitel');
+
+            vysledekDiv.innerText = vylosovany;
+            komentarDiv.innerText = "";
+        }
+
+        function vyčistitPolicko() {
+            document.getElementById('vysledekUcitel').innerText = "";
+            document.getElementById('komentarUcitel').innerText = "";
         }
     </script>
 </body>
