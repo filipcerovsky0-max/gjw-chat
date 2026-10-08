@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rozvodna - GJW</title>
+    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <style>
+        body {
+            background-color: #808080; /* Šedé pozadí */
+            color: #000000;
+            font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif;
+            font-size: 14px;
+            margin: 15px;
+            padding: 10px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .stred { text-align: center; }
+        .oddeleni { border: 0; height: 2px; background: #333; margin: 20px 0; }
+        h1 { font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif; font-size: 26px; font-weight: bold; margin: 15px 0; color: #fff; text-shadow: 2px 2px #000; }
+        .back-link { color: #ffff00; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 15px; font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif; font-weight: bold; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .rozvodna-box {
+            background: #c0c0c0;
+            border: 3px solid #000;
+            padding: 20px;
+            border-radius: 0px; /* Úplně hranatý obdélník */
+            margin: 15px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        /* Meme červená obdélníková tlačítka v Comic Sans */
+        .rozvodna-btn {
+            background-color: #ff0000;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif;
+            border: 3px solid #000000;
+            border-radius: 0px; /* Žádné zaoblení, čistý obdélník */
+            display: inline-block;
+            box-shadow: 3px 3px 0px #000000;
+            transition: transform 0.1s;
+        }
+        .rozvodna-btn:hover {
+            background-color: #cc0000;
+            transform: scale(1.05);
+        }
+        .rozvodna-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #000000;
+        }
+        
+        .tady { font-size: 14px; color: #fff; text-align: center; font-weight: bold; text-shadow: 1px 1px #000; }
+    </style>
+</head>
+<body>
+    <!-- Hudba hrající pouze v rozvodně -->
+    <audio id="rozvodnaHudba" src="hudba.mp3" loop autoplay></audio>
+
+    <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
+    <hr class="oddeleni">
+
+    <div class="stred">
+        <h1>Rozvodna</h1>
+        <p class="tady">Klikej na vlastní nebezpečí:</p>
+    </div>
+
+    <div class="rozvodna-box" id="rozvodnaTlacitka">
+        <p style="color: #000; font-size: 14px; margin: 0; font-family: 'Comic Sans MS';">Načítám rozvodnu...</p>
+    </div>
+
+    <script>
+        // Ošetření spuštění hudby pro mobily a prohlížeče
+        const audioRozvodna = document.getElementById('rozvodnaHudba');
+        audioRozvodna.volume = 0.5;
+        let playPromiseRozvodna = audioRozvodna.play();
+        if (playPromiseRozvodna !== undefined) {
+            playPromiseRozvodna.catch(() => {
+                window.addEventListener('click', () => {
+                    audioRozvodna.play();
+                }, { once: true });
+            });
+        }
+
+        // Seznam souborů v rozvodně podle tvé složky (bez koncovky .html)
+        const seznamSouboruRozvodny = [
+            "bernard",
+            "dopit",
+            "jaro",
+            "lakomec",
+            "marek",
+            "matosek",
+            "memikoveobrazky",
+            "miler",
+            "mlatas",
+            "vlud"
+        ];
+
+        function nactiRozvodnu() {
+            const box = document.getElementById('rozvodnaTlacitka');
+            box.innerHTML = "";
+
+            if (seznamSouboruRozvodny.length === 0) {
+                box.innerHTML = '<p style="color:#000; font-size:14px; margin:0; font-family:\'Comic Sans MS\';">Zatím žádné soubory v rozvodně.</p>';
+                return;
+            }
+
+            seznamSouboruRozvodny.forEach(nazev => {
+                const btn = document.createElement('a');
+                btn.className = 'rozvodna-btn';
+                btn.href = `${nazev}.html`;
+                btn.innerText = nazev;
+                box.appendChild(btn);
+            });
+        }
+        nactiRozvodnu();
+    </script>
+</body>
+</html>
