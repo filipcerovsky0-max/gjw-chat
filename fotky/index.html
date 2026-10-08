@@ -63,6 +63,9 @@
     </style>
 </head>
 <body>
+    <!-- Skrytý audio přehrávač (soubor hudba.mp3 nahraj do stejné složky fotky/) -->
+    <audio id="pozadiHudba" src="hudba.mp3" loop autoplay></audio>
+
     <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
     
     <div id="galerie" class="gallery">
@@ -70,6 +73,18 @@
     </div>
 
     <script>
+        // Ošetření spuštění hudby pro moderní prohlížeče a mobily
+        const audio = document.getElementById('pozadiHudba');
+        audio.volume = 0.5;
+        let playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(() => {
+                window.addEventListener('click', () => {
+                    audio.play();
+                }, { once: true });
+            });
+        }
+
         const seznamFotek = [
             { soubor: "cold asf.jpg", nazev: "cold asf" },
             { soubor: "idk co tu dela.jpg", nazev: "idk co tu dela" },
@@ -79,7 +94,7 @@
             { soubor: "je v katakombach.jpg", nazev: "je v katakombach" },
             { soubor: "taky v katakombach.jpg", nazev: "bracho co tu delas" },
             { soubor: "hlav.png", nazev: "der Führer" },
-	    { soubor: "marion.png", nazev: "Je m´apelle Bernard" }
+            { soubor: "marion.png", nazev: "Je m´apelle Bernard" }
         ];
 
         function nactiGalerii() {
