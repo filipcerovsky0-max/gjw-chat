@@ -49,7 +49,7 @@
         #druhynadpis a:hover { text-decoration: underline; }
         #mininadpis { font-size: 13px; margin: 10px 0 4px 0; font-weight: bold; color: #000000; }
         
-        /* Žlutý papírek (Post-it) pro Hlášku dne */
+        /* Žlutý papírek (Post-it) pro Hlášku dne u novinek */
         .hlaska-papirek {
             background: #fff8c5;
             border: 1px solid #e2d27f;
@@ -76,33 +76,6 @@
             margin: 0;
         }
         
-        /* Styl pro Rozvodnu a tlačítka */
-        .rozvodna-box {
-            background: #fff;
-            border: 1px solid #ccc;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 15px 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .rozvodna-btn {
-            background-color: #222;
-            color: #fff;
-            text-decoration: none;
-            padding: 8px 16px;
-            font-size: 14px;
-            font-weight: bold;
-            font-family: 'Papyrus', fantasy, sans-serif;
-            border-radius: 4px;
-            display: inline-block;
-            transition: background-color 0.2s;
-        }
-        .rozvodna-btn:hover {
-            background-color: #444;
-        }
-
         .novinky-sekce {
             font-family: 'Papyrus', fantasy, sans-serif;
         }
@@ -131,7 +104,7 @@
     <div class="novinky-sekce">
         <h2 id="druhynadpis" style="font-family: 'Papyrus', fantasy, sans-serif;">Novinky</h2>
         
-        <!-- Žlutý lístek s Hláškou dne -->
+        <!-- Žlutý lístek s Hláškou dne (7 hlášek pro 7 dní v týdnu) -->
         <div class="hlaska-papirek">
             <div class="hlaska-nadpis">📌 Hláška dne</div>
             <div class="hlaska-text" id="hlaskaDneContainer">
@@ -146,16 +119,9 @@
     <br>
     <hr class="oddeleni">
 
-    <!-- SEKCE: Rozvodna (Tlačítka pro HTML soubory + hudba pouze zde) -->
-    <h2 id="druhynadpis">⚡ Rozvodna</h2>
-    <p class="tady">Rychlé přepínače na podstránky ve složce rozvodna:</p>
-    
-    <!-- Hudba hrající pouze v rozvodně (soubor hudba.mp3 musí být ve složce rozvodna/) -->
-    <audio id="rozvodnaHudba" src="./rozvodna/hudba.mp3" loop autoplay></audio>
-
-    <div class="rozvodna-box" id="rozvodnaTlacitka">
-        <p style="color: #666; font-size: 13px; margin: 0;">Načítám rozvodnu...</p>
-    </div>
+    <!-- SEKCE: Rozvodna (Tohle na hlavní stránce chybělo) -->
+    <h2 id="druhynadpis"><a href="./rozvodna/">🗿 Rozvodna</a></h2>
+    <p class="tady">rozvodna kdoví kam všude</p>
     <hr class="oddeleni">
 
     <h2 id="druhynadpis"><a href="./chat/"><img src="https://i.imgur.com/c8lHe3s.png" width="19" alt="Chat">Diskuzní Portál</a></h2>
@@ -194,7 +160,7 @@
 
     <!-- Fotky učitelů -->
     <h2 id="druhynadpis"><a href="./fotky/">📸 Fotky učitelů</a></h2>
-    <p class="tady">Čistá galerie bez zbytečných keců</p>
+    <p class="tady">Čistá galerie fotek učitelů co jsme sehnali (sháníme)</p>
     <hr class="oddeleni">
 
     <!-- Školní loterie -->
@@ -203,7 +169,7 @@
     <hr class="oddeleni">
 
     <h2 id="druhynadpis">Informácie</h2>
-    <p class="dva" id="homeInfoText">Máš nějaké informace které chceš zveřejnit? Pošli je na mail (prijmame i fanouskovske strank!)<strong><a href="mailto:anonym.gjw@proton.me">anonym_z_gjw@proton.me</a></strong></p>
+    <p class="dva" id="homeInfoText">Máš nějaké informace které chceš zveřejnit? Pošli je na mail (prijmame i fanouskovske stranky!)<strong><a href="mailto:anonym.gjw@proton.me">anonym_z_gjw@proton.me</a></strong></p>
         
     <h2 id="mininadpis">Licence</h2>
     <p class="legal-text" id="homeLicenseText">Veškerý obsah na této stránce je šířen pod licencí Creative Commons (BY 4.0). Stránka slouží jako neoficiální nezávislý studentský portál.</p>
@@ -219,56 +185,20 @@
     <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
 
     <script>
-        // Ošetření spuštění hudby pro rozvodnu (pokud prohlížeč blokuje autoplay, spuštění proběhne po prvním kliku)
-        const audioRozvodna = document.getElementById('rozvodnaHudba');
-        audioRozvodna.volume = 0.5;
-        let playPromiseRozvodna = audioRozvodna.play();
-        if (playPromiseRozvodna !== undefined) {
-            playPromiseRozvodna.catch(() => {
-                window.addEventListener('click', () => {
-                    audioRozvodna.play();
-                }, { once: true });
-            });
-        }
-
-        // 7 hlášek pro 7 dní v týdnu
+        // 7 hlášek pro 7 dní v týdnu (0 = Neděle, 1 = Pondělí, 2 = Úterý, 3 = Středa, 4 = Čtvrtek, 5 = Pátek, 6 = Sobota)
         const hlaskyTydne = [
-            "„Neděle večer, deprese zítřejšího rozvrhu.“",          
-            "„Pondělí přežijou jen ti nejsilnější jedinci.“",        
-            "„Úterý: Učitelé se teprve probouzí z víkendu.“",       
-            "„Středa: Polovina utrpení je za námi.“",               
-            "„Čtvrtek: Den, kdy už nikdo nic nestíhá.“",           
-            "„Pátek! Všichni utíkají pryč ze školy.“",              
-            "„Sobota: Klid, nikdo nezkouší a nikde není Nevlud.“"   
+            "„Neděle: proc zitra chodit do skoly, kdyz muzes pestovat jahody“",          
+            "„Pondělí: jest pondeli jeste tyden pred nami, jdu sesbirat vsechny banany“",        
+            "„Úterý: pice nic me nenapada“",       
+            "„Středa: Polovina utrpení je za námi. Je cas na vikend pripravit plany“",               
+            "„Čtvrtek: den, kdy kazdy do zdi civi a patek v mysli vidi“",           
+            "„Pátek! dnes konec utrperni tydeniho je, Hlavacek se raduje“",              
+            "„Sobota: dnes vsichni volno mame gjw my ovladame“"   
         ];
+
+        // Automatické vybrání hlášky podle aktuálního dne
         const dnesDen = new Date().getDay();
         document.getElementById('hlaskaDneContainer').innerText = hlaskyTydne[dnesDen];
-
-        // Seznam HTML souborů ve složce /rozvodna/ (zde dopiš názvy svých souborů bez .html)
-        const seznamSouboruRozvodny = [
-            "projekt1",
-            "tajna-stranka",
-            "experiment"
-        ];
-
-        function nactiRozvodnu() {
-            const box = document.getElementById('rozvodnaTlacitka');
-            box.innerHTML = "";
-
-            if (seznamSouboruRozvodny.length === 0) {
-                box.innerHTML = '<p style="color:#666; font-size:13px; margin:0;">Zatím žádné soubory v rozvodně.</p>';
-                return;
-            }
-
-            seznamSouboruRozvodny.forEach(nazevSouboru => {
-                const btn = document.createElement('a');
-                btn.className = 'rozvodna-btn';
-                btn.href = `./rozvodna/${nazevSouboru}.html`;
-                btn.innerText = nazevSouboru;
-                box.appendChild(btn);
-            });
-        }
-        nactiRozvodnu();
 
         const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
