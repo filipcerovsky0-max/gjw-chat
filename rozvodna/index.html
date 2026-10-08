@@ -5,11 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rozvodna - GJW</title>
     <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <!-- Načtení Comic Sans náhrady pro jistotu na mobilech -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         body {
             background-color: #808080; /* Šedé pozadí */
             color: #000000;
-            font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif;
+            font-family: 'Comic Neue', "Comic Sans MS", "Comic Sans", cursive, sans-serif;
             font-size: 14px;
             margin: 15px;
             padding: 10px;
@@ -20,8 +24,8 @@
         }
         .stred { text-align: center; }
         .oddeleni { border: 0; height: 2px; background: #333; margin: 20px 0; }
-        h1 { font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif; font-size: 26px; font-weight: bold; margin: 15px 0; color: #fff; text-shadow: 2px 2px #000; }
-        .back-link { color: #ffff00; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 15px; font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif; font-weight: bold; }
+        h1 { font-family: 'Comic Neue', "Comic Sans MS", "Comic Sans", cursive, sans-serif; font-size: 26px; font-weight: bold; margin: 15px 0; color: #fff; text-shadow: 2px 2px #000; }
+        .back-link { color: #ffff00; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 15px; font-family: 'Comic Neue', "Comic Sans MS", "Comic Sans", cursive, sans-serif; font-weight: bold; }
         .back-link:hover { text-decoration: underline; }
         
         .rozvodna-box {
@@ -44,7 +48,7 @@
             padding: 12px 20px;
             font-size: 16px;
             font-weight: bold;
-            font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif;
+            font-family: 'Comic Neue', "Comic Sans MS", "Comic Sans", cursive, sans-serif;
             border: 3px solid #000000;
             border-radius: 0px; /* Žádné zaoblení, čistý obdélník */
             display: inline-block;
@@ -60,7 +64,7 @@
             box-shadow: 1px 1px 0px #000000;
         }
         
-        .tady { font-size: 14px; color: #fff; text-align: center; font-weight: bold; text-shadow: 1px 1px #000; }
+        .tady { font-size: 14px; color: #fff; text-align: center; font-weight: bold; text-shadow: 1px 1px #000; font-family: 'Comic Neue', "Comic Sans MS", "Comic Sans", cursive, sans-serif; }
     </style>
 </head>
 <body>
@@ -76,7 +80,7 @@
     </div>
 
     <div class="rozvodna-box" id="rozvodnaTlacitka">
-        <p style="color: #000; font-size: 14px; margin: 0; font-family: 'Comic Sans MS';">Načítám rozvodnu...</p>
+        <p style="color: #000; font-size: 14px; margin: 0; font-family: 'Comic Neue', 'Comic Sans MS';">Načítám rozvodnu...</p>
     </div>
 
     <script>
@@ -111,7 +115,7 @@
             box.innerHTML = "";
 
             if (seznamSouboruRozvodny.length === 0) {
-                box.innerHTML = '<p style="color:#000; font-size:14px; margin:0; font-family:\'Comic Sans MS\';">Zatím žádné soubory v rozvodně.</p>';
+                box.innerHTML = '<p style="color:#000; font-size:14px; margin:0; font-family:\'Comic Neue\', \'Comic Sans MS\';">Zatím žádné soubory v rozvodně.</p>';
                 return;
             }
 
