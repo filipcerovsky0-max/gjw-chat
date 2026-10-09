@@ -84,6 +84,10 @@
                 <label class="block text-[11px] font-bold text-black">Třída:</label>
                 <select id="loginClass" class="retro-select w-full">
                     <option value="">(bez třídy / učitel)</option>
+                    <option value="1.A">1.A</option><option value="1.B">1.B</option>
+                    <option value="2.A">2.A</option><option value="2.B">2.B</option>
+                    <option value="3.A">3.A</option><option value="3.B">3.B</option>
+                    <option value="4.A">4.A</option><option value="4.B">4.B</option>
                     <option value="O1.A">O1.A</option><option value="O1.B">O1.B</option>
                     <option value="O2.A">O2.A</option><option value="O2.B">O2.B</option>
                     <option value="O3.A">O3.A</option><option value="O3.B">O3.B</option>
@@ -400,45 +404,47 @@
             return num * 60000;
         }
 
-        db.ref('messages').on('value', (snapshot) => {
-            const data = snapshot.val();
-            const messagesList = document.getElementById('messagesList');
-            messagesList.innerHTML = '';
-            if (!data) { document.getElementById('emptyState').classList.remove('hidden'); return; }
-            document.getElementById('emptyState').classList.add('hidden');
+        function renderMessages() {
+            db.ref('messages').on('value', (snapshot) => {
+                const data = snapshot.val();
+                const messagesList = document.getElementById('messagesList');
+                messagesList.innerHTML = '';
+                if (!data) { document.getElementById('emptyState').classList.remove('hidden'); return; }
+                document.getElementById('emptyState').classList.add('hidden');
 
-            Object.entries(data).forEach(([key, msg]) => {
-                const div = document.createElement('div');
-                if (msg.isSystem) {
-                    div.className = "text-center text-gray-500 text-[11px] italic my-1 flex items-center justify-center gap-2";
-                    div.innerHTML = `<span>-- ${msg.text} --</span>`;
-                    if (isAdmin) {
-                        const delBtn = document.createElement('button');
-                        delBtn.innerText = "[smazat]";
-                        delBtn.className = "text-red-600 cursor-pointer hover:underline text-[10px]";
-                        delBtn.onclick = () => deleteMessage(key);
-                        div.appendChild(delBtn);
+                Object.entries(data).forEach(([key, msg]) => {
+                    const div = document.createElement('div');
+                    if (msg.isSystem) {
+                        div.className = "text-center text-gray-500 text-[11px] italic my-1 flex items-center justify-center gap-2";
+                        div.innerHTML = `<span>-- ${msg.text} --</span>`;
+                        if (isAdmin) {
+                            const delBtn = document.createElement('button');
+                            delBtn.innerText = "[smazat]";
+                            delBtn.className = "text-red-600 cursor-pointer hover:underline text-[10px]";
+                            delBtn.onclick = () => deleteMessage(key);
+                            div.appendChild(delBtn);
+                        }
+                    } else {
+                        div.className = "bg-white border border-gray-300 p-2 rounded shadow-sm text-xs relative group";
+                        const nameHtml = msg.isAdmin 
+                            ? `<span class="rainbow-admin cursor-pointer" onclick="openUserProfileModal('${msg.userId}', '${msg.user}')">${msg.user}</span>`
+                            : `<span class="font-bold text-blue-900 cursor-pointer underline" onclick="openUserProfileModal('${msg.userId}', '${msg.user}')">${msg.user}</span>`;
+                        
+                        div.innerHTML = `<div class="flex justify-between text-[11px] mb-0.5"><span>${nameHtml}</span><span class="text-gray-400 font-normal">${msg.time}</span></div><div>${msg.text}</div>`;
+                        
+                        if (isAdmin) {
+                            const delBtn = document.createElement('button');
+                            delBtn.innerText = "Smazat";
+                            delBtn.className = "absolute top-1 right-2 text-[10px] text-red-600 hidden group-hover:inline-block cursor-pointer bg-red-50 px-1 border border-red-200 rounded";
+                            delBtn.onclick = () => deleteMessage(key);
+                            div.appendChild(delBtn);
+                        }
                     }
-                } else {
-                    div.className = "bg-white border border-gray-300 p-2 rounded shadow-sm text-xs relative group";
-                    const nameHtml = msg.isAdmin 
-                        ? `<span class="rainbow-admin cursor-pointer" onclick="openUserProfileModal('${msg.userId}', '${msg.user}')">${msg.user}</span>`
-                        : `<span class="font-bold text-blue-900 cursor-pointer underline" onclick="openUserProfileModal('${msg.userId}', '${msg.user}')">${msg.user}</span>`;
-                    
-                    div.innerHTML = `<div class="flex justify-between text-[11px] mb-0.5"><span>${nameHtml}</span><span class="text-gray-400 font-normal">${msg.time}</span></div><div>${msg.text}</div>`;
-                    
-                    if (isAdmin) {
-                        const delBtn = document.createElement('button');
-                        delBtn.innerText = "Smazat";
-                        delBtn.className = "absolute top-1 right-2 text-[10px] text-red-600 hidden group-hover:inline-block cursor-pointer bg-red-50 px-1 border border-red-200 rounded";
-                        delBtn.onclick = () => deleteMessage(key);
-                        div.appendChild(delBtn);
-                    }
-                }
-                messagesList.appendChild(div);
+                    messagesList.appendChild(div);
+                });
+                window.scrollTo(0, document.body.scrollHeight);
             });
-            window.scrollTo(0, document.body.scrollHeight);
-        });
+        }
     </script>
 </body>
 </html>
