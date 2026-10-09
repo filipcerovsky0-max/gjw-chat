@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fotky učitelů - GJW</title>
     <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
-    <!-- Vynucení Papyrus stylu nebo fallbacku -->
     <style>
         body {
             background-color: #f0f0f0;
@@ -63,7 +62,7 @@
     </style>
 </head>
 <body>
-    <!-- Skrytý audio přehrávač (soubor hudba.mp3 nahraj do stejné složky fotky/) -->
+    <!-- Skrytý audio přehrávač -->
     <audio id="pozadiHudba" src="hudba.mp3" loop autoplay></audio>
 
     <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
@@ -86,15 +85,19 @@
         }
 
         const seznamFotek = [
+            { soubor: "žalUD.png", nazev: "žaLUD" },
+            { soubor: "1+1=2.jpeg", nazev: "1 + 1 = 2" },
             { soubor: "cold asf.jpg", nazev: "cold asf" },
-            { soubor: "idk co tu dela.jpg", nazev: "idk co tu dela" },
             { soubor: "coldjpg.jpg", nazev: "studene" },
-            { soubor: "sedlak.jpg", nazev: "sedlak" },
-            { soubor: "subirovjpg.jpg", nazev: "subirov" },
-            { soubor: "je v katakombach.jpg", nazev: "je v katakombach" },
-            { soubor: "taky v katakombach.jpg", nazev: "bracho co tu delas" },
             { soubor: "hlav.png", nazev: "der Führer" },
-            { soubor: "marion.png", nazev: "Je m´apelle Bernard" }
+            { soubor: "idk co tu dela.jpg", nazev: "idk co tu dela" },
+            { soubor: "je v katakombach.jpg", nazev: "je v katakombach" },
+            { soubor: "marion.png", nazev: "Je m´apelle Bernard" },
+            { soubor: "odpocivej v pokoji.jpeg", nazev: "odpocivej v pokoji" },
+            { soubor: "sedlak.jpg", nazev: "sedlak" },
+            { soubor: "skryta identita odhalena.png", nazev: "skryta identita odhalena" },
+            { soubor: "subirovjpg.jpg", nazev: "subirov" },
+            { soubor: "taky v katakombach.jpg", nazev: "bracho co tu delas" }
         ];
 
         function nactiGalerii() {
