@@ -44,71 +44,43 @@
     <hr class="oddeleni">
 
     <div class="stred">
-        <h1>🎵 Hudební koutek</h1>
-        <p>Poslouchej písničky, lepší než poslouchat učitele (zrada pochopíš pak)</p>
+        <h1>Hudební koutek</h1>
+        <p>Poslouchej pisnicky, lepsejsi nez poslouchat ucitele (zrada porozumis pak)</p>
     </div>
 
     <hr class="oddeleni">
 
     <!-- Seznam písniček -->
-    <div id="seznam-pisnicek">
-        <p class="stred" style="color: #666;">Načítám písničky ze složky...</p>
-    </div>
+    <div id="seznam-pisnicek"></div>
 
     <hr class="oddeleni">
     <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
 
     <script>
-        async function nactiHudbuZGitHubu() {
-            const playlistDiv = document.getElementById('seznam-pisnicek');
+        const mp3Files = [
+            { name: "bum.mp3", title: "bum" },
+            { name: "dej to nahlas delej.mp3", title: "dej to nahlas delej" },
+            { name: "chodim.mp3", title: "chodim" },
+            { name: "Marcand yapping.mp3", title: "Marcan yapping" },
+            { name: "mongolské hrdelní zpěvy.mp3", title: "Mongolské hrdelní zpěvy" }
+        ];
+
+        const playlistDiv = document.getElementById('seznam-pisnicek');
+        playlistDiv.innerHTML = "";
+
+        mp3Files.forEach(file => {
+            const box = document.createElement('div');
+            box.className = 'music-box';
             
-            // Správné údaje dle tvého GitHubu
-            const owner = "filipcerovsky0-max";
-            const repo = "gjw-chat";
-            const path = "hudba";
-
-            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error("Nepodařilo se načíst obsah ze složky.");
-                }
-                
-                const files = await response.json();
-                
-                // Vyfiltruje pouze MP3 soubory
-                const mp3Files = files.filter(file => file.type === 'file' && file.name.toLowerCase().endsWith('.mp3'));
-
-                playlistDiv.innerHTML = "";
-
-                if (mp3Files.length === 0) {
-                    playlistDiv.innerHTML = '<p class="stred">Ve složce hudba/ na GitHubu zatím nejsou žádné MP3 soubory.</p>';
-                    return;
-                }
-
-                mp3Files.forEach(file => {
-                    // Pěkně formátovaný název (odstraní příponu .mp3 a nahradí pomlčky/podtržítka mezerami)
-                    const cleanName = file.name.replace(/\.mp3$/i, '').replace(/[-_]/g, ' ');
-                    
-                    const box = document.createElement('div');
-                    box.className = 'music-box';
-                    box.innerHTML = `
-                        <p><b>🎵 ${cleanName}</b></p>
-                        <audio controls preload="metadata">
-                            <source src="${file.download_url}" type="audio/mp3">
-                            Tvůj prohlížeč nepodporuje přehrávání audio souborů.
-                        </audio>
-                    `;
-                    playlistDiv.appendChild(box);
-                });
-
-            } catch (error) {
-                playlistDiv.innerHTML = `<p class="stred" style="color: red;">Chyba při načítání hudby: ${error.message}</p>`;
-            }
-        }
-
-        nactiHudbuZGitHubu();
+            box.innerHTML = `
+                <p><b>${file.title}</b></p>
+                <audio controls preload="metadata">
+                    <source src="${file.name}" type="audio/mp3">
+                    Tvůj prohlížeč nepodporuje přehrávání audio souborů.
+                </audio>
+            `;
+            playlistDiv.appendChild(box);
+        });
     </script>
 </body>
 </html>
