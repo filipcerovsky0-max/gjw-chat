@@ -1,217 +1,344 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="cs" class="h-full bg-gray-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>gjw-chat - Ultra Admin Panel</title>
-    <!-- Firebase SDK (v9 modular) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-
-        // Konfigurace Firebase (doplň své údaje z Firebase projektu)
-        const firebaseConfig = {
-            databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        // Generování unikátního device fingerprintu
-        window.getDeviceFingerprint = function() {
-            const canvas = document.createElement('canvas');
-            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-            const data = navigator.userAgent + navigator.language + screen.colorDepth + (gl ? gl.getParameter(gl.RENDERER) : '');
-            let hash = 0;
-            for (let i = 0; i < data.length; i++) {
-                hash = ((hash << 5) - hash) + data.charCodeAt(i);
-                hash |= 0;
-            }
-            return Math.abs(hash).toString(16);
-        };
-
-        // Přihlášení do admin menu
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginBtn = document.getElementById('admin-login-btn');
-            const passwordInput = document.getElementById('admin-password-input');
-            const loginModal = document.getElementById('admin-login-modal');
-            const adminMenu = document.getElementById('ultra-admin-menu');
-
-            loginBtn.addEventListener('click', async () => {
-                const inputVal = passwordInput.value;
-                try {
-                    const passRef = ref(db, 'admin/password');
-                    const snapshot = await get(passRef);
-                    
-                    if (snapshot.exists() && snapshot.val() === inputVal) {
-                        loginModal.style.display = 'none';
-                        adminMenu.style.display = 'block';
-                        window.isAdminAuthenticated = true;
-                        alert('Úspěšně přihlášen do Ultra Admin Menu!');
-                        initAdminPanelLogic(db);
-                    } else {
-                        alert('Nesprávné heslo!');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    alert('Chyba při ověřování s Firebase databází.');
-                }
-            });
-        });
-
-        function initAdminPanelLogic(db) {
-            // Rainbow Nick Toggle
-            const rainbowToggle = document.getElementById('rainbow-nick-toggle');
-            rainbowToggle.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    document.body.classList.add('rainbow-active');
-                } else {
-                    document.body.classList.remove('rainbow-active');
-                }
-            });
-
-            // Ghost Mode Toggle
-            const ghostToggle = document.getElementById('ghost-mode-toggle');
-            ghostToggle.addEventListener('change', (e) => {
-                window.isGhostMode = e.target.checked;
-                console.log("Ghost mód aktivní:", window.isGhostMode);
-            });
-        }
-    </script>
-
+    <title>co tu delas bracho todle je pro adminstvo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
-            margin: 0;
-            padding: 20px;
-        }
-
-        /* Duhová animace pro Rainbow Nick */
-        @keyframes rainbow {
-            0% { color: red; }
-            14% { color: orange; }
-            28% { color: yellow; }
-            42% { color: green; }
-            57% { color: blue; }
-            71% { color: indigo; }
-            85% { color: violet; }
-            100% { color: red; }
-        }
-        body.rainbow-active .my-nickname {
-            animation: rainbow 3s infinite;
-            font-weight: bold;
-            text-shadow: 0 0 8px rgba(255,255,255,0.6);
-        }
-
-        /* Modální okno pro přihlášení */
-        .admin-modal {
-            max-width: 400px;
-            margin: 100px auto;
-            background: #1e1e1e;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.7);
-            border: 1px solid #333;
-            text-align: center;
-        }
-        .admin-modal input {
-            width: 80%;
-            padding: 10px;
-            margin: 15px 0;
-            background: #2a2a2a;
-            border: 1px solid #444;
-            color: #fff;
-            border-radius: 5px;
-        }
-        .admin-modal button, .admin-panel button {
-            background: #6200ee;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .admin-modal button:hover, .admin-panel button:hover {
-            background: #7720ff;
-        }
-
-        /* Ultra Admin Menu */
-            .admin-panel {
-            max-width: 700px;
-            margin: 20px auto;
-            background: #1e1e1e;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.7);
-            border: 1px solid #333;
-        }
-        .admin-panel h2 {
-            margin-top: 0;
-            color: #bb86fc;
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
-        }
-        .admin-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #252525;
-            border-radius: 8px;
-        }
-        .admin-section h3 {
-            margin-top: 0;
-            font-size: 1.1em;
-            color: #03dac6;
-        }
-        label {
-            display: block;
-            margin: 8px 0;
-            cursor: pointer;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; }
+        .tab-btn.active { border-bottom: 2px solid #3b82f6; color: #1d4ed8; font-weight: bold; }
+        .rainbow-admin { background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8fafc; }
     </style>
 </head>
-<body>
+<body class="h-full flex flex-col">
 
-    <!-- Přihlašovací okno -->
-    <div id="admin-login-modal" class="admin-modal">
-        <h2>sorry bro pouze pro adminstvo</h2>
-        <p>netusim jaks to nasel bro</p>
-        <input type="password" id="admin-password-input" placeholder="bohuzel potrebujes heslo">
-        <br>
-        <button id="admin-login-btn">Přihlásit se</button>
-    </div>
-
-    <!-- Ultra Admin Menu (zpočátku skryté) -->
-    <div id="ultra-admin-menu" class="admin-panel" style="display: none;">
-        <h2>⚡ Ultra Admin Menu</h2>
-
-        <div class="admin-section">
-            <span class="my-nickname">Ukázka přezdívky v chatu</span>
-            <h3>🎮 Nastavení identity & režimů</h3>
-            <label><input type="checkbox" id="rainbow-nick-toggle"> Duhový Nick (Rainbow)</label>
-            <label><input type="checkbox" id="ghost-mode-toggle"> Ghost Mód (Neviditelný pozorovatel)</label>
-        </div>
-
-        <div class="admin-section">
-            <h3>📁 Správa souborů a designů</h3>
-            <input type="file" id="design-file-input" style="margin-bottom: 10px;">
-            <br>
-            <input type="text" id="rename-old-input" placeholder="Původní název souboru" style="padding: 6px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px;">
-            <input type="text" id="rename-new-input" placeholder="Nový název souboru" style="padding: 6px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px;">
-            <button id="rename-file-btn" style="margin-left: 5px;">Přejmenovat</button>
-        </div>
-
-        <div class="admin-section">
-            <h3>🛡️ Moderace a tresty (podle Fingerprintu)</h3>
-            <input type="text" id="target-fingerprint-input" placeholder="Fingerprint uživatele" style="width: 60%; padding: 6px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px; margin-bottom: 10px;">
-            <br>
-            <button id="action-mute-btn" style="background: #fbc02d; color: black;">Mute (umlčet)</button>
-            <button id="action-kick-btn" style="background: #f57c00;">Kick (vyhodit)</button>
-            <button id="action-ban-btn" style="background: #d32f2f;">Ban (zablokovat)</button>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="fixed inset-0 bg-gray-900 z-50 flex flex-col items-center justify-center p-4">
+        <div class="bg-white p-8 rounded shadow-2xl max-w-sm w-full space-y-4">
+            <h2 class="text-2xl font-bold text-center text-gray-800">Admin Login</h2>
+            <div>
+                <label class="block text-sm font-bold mb-1">heslo poprosim</label>
+                <input type="password" id="adminPassword" class="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Zadej heslo...">
+            </div>
+            <button onclick="verifyLogin()" class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition">Přihlásit se</button>
+            <p id="loginError" class="text-red-500 text-sm text-center hidden font-bold">Chybné heslo!</p>
         </div>
     </div>
 
+    <!-- Admin Dashboard (Skryté do přihlášení) -->
+    <div id="dashboardScreen" class="hidden flex-1 flex flex-col h-full">
+        <header class="bg-gray-800 text-white p-4 flex justify-between items-center shadow-md shrink-0">
+            <h1 class="text-xl font-bold rainbow-admin">GJW Ultra Admin Panel</h1>
+            <div class="flex gap-4">
+                <button onclick="enterChat('observed')" class="bg-green-600 px-3 py-1 rounded text-sm font-bold hover:bg-green-500">Vstoupit do Chatu (Viditelný)</button>
+                <button onclick="enterChat('hidden')" class="bg-gray-600 px-3 py-1 rounded text-sm font-bold hover:bg-gray-500">Vstoupit do Chatu (Duch)</button>
+                <button onclick="logoutAdmin()" class="bg-red-600 px-3 py-1 rounded text-sm font-bold hover:bg-red-500">Odhlásit</button>
+            </div>
+        </header>
+
+        <nav class="bg-white border-b flex px-4 shrink-0 overflow-x-auto">
+            <button onclick="switchTab('tab-chat')" class="tab-btn active px-4 py-3 hover:bg-gray-50 focus:outline-none">Moderace Zpráv</button>
+            <button onclick="switchTab('tab-tresty')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Aktivní Tresty</button>
+            <button onclick="switchTab('tab-fotky')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Správa Fotek</button>
+            <button onclick="switchTab('tab-hudba')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Správa Hudby</button>
+            <button onclick="switchTab('tab-rozsir')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Správa Rozšiř To</button>
+            <button onclick="switchTab('tab-memes')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Správa Memes</button>
+        </nav>
+
+        <main class="flex-1 overflow-y-auto p-6 bg-gray-100">
+            <!-- TAB: Chaty -->
+            <div id="tab-chat" class="tab-content">
+                <h2 class="text-xl font-bold mb-4">Historie a Moderace Chatu</h2>
+                <div class="bg-white rounded shadow overflow-hidden">
+                    <table>
+                        <thead><tr><th>Čas</th><th>Autor</th><th>Zpráva</th><th>Akce</th></tr></thead>
+                        <tbody id="adminMessagesList"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: Tresty -->
+            <div id="tab-tresty" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">Aktivní Bany a Muty</h2>
+                <div class="bg-white rounded shadow overflow-hidden">
+                    <table>
+                        <thead><tr><th>Uživatel (ID)</th><th>Typ Trestu</th><th>Důvod</th><th>Vyprší</th><th>Akce</th></tr></thead>
+                        <tbody id="adminRestrictionsList"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: Správa obsahu (Společná šablona pro Fotky, Hudbu, Promo, Memes) -->
+            <div id="tab-fotky" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">Galerie Fotek</h2>
+                <div id="manager-fotky"></div>
+            </div>
+            <div id="tab-hudba" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">Hudební Koutek</h2>
+                <div id="manager-hudba"></div>
+            </div>
+            <div id="tab-rozsir" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">Materiály k Rozšíření</h2>
+                <div id="manager-promoDesigns"></div>
+            </div>
+            <div id="tab-memes" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">Sekce Memes</h2>
+                <div id="manager-memes"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Inicializace Firebase
+        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let adminKey = null;
+
+        // 1. OVEŘENÍ LOGINU Z FIREBASE
+        function verifyLogin() {
+            const pwd = document.getElementById('adminPassword').value;
+            db.ref('admin/password').once('value').then(snap => {
+                if (snap.val() === pwd) {
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('dashboardScreen').classList.remove('hidden');
+                    sessionStorage.setItem('ultra_admin_auth', 'true');
+                    initDashboard();
+                } else {
+                    document.getElementById('loginError').classList.remove('hidden');
+                }
+            });
+        }
+
+        // Auto-login check
+        if(sessionStorage.getItem('ultra_admin_auth') === 'true') {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboardScreen').classList.remove('hidden');
+            initDashboard();
+        }
+
+        function logoutAdmin() {
+            sessionStorage.removeItem('ultra_admin_auth');
+            sessionStorage.removeItem('gjw_admin_session');
+            location.reload();
+        }
+
+        // 2. VSTUP DO CHATU Z ADMIN MENU
+        function enterChat(mode) {
+            sessionStorage.setItem('gjw_admin_session', 'true');
+            sessionStorage.setItem('gjw_admin_mode', mode); // 'observed' nebo 'hidden'
+            window.location.href = '../chat/';
+        }
+
+        // 3. PŘEPÍNÁNÍ TABŮ
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.remove('hidden');
+        }
+
+        // 4. INICIALIZACE DAT DASHBOARDU
+        function initDashboard() {
+            loadMessages();
+            loadRestrictions();
+            buildContentManager('fotky', 'Fotek', true);
+            buildContentManager('hudba', 'Hudby', false); // Hudba nejde rozumně do Base64, lepší zadávat URL
+            buildContentManager('promoDesigns', 'Materiálů', true);
+            buildContentManager('memes', 'Memes', true);
+        }
+
+        // --- SEKCE: MODERACE CHATU ---
+        function loadMessages() {
+            db.ref('messages').on('value', snap => {
+                const tbody = document.getElementById('adminMessagesList');
+                tbody.innerHTML = '';
+                const msgs = snap.val() || {};
+                Object.entries(msgs).reverse().forEach(([key, msg]) => {
+                    const tr = document.createElement('tr');
+                    tr.className = msg.isSystem ? 'bg-gray-50 text-gray-500 italic' : '';
+                    const userDisplay = msg.isAdmin ? `<span class="rainbow-admin">${msg.user}</span>` : msg.user;
+                    tr.innerHTML = `
+                        <td class="text-xs text-gray-500">${msg.time || '-'}</td>
+                        <td class="font-bold">${msg.isSystem ? 'SYSTÉM' : userDisplay}</td>
+                        <td class="w-1/2">${msg.text}</td>
+                        <td class="space-x-2">
+                            <button onclick="editMessage('${key}', \`${msg.text.replace(/`/g, '\\`')}\`)" class="text-blue-600 hover:underline text-sm font-bold">Upravit</button>
+                            <button onclick="deleteMessage('${key}')" class="text-red-600 hover:underline text-sm font-bold">Smazat</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        function deleteMessage(key) {
+            if(confirm("Opravdu trvale smazat zprávu?")) db.ref('messages/' + key).remove();
+        }
+
+        function editMessage(key, oldText) {
+            const newText = prompt("Upravit text zprávy:", oldText);
+            if (newText !== null && newText !== oldText) {
+                db.ref('messages/' + key).update({ text: newText });
+            }
+        }
+
+        // --- SEKCE: SPRÁVA TRESTŮ ---
+        function loadRestrictions() {
+            db.ref('restrictions').on('value', snap => {
+                const tbody = document.getElementById('adminRestrictionsList');
+                tbody.innerHTML = '';
+                const rests = snap.val() || {};
+                Object.entries(rests).forEach(([uid, rest]) => {
+                    if (rest.ban) appendRestrictionRow(tbody, uid, rest.ban, 'BAN', rest.userId);
+                    if (rest.mute) appendRestrictionRow(tbody, uid, rest.mute, 'MUTE', rest.userId);
+                });
+            });
+        }
+
+        function appendRestrictionRow(tbody, uid, penalty, type, fallbackName) {
+            const tr = document.createElement('tr');
+            const isPerm = penalty.permanent;
+            const expStr = isPerm ? 'Natrvalo' : new Date(penalty.expiresAt).toLocaleString();
+            const reason = penalty.reason || '-';
+            const name = penalty.username || fallbackName || uid;
+            
+            tr.innerHTML = `
+                <td><span class="font-bold">${name}</span> <br><span class="text-[10px] text-gray-500">${uid}</span></td>
+                <td><span class="${type==='BAN'?'bg-red-100 text-red-800':'bg-orange-100 text-orange-800'} px-2 py-1 rounded text-xs font-bold">${type}</span></td>
+                <td>${reason}</td>
+                <td>${expStr}</td>
+                <td><button onclick="removePenalty('${uid}', '${type.toLowerCase()}')" class="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold hover:bg-green-600">Zrušit trest</button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function removePenalty(uid, type) {
+            if(confirm(`Opravdu zrušit ${type} pro uživatele?`)) {
+                db.ref(`restrictions/${uid}/${type}`).remove();
+                // Pokus smazat celý záznam, pokud je prázdný
+                db.ref(`restrictions/${uid}`).once('value').then(s => {
+                    if(!s.val().ban && !s.val().mute && !s.val().kicked) db.ref(`restrictions/${uid}`).remove();
+                });
+            }
+        }
+
+        // --- SEKCE: UNIVERZÁLNÍ SPRÁVCE OBSAHU (S podporou nahrávání z PC) ---
+        function buildContentManager(dbNode, label, supportsUpload) {
+            const container = document.getElementById('manager-' + dbNode);
+            
+            let uploadHtml = '';
+            if(supportsUpload) {
+                uploadHtml = `
+                    <div class="mb-2">
+                        <label class="text-xs font-bold block mb-1">Nebo nahraj lokální soubor (převede se na Base64 text)</label>
+                        <input type="file" id="file-${dbNode}" class="border p-1 w-full text-sm" accept="image/*">
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="bg-white p-4 rounded shadow mb-4 border border-blue-200">
+                    <h3 class="font-bold mb-2">Přidat nový záznam</h3>
+                    <input type="text" id="title-${dbNode}" placeholder="Název / Titulek" class="border p-2 w-full mb-2">
+                    <input type="text" id="url-${dbNode}" placeholder="URL adresa nebo název souboru (např. song.mp3)" class="border p-2 w-full mb-2">
+                    ${uploadHtml}
+                    <button onclick="addContentItem('${dbNode}')" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Přidat záznam</button>
+                </div>
+                <div class="bg-white rounded shadow overflow-hidden">
+                    <table>
+                        <thead><tr><th>Náhled/Titulek</th><th>Cesta/URL</th><th>Akce</th></tr></thead>
+                        <tbody id="list-${dbNode}"></tbody>
+                    </table>
+                </div>
+            `;
+
+            // Live sync
+            db.ref(dbNode).on('value', snap => {
+                const tbody = document.getElementById('list-' + dbNode);
+                tbody.innerHTML = '';
+                const items = snap.val() || {};
+                Object.entries(items).forEach(([key, item]) => {
+                    // Adaptace na struktury: promoDesigns používá .title a .image, ostatní podle toho jak se uloží
+                    const title = item.nazev || item.title || item.name || '[Bez názvu]';
+                    const src = item.soubor || item.image || item.url || item.name || '';
+                    const isImg = src.includes('data:image') || src.match(/\.(jpeg|jpg|gif|png)$/) != null;
+                    const preview = isImg ? `<img src="${src}" class="h-10 rounded border">` : title;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="font-bold flex items-center gap-2">${preview} ${isImg ? `<span class="text-xs text-gray-500">${title}</span>` : ''}</td>
+                        <td class="text-xs text-gray-500 max-w-xs truncate" title="${src}">${src.substring(0, 50)}...</td>
+                        <td class="space-x-2">
+                            <button onclick="renameContentItem('${dbNode}', '${key}', '${title}')" class="text-blue-600 hover:underline text-sm font-bold">Přejmenovat</button>
+                            <button onclick="deleteContentItem('${dbNode}', '${key}')" class="text-red-600 hover:underline text-sm font-bold">Smazat</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        function addContentItem(dbNode) {
+            const titleInput = document.getElementById('title-' + dbNode);
+            const urlInput = document.getElementById('url-' + dbNode);
+            const fileInput = document.getElementById('file-' + dbNode);
+
+            const title = titleInput.value.trim();
+            const url = urlInput.value.trim();
+
+            if (!title) return alert("Zadejte název!");
+
+            // Ošetření struktury dat (různé DB nodule mají v původních souborech různou strukturu)
+            const getPayload = (finalUrl) => {
+                if (dbNode === 'promoDesigns') return { title: title, image: finalUrl };
+                if (dbNode === 'fotky') return { nazev: title, soubor: finalUrl };
+                if (dbNode === 'hudba') return { title: title, name: finalUrl };
+                if (dbNode === 'memes') return { title: title, image: finalUrl };
+                return { title: title, url: finalUrl };
+            };
+
+            // Pokud uživatel vybral lokální soubor pro konverzi
+            if (fileInput && fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    const base64String = reader.result;
+                    db.ref(dbNode).push(getPayload(base64String));
+                    titleInput.value = ''; urlInput.value = ''; fileInput.value = '';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                if (!url) return alert("Zadejte URL, nebo vyberte soubor k nahrání!");
+                db.ref(dbNode).push(getPayload(url));
+                titleInput.value = ''; urlInput.value = '';
+            }
+        }
+
+        function renameContentItem(dbNode, key, oldTitle) {
+            const newTitle = prompt("Zadejte nový název:", oldTitle);
+            if (newTitle && newTitle !== oldTitle) {
+                db.ref(`${dbNode}/${key}`).once('value').then(snap => {
+                    const data = snap.val();
+                    if (data.nazev !== undefined) data.nazev = newTitle;
+                    if (data.title !== undefined) data.title = newTitle;
+                    db.ref(`${dbNode}/${key}`).update(data);
+                });
+            }
+        }
+
+        function deleteContentItem(dbNode, key) {
+            if(confirm("Opravdu smazat tento soubor/záznam z databáze?")) {
+                db.ref(`${dbNode}/${key}`).remove();
+            }
+        }
+    </script>
 </body>
 </html>
