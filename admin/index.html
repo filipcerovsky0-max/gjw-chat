@@ -1,92 +1,94 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GJW Admin & Master Control</title>
-    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <title>gjw-chat - Ultra Admin Panel</title>
+    <!-- Firebase SDK (v9 modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+        // Konfigurace Firebase (doplň své údaje z Firebase projektu)
+        const firebaseConfig = {
+            databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Generování unikátního device fingerprintu
+        window.getDeviceFingerprint = function() {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            const data = navigator.userAgent + navigator.language + screen.colorDepth + (gl ? gl.getParameter(gl.RENDERER) : '');
+            let hash = 0;
+            for (let i = 0; i < data.length; i++) {
+                hash = ((hash << 5) - hash) + data.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash).toString(16);
+        };
+
+        // Přihlášení do admin menu
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginBtn = document.getElementById('admin-login-btn');
+            const passwordInput = document.getElementById('admin-password-input');
+            const loginModal = document.getElementById('admin-login-modal');
+            const adminMenu = document.getElementById('ultra-admin-menu');
+
+            loginBtn.addEventListener('click', async () => {
+                const inputVal = passwordInput.value;
+                try {
+                    const passRef = ref(db, 'admin/password');
+                    const snapshot = await get(passRef);
+                    
+                    if (snapshot.exists() && snapshot.val() === inputVal) {
+                        loginModal.style.display = 'none';
+                        adminMenu.style.display = 'block';
+                        window.isAdminAuthenticated = true;
+                        alert('Úspěšně přihlášen do Ultra Admin Menu!');
+                        initAdminPanelLogic(db);
+                    } else {
+                        alert('Nesprávné heslo!');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Chyba při ověřování s Firebase databází.');
+                }
+            });
+        });
+
+        function initAdminPanelLogic(db) {
+            // Rainbow Nick Toggle
+            const rainbowToggle = document.getElementById('rainbow-nick-toggle');
+            rainbowToggle.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    document.body.classList.add('rainbow-active');
+                } else {
+                    document.body.classList.remove('rainbow-active');
+                }
+            });
+
+            // Ghost Mode Toggle
+            const ghostToggle = document.getElementById('ghost-mode-toggle');
+            ghostToggle.addEventListener('change', (e) => {
+                window.isGhostMode = e.target.checked;
+                console.log("Ghost mód aktivní:", window.isGhostMode);
+            });
+        }
+    </script>
+
     <style>
         body {
-            background-color: #f0f0f0;
-            color: #000000;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 14px;
-            margin: 15px;
-            padding: 10px;
-            max-width: 1000px;
-            margin-left: auto;
-            margin-right: auto;
-            box-sizing: border-box;
-        }
-        .stred { text-align: center; }
-        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
-        h1, h2 { font-family: 'Papyrus', fantasy, sans-serif; }
-        h1 { font-size: 22px; font-weight: bold; margin: 15px 0; color: #000000; }
-        h2 { font-size: 17px; font-weight: bold; margin: 20px 0 8px 0; color: #000000; }
-        p { font-size: 13px; color: #555; margin-bottom: 5px; }
-        .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; font-family: 'Papyrus', fantasy, sans-serif; }
-        .back-link:hover { text-decoration: underline; }
-        
-        .admin-section {
-            background: #fff;
-            border: 1px solid #ccc;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
             padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        textarea, input[type="text"], input[type="password"], input[type="number"], select {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-        .btn {
-            background-color: #222;
-            color: #fff;
-            border: none;
-            padding: 8px 14px;
-            font-size: 13px;
-            font-weight: bold;
-            font-family: 'Papyrus', fantasy, sans-serif;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 5px;
-            margin-bottom: 5px;
-        }
-        .btn:hover { background-color: #444; }
-        .btn-danger { background-color: #b30000; }
-        .btn-danger:hover { background-color: #800000; }
-        .btn-warning { background-color: #cc8800; color: white; }
-        .btn-warning:hover { background-color: #996600; }
-        
-        .chat-row, .user-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f9f9f9;
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            font-size: 13px;
-            gap: 10px;
-        }
-        
-        .clickable-name {
-            cursor: pointer;
-            color: #0000EE;
-            text-decoration: underline;
-        }
-        .clickable-name:hover {
-            color: #ff0000;
-        }
-        
+
+        /* Duhová animace pro Rainbow Nick */
         @keyframes rainbow {
             0% { color: red; }
             14% { color: orange; }
@@ -97,295 +99,119 @@
             85% { color: violet; }
             100% { color: red; }
         }
-        .rainbow-nick {
+        body.rainbow-active .my-nickname {
+            animation: rainbow 3s infinite;
             font-weight: bold;
-            animation: rainbow 3s infinite linear;
+            text-shadow: 0 0 8px rgba(255,255,255,0.6);
         }
 
-        .modal {
-            background: #fffdf5;
-            border: 2px solid #222;
+        /* Modální okno pro přihlášení */
+        .admin-modal {
+            max-width: 400px;
+            margin: 100px auto;
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+            border: 1px solid #333;
+            text-align: center;
+        }
+        .admin-modal input {
+            width: 80%;
+            padding: 10px;
+            margin: 15px 0;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 5px;
+        }
+        .admin-modal button, .admin-panel button {
+            background: #6200ee;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .admin-modal button:hover, .admin-panel button:hover {
+            background: #7720ff;
+        }
+
+        /* Ultra Admin Menu */
+            .admin-panel {
+            max-width: 700px;
+            margin: 20px auto;
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+            border: 1px solid #333;
+        }
+        .admin-panel h2 {
+            margin-top: 0;
+            color: #bb86fc;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .admin-section {
+            margin-bottom: 20px;
             padding: 15px;
-            border-radius: 6px;
-            margin-top: 15px;
+            background: #252525;
+            border-radius: 8px;
         }
-        
-        #loginOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 9999; display: flex;
-            justify-content: center; align-items: center;
+        .admin-section h3 {
+            margin-top: 0;
+            font-size: 1.1em;
+            color: #03dac6;
         }
-        .login-box {
-            background: #fff; padding: 25px; border-radius: 8px; width: 320px; text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        label {
+            display: block;
+            margin: 8px 0;
+            cursor: pointer;
         }
-        #adminMainContent { display: none; }
-        #status { font-weight: bold; margin-left: 10px; color: green; }
     </style>
 </head>
 <body>
 
-    <!-- PŘIHLAŠOVACÍ FORMULÁŘ -->
-    <div id="loginOverlay">
-        <div class="login-box">
-            <h2 style="margin-top:0; font-family:'Papyrus',fantasy,sans-serif;">🔐 Zabezpečený Admin</h2>
-            <p>Zadej administrátorské heslo:</p>
-            <input type="password" id="adminPasswordInput" placeholder="Heslo..." onkeydown="if(event.key === 'Enter') overitHeslo();">
-            <button class="btn" style="width:100%; margin-top:10px;" onclick="overitHeslo()">Vstoupit</button>
-            <p id="loginError" style="color:red; margin-top:10px; font-size:12px;"></p>
+    <!-- Přihlašovací okno -->
+    <div id="admin-login-modal" class="admin-modal">
+        <h2>sorry bro pouze pro adminstvo</h2>
+        <p>netusim jaks to nasel bro</p>
+        <input type="password" id="admin-password-input" placeholder="bohuzel potrebujes heslo">
+        <br>
+        <button id="admin-login-btn">Přihlásit se</button>
+    </div>
+
+    <!-- Ultra Admin Menu (zpočátku skryté) -->
+    <div id="ultra-admin-menu" class="admin-panel" style="display: none;">
+        <h2>⚡ Ultra Admin Menu</h2>
+
+        <div class="admin-section">
+            <span class="my-nickname">Ukázka přezdívky v chatu</span>
+            <h3>🎮 Nastavení identity & režimů</h3>
+            <label><input type="checkbox" id="rainbow-nick-toggle"> Duhový Nick (Rainbow)</label>
+            <label><input type="checkbox" id="ghost-mode-toggle"> Ghost Mód (Neviditelný pozorovatel)</label>
+        </div>
+
+        <div class="admin-section">
+            <h3>📁 Správa souborů a designů</h3>
+            <input type="file" id="design-file-input" style="margin-bottom: 10px;">
+            <br>
+            <input type="text" id="rename-old-input" placeholder="Původní název souboru" style="padding: 6px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px;">
+            <input type="text" id="rename-new-input" placeholder="Nový název souboru" style="padding: 6px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px;">
+            <button id="rename-file-btn" style="margin-left: 5px;">Přejmenovat</button>
+        </div>
+
+        <div class="admin-section">
+            <h3>🛡️ Moderace a tresty (podle Fingerprintu)</h3>
+            <input type="text" id="target-fingerprint-input" placeholder="Fingerprint uživatele" style="width: 60%; padding: 6px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px; margin-bottom: 10px;">
+            <br>
+            <button id="action-mute-btn" style="background: #fbc02d; color: black;">Mute (umlčet)</button>
+            <button id="action-kick-btn" style="background: #f57c00;">Kick (vyhodit)</button>
+            <button id="action-ban-btn" style="background: #d32f2f;">Ban (zablokovat)</button>
         </div>
     </div>
 
-    <!-- HLAVNÍ OBSAH ADMINISTRACE -->
-    <div id="adminMainContent">
-        <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
-        <hr class="oddeleni">
-
-        <div class="stred">
-            <h1>⚡ GJW Master Control Admin Panel</h1>
-            <p>Interaktivní správa chatu, Ghost mód, banování dle zařízení (Fingerprint ID).</p>
-        </div>
-
-        <hr class="oddeleni">
-
-        <!-- SEKCE 1: Správa textů webu a změna hesla -->
-        <div class="admin-section">
-            <h2>📢 Správa textů webu & Heslo</h2>
-            <div style="margin-bottom: 15px;">
-                <p><b>Změnit admin heslo ve Firebase:</b></p>
-                <input type="text" id="newAdminPass" placeholder="Nové heslo...">
-                <button class="btn" onclick="zmenitHeslo()">Uložit nové heslo</button>
-            </div>
-            <textarea id="newsText" placeholder="Novinky HTML..."></textarea>
-            <button type="button" class="btn" onclick="ulozTexty()">Uložit texty</button>
-            <span id="status"></span>
-        </div>
-
-        <!-- SEKCE 2: Živý chat & Ghost / Viditelný režim -->
-        <div class="admin-section">
-            <h2>💬 Živý chat (Klikací jména a správa zpráv)</h2>
-            <p>Kliknutím na jméno kohokoliv v chatu ho můžeš rovnou vytrestat. Zde můžeš také psát zprávy nebo aktivovat Ghost mód:</p>
-            
-            <div style="background: #f4f4f4; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
-                <input type="text" id="adminChatName" value="ADMIN ⚡" placeholder="Admin jméno..." style="margin-bottom: 5px;">
-                <textarea id="adminChatInput" placeholder="Napsat zprávu do chatu jako admin..." style="min-height: 40px; margin-bottom: 5px;"></textarea>
-                <div>
-                    <label><input type="checkbox" id="adminRainbowCheck" checked> Duhový Rainbow Nick ✨</label>
-                    <label style="margin-left: 15px;"><input type="checkbox" id="ghostModeCheck"> 👻 Ghost mód (neviditelný v chatu / offline stav)</label>
-                </div>
-                <button class="btn" style="margin-top: 8px;" onclick="odeslatAdminZpravu()">Odeslat zprávu do chatu</button>
-            </div>
-
-            <div id="chatMessagesList" style="max-height: 350px; overflow-y: auto; border: 1px solid #ddd; background: #fff;">
-                <p style="padding: 10px; text-align: center;">Načítám zprávy...</p>
-            </div>
-        </div>
-
-        <!-- SEKCE 3: Správa Uživatelů podle Fingerprint ID / Zařízení -->
-        <div class="admin-section">
-            <h2>🔨 Správa uživatelů (Vázáno na zařízení / Fingerprint)</h2>
-            <p>Seznam všech uživatelů podle jejich jedinečného ID zařízení. Kliknutím na uživatele upravíš jeho tresty:</p>
-            <div id="usersList" style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; background: #fff; margin-bottom: 15px;">
-                <p style="padding: 10px; text-align: center;">Načítám uživatele...</p>
-            </div>
-
-            <!-- MODAL OKNO PRO TRESTY A FINGERPRINT -->
-            <div id="userDetailModal" class="modal" style="display:none;">
-                <h3 id="modalUserName" style="margin-top:0;">Detail uživatele</h3>
-                <p><b>Fingerprint / ID zařízení:</b> <span id="modalUserId" style="font-family: monospace; color: #b30000;"></span></p>
-                
-                <div style="margin-top: 10px;">
-                    <label><b>Typ trestu:</b></label>
-                    <select id="trestTyp">
-                        <option value="mute">Mute (Ztlumení psaní na zařízení)</option>
-                        <option value="ban">Ban (Zákaz vstupu ze zařízení)</option>
-                        <option value="kick">Kick (Okamžité vyhození)</option>
-                    </select>
-                </div>
-                
-                <div style="margin-top: 10px;">
-                    <label><b>Doba trvání (v minutách, 0 = natrvalo):</b></label>
-                    <input type="number" id="trestDoba" value="60" min="0">
-                </div>
-
-                <div style="margin-top: 10px;">
-                    <label><input type="checkbox" id="rainbowToggle"> Povolit <b>Rainbow Nick</b> ✨</label>
-                </div>
-
-                <div style="margin-top: 15px;">
-                    <button class="btn btn-danger" onclick="aplikovatTrest()">Provést trest / Nastavení</button>
-                    <button class="btn" onclick="zavritModal()">Zavřít</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        let aktivniUzivatelId = null;
-
-        function overitHeslo() {
-            const zadebaneHeslo = document.getElementById('adminPasswordInput').value;
-            const errorP = document.getElementById('loginError');
-            errorP.style.color = "gray";
-            errorP.innerText = "Ověřuji...";
-
-            db.ref('admin/password').once('value', (snap) => {
-                const spravneHeslo = snap.val();
-
-                if (zadebaneHeslo && zadebaneHeslo.trim() === String(spravneHeslo).trim()) {
-                    document.getElementById('loginOverlay').style.display = "none";
-                    document.getElementById('adminMainContent').style.display = "block";
-                    nacistDataAdminu();
-                } else {
-                    errorP.style.color = "red";
-                    errorP.innerText = "Nesprávné heslo!";
-                }
-            }, (error) => {
-                errorP.style.color = "red";
-                errorP.innerText = "Chyba připojení: " + error.message;
-            });
-        }
-
-        function zmenitHeslo() {
-            const noveHeslo = document.getElementById('newAdminPass').value;
-            if (!noveHeslo) return alert("Zadej platné heslo!");
-            db.ref('admin/password').set(noveHeslo).then(() => {
-                alert("Heslo bylo úspěšně změněno ve Firebase!");
-                document.getElementById('newAdminPass').value = "";
-            });
-        }
-
-        function nacistDataAdminu() {
-            // 1. Texty
-            db.ref('siteContent/newsText').once('value', (snap) => {
-                if (snap.val()) document.getElementById('newsText').value = snap.val();
-            });
-
-            // 2. Načtení zpráv (včetně propojení na fingerprint uživatele)
-            db.ref('messages').on('value', (snapshot) => {
-                const chatList = document.getElementById('chatMessagesList');
-                chatList.innerHTML = "";
-                const msgs = snapshot.val();
-                if (!msgs) {
-                    chatList.innerHTML = '<p style="padding: 10px; text-align: center;">Žádné zprávy.</p>';
-                    return;
-                }
-
-                Object.keys(msgs).reverse().forEach(key => {
-                    const msg = msgs[key];
-                    const row = document.createElement('div');
-                    row.className = 'chat-row';
-                    const stav = msg.seen ? "👁️ Viděno" : "🔴 Neviděno";
-                    const fingerprintId = msg.fingerprint || msg.userId || 'neznami-id';
-                    
-                    row.innerHTML = `
-                        <div>
-                            <span class="clickable-name ${msg.rainbow ? 'rainbow-nick' : ''}" onclick="otevritDetailUto('${fingerprintId}', '${msg.name || 'Anonym'}')"><b>${msg.name || 'Anonym'}</b></span> 
-                            <span>: ${msg.text || ''}</span>
-                            <br><small style="color: #888;">ID zařízení: ${fingerprintId} | Stav: ${stav}</small>
-                        </div>
-                        <div>
-                            <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="prepnoutVidene('${key}', ${!msg.seen})">Viditelnost</button>
-                            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="smazZpravu('${key}')">Smazat</button>
-                        </div>
-                    `;
-                    chatList.appendChild(row);
-                });
-            });
-
-            // 3. Načtení uživatelů podle zařízení (Fingerprint)
-            db.ref('users').on('value', (snapshot) => {
-                const usersList = document.getElementById('usersList');
-                usersList.innerHTML = "";
-                const users = snapshot.val();
-                if (!users) {
-                    usersList.innerHTML = '<p style="padding: 10px; text-align: center;</">Žádní zaregistrovaní uživatelé zařízení.</p>';
-                    return;
-                }
-
-                Object.keys(users).forEach(fingerprintId => {
-                    const user = users[fingerprintId];
-                    const row = document.createElement('div');
-                    row.className = 'user-row';
-                    row.innerHTML = `
-                        <span><b class="clickable-name ${user.rainbow ? 'rainbow-nick' : ''}" onclick="otevritDetailUto('${fingerprintId}', '${user.name || fingerprintId}')">${user.name || fingerprintId}</b> <br><small style="color:#666;">ID: ${fingerprintId}</small></span>
-                        <span>Stav: <b>${user.status || 'Aktivní'}</b> <button class="btn" style="margin-left: 10px;" onclick="otevritDetailUto('${fingerprintId}', '${user.name || fingerprintId}')">Spravovat</button></span>
-                    `;
-                    usersList.appendChild(row);
-                });
-            });
-        }
-
-        function ulozTexty() {
-            const val = document.getElementById('newsText').value;
-            db.ref('siteContent/newsText').set(val).then(() => {
-                const stat = document.getElementById('status');
-                stat.innerText = "Uloženo!";
-                setTimeout(() => stat.innerText = "", 2000);
-            });
-        }
-
-        function odeslatAdminZpravu() {
-            const name = document.getElementById('adminChatName').value || "ADMIN ⚡";
-            const text = document.getElementById('adminChatInput').value;
-            const rainbow = document.getElementById('adminRainbowCheck').checked;
-            const ghost = document.getElementById('ghostModeCheck').checked;
-
-            if (!text) return;
-
-            // Pokud je zapnutý Ghost mód, zpráva se může poslat jako neviditelný / systémový prvek nebo admin prvek bez upozornění
-            db.ref('messages').push({
-                name: name,
-                text: text,
-                rainbow: rainbow,
-                ghost: ghost,
-                seen: true,
-                fingerprint: "ADMIN_DEVICE_MASTER",
-                timestamp: Date.now()
-            });
-
-            document.getElementById('adminChatInput').value = "";
-        }
-
-        function smazZpravu(id) { db.ref('messages/' + id).remove(); }
-        function prepnoutVidene(id, stav) { db.ref('messages/' + id + '/seen').set(stav); }
-
-        function otevritDetailUto(fingerprintId, jmeno) {
-            aktivniUzivatelId = fingerprintId;
-            document.getElementById('modalUserName').innerText = "Správa uživatele: " + jmeno;
-            document.getElementById('modalUserId').innerText = fingerprintId;
-            document.getElementById('userDetailModal').style.display = "block";
-        }
-
-        function zavritModal() {
-            document.getElementById('userDetailModal').style.display = "none";
-            aktivniUzivatelId = null;
-        }
-
-        function aplikovatTrest() {
-            if (!aktivniUzivatelId) return;
-            const typ = document.getElementById('trestTyp').value;
-            const dobaMinut = parseInt(document.getElementById('trestDoba').value) || 0;
-            const rainbow = document.getElementById('rainbowToggle').checked;
-            const expiration = dobaMinut > 0 ? Date.now() + (dobaMinut * 60000) : 0;
-
-            if (typ === 'ban') {
-                db.ref('bans/' + aktivniUzivatelId).set({ expires: expiration, active: true });
-                db.ref('users/' + aktivniUzivatelId + '/status').set('ZABANOVÁN');
-            } else if (typ === 'mute') {
-                db.ref('mutes/' + aktivniUzivatelId).set({ expires: expiration, active: true });
-                db.ref('users/' + aktivniUzivatelId + '/status').set('ZTLUMEN (MUTE)');
-            } else if (typ === 'kick') {
-                db.ref('users/' + aktivniUzivatelId + '/status').set('VYKOPNUT');
-            }
-            db.ref('users/' + aktivniUzivatelId + '/rainbow').set(rainbow);
-            alert("Trest pro zařízení " + aktivniUzivatelId + " byl úspěšně aplikován!");
-            zavritModal();
-        }
-    </script>
 </body>
 </html>
