@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>syyyr vyleti ptacek</title>
+    <title>fotecky uciteliku</title>
     <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
     <style>
         body {
@@ -65,7 +65,6 @@
             font-size: 15px; 
             font-family: 'Papyrus', fantasy, sans-serif;
         }
-        /* Počítadlo lajků dole vlevo */
         .like-counter {
             position: absolute;
             bottom: 8px;
@@ -82,7 +81,6 @@
             pointer-events: none;
             backdrop-filter: blur(2px);
         }
-        /* Animované srdíčko při double-tapu */
         .heart-animation {
             position: absolute;
             top: 50%;
@@ -114,7 +112,6 @@
     </div>
 
     <script>
-        // Ošetření spuštění hudby pro moderní prohlížeče a mobily
         const audio = document.getElementById('pozadiHudba');
         audio.volume = 0.5;
         let playPromise = audio.play();
@@ -126,14 +123,39 @@
             });
         }
 
-        // Firebase Inicializace
         const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.database();
 
-        // Živé načítání fotek z Firebase (včetně počtu lajků)
+        // Záložní výchozí fotky pro případ, že je databáze prázdná
+        const pùvodniFotky = [
+            { soubor: "zalud.png", nazev: "žaLUD", likes: 0 },
+            { soubor: "1+1=2.jpeg", nazev: "1 + 1 = 2", likes: 0 },
+            { soubor: "cold asf.jpg", nazev: "cold asf", likes: 0 },
+            { soubor: "coldjpg.jpg", nazev: "studene", likes: 0 },
+            { soubor: "hlav.png", nazev: "der Führer", likes: 0 },
+            { soubor: "idk co tu dela.jpg", nazev: "idk co tu dela", likes: 0 },
+            { soubor: "je v katakombach.jpg", nazev: "je v katakombach", likes: 0 },
+            { soubor: "marion.png", nazev: "Je m´apelle Bernard", likes: 0 },
+            { soubor: "odpocivej v pokoji.jpeg", nazev: "odpocivej v pokoji", likes: 0 },
+            { soubor: "sedlak.jpg", nazev: "sedlak", likes: 0 },
+            { soubor: "skryta identita odhalena.png", nazev: "skryta identita odhalena", likes: 0 },
+            { soubor: "subirovjpg.jpg", nazev: "subirov", likes: 0 },
+            { soubor: "taky v katakombach.jpg", nazev: "bracho co tu delas", likes: 0 }
+        ];
+
+        db.ref('fotky').once('value', (snapshot) => {
+            if (!snapshot.exists()) {
+                // Pokud ve Firebase nic není, automaticky to tam nahrajeme
+                pùvodniFotky.forEach(foto => {
+                    db.ref('fotky').push(foto);
+                });
+            }
+        });
+
+        // Živé poslouchání dat z Firebase
         db.ref('fotky').on('value', (snapshot) => {
             const galerieDiv = document.getElementById('galerie');
             galerieDiv.innerHTML = "";
@@ -161,7 +183,6 @@
                     <p class="photo-title">${nazev}</p>
                 `;
 
-                // Logika pro detekci dvojitého klepnutí (double tap / double click)
                 const wrapper = box.querySelector('.image-wrapper');
                 const heart = box.querySelector('.heart-animation');
                 let lastClickTime = 0;
@@ -171,15 +192,12 @@
                     const tapLength = currentTime - lastClickTime;
                     
                     if (tapLength < 300 && tapLength > 0) {
-                        // Došlo k double tapu -> animace + přičtení lajku ve Firebase
                         heart.classList.add('show');
                         setTimeout(() => {
                             heart.classList.remove('show');
                         }, 800);
 
-                        // Transakce nebo inkrementace v Realtime Database
-                        const photoRef = db.ref(`fotky/${key}/likes`);
-                        photoRef.transaction((currentLikes) => {
+                        db.ref(`fotky/${key}/likes`).transaction((currentLikes) => {
                             return (currentLikes || 0) + 1;
                         });
 
