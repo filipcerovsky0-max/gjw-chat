@@ -28,6 +28,31 @@
         .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; }
         .back-link:hover { text-decoration: underline; }
         
+        /* Styl pro mini video banner */
+        .video-banner {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .video-banner video {
+            width: 100%;
+            max-width: 220px;
+            border-radius: 4px;
+            display: block;
+        }
+        .video-banner span {
+            font-size: 13px;
+            font-weight: bold;
+            color: #333;
+            flex: 1;
+        }
+        
         .ucitel-box {
             background-color: #ffffff;
             border: 1px solid #ccc;
@@ -72,6 +97,13 @@
 </head>
 <body>
     <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
+    
+    <!-- Mini video banner v loopu -->
+    <div class="video-banner">
+        <video src="proton.mp4" autoplay loop muted playsinline></video>
+        <span>Jak jsme slíbili tak taky dodržujem (zbytek pošlem pak vy nedočkavci)</span>
+    </div>
+
     <hr class="oddeleni">
 
     <div class="stred">
