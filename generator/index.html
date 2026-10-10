@@ -78,7 +78,7 @@
 
     <div class="stred">
         <h1>Generator omluvenek GJW</h1>
-        <p>Zadej udaje a vygeneruj si oficialne vypadajici omluvenku, kterou uz ucitele urcite neprokouknou.</p>
+        <p>zadej svoje udaje a vygeneruj si vysoce duveryhodnou omluvenku (pak to posli tridni/mu</p>
     </div>
 
     <div class="form-box">
@@ -94,7 +94,7 @@
             <option value="O1.A">O1.A</option><option value="O1.B">O1.B</option>
             <option value="O2.A">O2.A</option><option value="O2.B">O2.B</option>
             <option value="O3.A">O3.A</option><option value="O3.B">O3.B</option>
-            <option value="O4.A">O4.A</option><option data-current="true" value="O4.B">O4.B</option>
+            <option value="O4.A">O4.A</option><option value="O4.B">O4.B</option>
             <option value="O5.A">O5.A</option><option value="O5.B">O5.B</option>
             <option value="O6.A">O6.A</option><option value="O6.B">O6.B</option>
             <option value="O7.A">O7.A</option><option value="O7.B">O7.B</option>
@@ -134,12 +134,11 @@
                 return;
             }
 
-            // Vybere náhodnou omluvenku z deseti
             const randomIndex = Math.floor(Math.random() * omluvenkyTemplate.length);
             let vybrana = omluvenkyTemplate[randomIndex];
 
-            // Nahradí zástupné symboly
-            vybrana = vybrana.replace(/[JMENO]/g, `<b>${jmeno}</b>`).replace(/[TRIDA]/g, `<b>${trida}</b>`);
+            // Opravené nahrazování textu namísto regexové množiny
+            vybrana = vybrana.split('[JMENO]').join(`<b>${jmeno}</b>`).split('[TRIDA]').join(`<b>${trida}</b>`);
 
             const dnes = new Date().toLocaleDateString('cs-CZ');
             
@@ -148,7 +147,7 @@
                 <b>Předmět: Omluvenka z vyučování</b><br><br>
                 ${vybrana}<br><br>
                 S pozdravem,<br>
-                <i>Vzpurný zákonný zástupce / AI generátor GJW</i>
+                <i>muj zakonej zastupce teda vas teda no proste zastupce</i>
             `;
 
             const outBox = document.getElementById('outputContainer');
