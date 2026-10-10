@@ -13,7 +13,23 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
+        /* Malý šedý easter egg vlevo nahoru */
+        .secret-easter-egg {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 9px;
+            color: #999;
+            text-decoration: none;
+            font-family: Arial, Helvetica, sans-serif;
+            z-index: 100;
+        }
+        .secret-easter-egg:hover {
+            color: #333;
+            text-decoration: underline;
+        }
         body {
+            position: relative;
             background-color: #f0f0f0;
             color: #000000;
             font-family: Arial, Helvetica, sans-serif;
@@ -93,6 +109,9 @@
     </style>
 </head>
 <body>
+    <!-- Malinký šedý easter egg vlevo nahoře -->
+    <a href="./tajny" class="secret-easter-egg">zkusil si uz gjwprostejov.com/tajny ?</a>
+
     <p class="stred">
         <span class="logo-wrapper">
             <img class="logo" src="https://i.imgur.com/QvqvK3M.png" alt="GJW Logo">
@@ -195,7 +214,7 @@
             "„Neděle: proc zitra chodit do skoly, kdyz muzes pestovat jahody“",          
             "„Pondělí: jest pondeli jeste tyden pred nami, jdu sesbirat vsechny banany“",        
             "„Úterý: pice nic me nenapada“",       
-            "„Středa: Polovina utrpení je za námi. Je cas na vikend pripravit plany“",               
+            "„Středa: Polovina utrpení je za námi. Je cas na vikend pripravit plany“",              
             "„Čtvrtek: den, kdy kazdy do zdi civi a patek v mysli vidi“",           
             "„Pátek! dnes konec utrpeni tydeniho je, Hlavacek se raduje“",              
             "„Sobota: dnes vsichni volno mame gjw my ovladame“"   
