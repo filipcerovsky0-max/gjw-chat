@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator omluvenek - GJW</title>
+    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            margin: 15px;
+            padding: 10px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .stred { text-align: center; }
+        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
+        h1 { font-size: 20px; font-weight: bold; margin: 15px 0; color: #000000; }
+        p { font-size: 14px; line-height: 1.5; color: #333; }
+        .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .form-box {
+            background: #fff;
+            border: 1px solid #b0b0a8;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .retro-input, .retro-select {
+            background: #ffffff;
+            border: 1px solid #94a3b8;
+            padding: 8px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            color: #000;
+            border-radius: 3px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }
+        .retro-button {
+            background: #e2e8f0;
+            border: 1px solid #94a3b8;
+            padding: 8px 16px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #000;
+            border-radius: 3px;
+            width: 100%;
+        }
+        .retro-button:hover { background: #cbd5e1; }
+        
+        .output-box {
+            background: #fffdf0;
+            border: 1px dashed #d4b126;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 16px;
+            line-height: 1.6;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
+    <hr class="oddeleni">
+
+    <div class="stred">
+        <h1>Generator omluvenek GJW</h1>
+        <p>Zadej udaje a vygeneruj si oficialne vypadajici omluvenku, kterou uz ucitele urcite neprokouknou.</p>
+    </div>
+
+    <div class="form-box">
+        <label for="jmenoInput"><b>Jmeno a prijmeni studenta:</b></label>
+        <input type="text" id="jmenoInput" class="retro-input" placeholder="např. Jan Novak">
+
+        <label for="tridaSelect"><b>Trida:</b></label>
+        <select id="tridaSelect" class="retro-select">
+            <option value="1.A">1.A</option><option value="1.B">1.B</option>
+            <option value="2.A">2.A</option><option value="2.B">2.B</option>
+            <option value="3.A">3.A</option><option value="3.B">3.B</option>
+            <option value="4.A">4.A</option><option value="4.B">4.B</option>
+            <option value="O1.A">O1.A</option><option value="O1.B">O1.B</option>
+            <option value="O2.A">O2.A</option><option value="O2.B">O2.B</option>
+            <option value="O3.A">O3.A</option><option value="O3.B">O3.B</option>
+            <option value="O4.A">O4.A</option><option data-current="true" value="O4.B">O4.B</option>
+            <option value="O5.A">O5.A</option><option value="O5.B">O5.B</option>
+            <option value="O6.A">O6.A</option><option value="O6.B">O6.B</option>
+            <option value="O7.A">O7.A</option><option value="O7.B">O7.B</option>
+            <option value="O8.A">O8.A</option><option value="O8.B">O8.B</option>
+        </select>
+
+        <button onclick="generujOmluvenku()" class="retro-button">Vygenerovat omluvenku</button>
+
+        <div id="outputContainer" class="output-box">
+            <p id="outputText"></p>
+        </div>
+    </div>
+
+    <hr class="oddeleni">
+    <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
+
+    <script>
+        const omluvenkyTemplate = [
+            "Vyzivam timto k omluveni [JMENO] z tridy [TRIDA], z duvodu planovani statniho prevratu",
+            "Omlouvám své dítě [JMENO] z třídy [TRIDA] z vyučování po ceste zakopl o vzduch a odvezla ho rychla",
+            "Tímto omlouvám žáka [JMENO] ([TRIDA]) z dnesnich hodin nebot si zapomnel prezuvky a dostal od Valouskove pres hubu",
+            "Žádám o omluvení absence studenta [JMENO] z [TRIDA]. hromadne vypravy na osidleni marsu",
+            "Omluva pro [JMENO] ([TRIDA]): rika ze naucit se na ctyri pisemky do zitrka neni mozne a tak si prochazi existencni krizi",
+            "Tímto omlouvám [JMENO] z třídy [TRIDA]. rano ho bohuzel bolelo brisko (asi skolni jidelna)",
+            "Omlouvám syna/dceru [JMENO] ([TRIDA]) z duvodu predavkovani se kofeinem v matematice",
+            "Student [JMENO] z třídy [TRIDA] dnes bohuzel nebude moci prijit do vyucovani protoze vas ukol sezral naseho psa",
+            "Omluva na dnešní den pro [JMENO] ([TRIDA]): nase dite se rozhodlo pro navstevu katakomb skoly a od te doby se nam neozyva",
+            "Tímto omlouvám [JMENO] z [TRIDA]. nemohl dorazit nebot lovil mamuty"
+        ];
+
+        function generujOmluvenku() {
+            const jmeno = document.getElementById('jmenoInput').value.trim();
+            const trida = document.getElementById('tridaSelect').value;
+
+            if (!jmeno) {
+                alert("tsemka zadej svoje meno");
+                return;
+            }
+
+            // Vybere náhodnou omluvenku z deseti
+            const randomIndex = Math.floor(Math.random() * omluvenkyTemplate.length);
+            let vybrana = omluvenkyTemplate[randomIndex];
+
+            // Nahradí zástupné symboly
+            vybrana = vybrana.replace(/[JMENO]/g, `<b>${jmeno}</b>`).replace(/[TRIDA]/g, `<b>${trida}</b>`);
+
+            const dnes = new Date().toLocaleDateString('cs-CZ');
+            
+            const finalHtml = `
+                <b>V Prostějově dne ${dnes}</b><br><br>
+                <b>Předmět: Omluvenka z vyučování</b><br><br>
+                ${vybrana}<br><br>
+                S pozdravem,<br>
+                <i>Vzpurný zákonný zástupce / AI generátor GJW</i>
+            `;
+
+            const outBox = document.getElementById('outputContainer');
+            const outText = document.getElementById('outputText');
+            
+            outText.innerHTML = finalHtml;
+            outBox.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
