@@ -96,10 +96,9 @@
         <div id="statusText" style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">Měřím rychlost a ping sítě...</div>
         
         <div class="info-grid">
-            <div class="info-item"><strong>Název Wi-Fi:</strong> <span id="wifiName">Zjišťuji...</span></div>
             <div class="info-item"><strong>Signál (čárky):</strong> <span id="wifiBars">Zjišťuji...</span></div>
             <div class="info-item"><strong>Odezva (Ping):</strong> <span id="wifiPing">Zjišťuji...</span></div>
-            <div class="info-item"><strong>Stav:</strong> <span id="wifiStatusState">Testování...</span></div>
+            <div class="info-item" style="grid-column: span 2;"><strong>Stav:</strong> <span id="wifiStatusState">Testování...</span></div>
         </div>
 
         <div id="hlaskaContainer" class="hlaska-box" style="display: none;">
@@ -113,18 +112,16 @@
     <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
 
     <script>
-        // Těchto 5 hlášek si můžeš libovolně přepsat (řadí se od nejlepšího pingu po totální katastrofu)
         const hlaskyPodlePingu = [
-            "1. (Super rychlost): hele radsi si zkontroluj jestli nemas zaply data todle nenik rychlost gjw wifi",
-            "2. (Celkem to jde): proste normalka no",
-            "3. (Průměrná bída): normalka pro skolni wifi nic extra ale jeste to nejak funguje",
-            "4. (Tragédie): jakoze nacist stranku trva jak prijit Opavske do hodiny",
-            "5. (Úplný konec): tak ja absolutne netusim jak si nacetl tudle stranku s toudle wifinou"
+            "(Až podezřele dobrý): hele radsi si zkontroluj jestli nemas zaply data todle nenik rychlost gjw wifi",
+            "(Celkem to jde): proste normalka no",
+            "(Průměrná bída): normalka pro skolni wifi nic extra ale jeste to nejak funguje",
+            "(Tragédie): jakoze nacist stranku trva jak prijit Opavske do hodiny",
+            "(Úplnej konec): tak ja absolutne netusim jak si nacetl tudle stranku s toudle wifinou"
         ];
 
         async function zmeritWifi() {
             document.getElementById('statusText').innerText = "Měřím rychlost a ping sítě...";
-            document.getElementById('wifiName').innerText = "Zjišťuji...";
             document.getElementById('wifiBars').innerText = "Zjišťuji...";
             document.getElementById('wifiPing').innerText = "Zjišťuji...";
             document.getElementById('wifiStatusState').innerText = "Měření...";
@@ -134,26 +131,13 @@
             let ping = 0;
 
             try {
-                // Pokusíme se načíst malý prvek (nebo vlastní favicon/stránku) pro zjištění reálné odezvy
                 await fetch('../favicon.ico?' + new Date().getTime(), { mode: 'no-cors', cache: 'no-store' });
                 let endTime = performance.now();
                 ping = Math.round(endTime - startTime);
             } catch (e) {
-                // Pokud fetch selže, simulujeme vyšší ping podle aktuálního času
                 ping = Math.floor(Math.random() * 400) + 300;
             }
 
-            // Zjištění názvu Wi-Fi a čárek přes Network Information API (pokud prohlížeč podporuje)
-            let conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-            let effectiveType = conn ? conn.effectiveType : 'unknown';
-            
-            // Odhad názvu sítě podle prostředí
-            let networkName = "GJW-Guest / Skolni-Wifi";
-            if (conn && conn.type) {
-                networkName = conn.type.toUpperCase();
-            }
-
-            // Výpočet čárek signálu a výběr hlášky na základě pingu
             let carek = "📶 4/4";
             let hlaskaIndex = 0;
 
@@ -174,19 +158,15 @@
                 hlaskaIndex = 4;
             }
 
-            // Zápis výsledků do stránek
-            document.getElementById('wifiName').innerText = networkName;
             document.getElementById('wifiBars').innerText = carek;
             document.getElementById('wifiPing').innerText = ping + " ms";
-            document.getElementById('wifiStatusState').innerText = (ping > 300) ? "tak wifi je v prdeli" : "Stabilní (zatím) 👍";
+            document.getElementById('wifiStatusState').innerText = (ping > 300) ? "tak wifi je v prdeli" : "Stabilní (zatím)";
             document.getElementById('statusText').innerText = "Výsledek diagnostiky školní sítě:";
             
-            // Zobrazení odpovídající hlášky
             document.getElementById('wifiHlaska').innerText = hlaskyPodlePingu[hlaskaIndex];
             document.getElementById('hlaskaContainer').style.display = 'block';
         }
 
-        // Spustit test hned po načtení stránky
         window.onload = zmeritWifi;
     </script>
 </body>
