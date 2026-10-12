@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows - Critical Process Died</title>
+    <style>
+        body {
+            background-color: #0078d7;
+            color: #ffffff;
+            font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 50px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            user-select: none;
+            overflow: hidden;
+            cursor: default;
+        }
+        .content {
+            max-width: 850px;
+        }
+        .emoji {
+            font-size: 90px;
+            line-height: 1;
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+        .text {
+            font-size: 26px;
+            line-height: 1.4;
+            font-weight: 300;
+            margin-bottom: 30px;
+        }
+        .percentage {
+            font-size: 26px;
+            font-weight: 300;
+            margin-bottom: 50px;
+        }
+        .details {
+            display: flex;
+            align-items: flex-start;
+            gap: 25px;
+        }
+        .qr-code {
+            width: 110px;
+            height: 110px;
+            background: #ffffff;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        .qr-code img {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .stop-info {
+            font-size: 14px;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+        /* Nápověda dole */
+        .exit-hint {
+            position: fixed;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: Arial, sans-serif;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .hidden-hint {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div class="emoji">:(</div>
+        <div class="text">
+            Vas pocitac narazil na problem a je nutne jej restartovat. Pouze shromaždujeme nejake informace o chybach a pak vas nechame restartovat.
+        </div>
+        <div class="percentage"><span id="percent">0</span>% dokončeno</div>
+        
+        <div class="details">
+            <div class="qr-code">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.youtube.com/watch?v=dQw4w9WgXcQ" alt="QR Code">
+            </div>
+            <div class="stop-info">
+                Další informace o tomto problému a možných opravách naleznete na adrese <a href="https://www.windows.com/stopcode" target="_blank" style="color: #ffffff; text-decoration: none;">https://www.windows.com/stopcode</a><br><br>
+                Pokud se obrátíte na oddělení podpory, poskytněte jim tyto informace:<br>
+                Zastavit kód: CRITICAL_PROCESS_DIED<br>
+                Selhávající položka: GJW_STUDENT_PORTAL.sys
+            </div>
+        </div>
+    </div>
+
+    <!-- Nápověda -->
+    <div id="exitHint" class="exit-hint">
+        Stiskni <b>F11</b> pro plny zazitek, nebo stiskni <b>Esc / klikni sem</b> pro navrat na hlavni menu. (Nebo zmáčkni klávesu <b>H</b> pro skrytí panelu)
+    </div>
+
+    <script>
+        // Nastavení načítání přesně na 45 minut celkem (každých 27 sekund 1%)
+        let p = 0;
+        const percentEl = document.getElementById('percent');
+        const totalTimeMs = 45 * 60 * 1000; 
+        const intervalTime = totalTimeMs / 100; 
+
+        const interval = setInterval(() => {
+            if (p < 100) {
+                p++;
+                percentEl.innerText = p;
+            } else {
+                clearInterval(interval);
+            }
+        }, intervalTime);
+
+        const hint = document.getElementById('exitHint');
+        
+        function checkFullscreen() {
+            const isFullscreen = document.fullscreenElement || document.webkitIsFullScreen || document.mozFullScreen;
+            if (isFullscreen) {
+                hint.classList.add('hidden-hint');
+            } else {
+                hint.classList.remove('hidden-hint');
+            }
+        }
+
+        document.addEventListener('fullscreenchange', checkFullscreen);
+        document.addEventListener('webkitfullscreenchange', checkFullscreen);
+        document.addEventListener('mozfullscreenchange', checkFullscreen);
+
+        // Klávesa 'h' nebo 'H' manuálně schová černý panel
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.location.href = '../';
+            }
+            if (e.key.toLowerCase() === 'h') {
+                hint.classList.add('hidden-hint');
+            }
+        });
+
+        // Kliknutí na obrazovku (mimo odkazy): pokud není ve fullscreenu, zapne ho, jinak vrátí na menu
+        document.body.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') return; // Necháme prokliknout QR kód / odkazy
+            
+            const isFullscreen = document.fullscreenElement || document.webkitIsFullScreen || document.mozFullScreen;
+            if (!isFullscreen) {
+                // Pokusí se vyžádat fullscreen, nebo uživatele vrátí, pokud klikne vyloženě na nápovědu
+                if (e.target.id === 'exitHint' || e.target.closest('#exitHint')) {
+                    window.location.href = '../';
+                } else {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen();
+                    }
+                }
+            } else {
+                // Pokud už je ve fullscreenu a klikne někam do prázdna, nic se nestane nebo může zpět
+            }
+        });
+    </script>
+</body>
+</html>
