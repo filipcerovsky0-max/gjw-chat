@@ -47,6 +47,11 @@
             box-sizing: border-box;
             display: block;
         }
+        .retro-input:disabled {
+            background-color: #e2e8f0;
+            color: #555;
+            cursor: not-allowed;
+        }
         .retro-button {
             background: #e2e8f0;
             border: 1px solid #94a3b8;
@@ -115,13 +120,6 @@
             width: 0%;
             background-color: #4caf50;
         }
-        .hall-of-fame-modal {
-            background: #fdf6e2;
-            border: 2px dashed #d4b126;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 15px 0;
-        }
         .heart-count {
             font-size: 16px;
             font-weight: bold;
@@ -136,7 +134,7 @@
 
     <div class="stred">
         <h1>🏆 Týdenní soutěž fotek učitelů</h1>
-        <p>Nahraj fotku, sbírej srdíčka. Každý e-mail má přesně 1 hlas (srdíčko), který můžeš kdykoliv přendat jinam! Končí každou neděli v 00:00! | <a href="#sineSlavyAnchor" style="color: #0000EE; font-weight: bold;">📜 Přejít do Síně slávy</a></p>
+        <p>Nahraj fotku, sbírej srdíčka. Každý e-mail má přesně 1 hlas (srdíčko), který můžeš kdykoliv přendat jinam! Končí každou neděli v 00:00! | <a href="./sin-slavy/" style="color: #0000EE; font-weight: bold;">📜 Síň slávy</a></p>
     </div>
 
     <!-- Výsledky minulého kola (Top 5) -->
@@ -145,22 +143,18 @@
         <div id="minulyKoloContainer">Načítám výsledky...</div>
     </div>
 
-    <!-- Síň slávy -->
-    <div id="sineSlavyAnchor" class="box hall-of-fame-modal">
-        <h3>🏛️ Síň slávy – Vítězové minulých kol</h3>
-        <p style="font-size: 13px; color: #555;">Tady najdeš šampióny ze všech předchozích týdnů včetně jejich vítězných fotek.</p>
-        <div id="sineSlavyContainer">Načítám historii síně slávy...</div>
-    </div>
-
     <!-- Přihlášení přes e-mail (One-Time Login) -->
     <div id="loginSection" class="box">
         <h3>🔑 Přihlášení pro účast v soutěži & hlasování</h3>
-        <p>Zadej svůj e-mail a přezdívku. Pošleme ti ověřovací kód na email!</p>
+        <p id="loginInstruction">Zadej svůj e-mail a přezdívku. Pošleme ti ověřovací kód přes Resend.</p>
+        
         <label>E-mail:</label>
         <input type="email" id="userEmail" class="retro-input" placeholder="student@gjw.cz">
+        
         <label>Přezdívka (do leaderboardu):</label>
         <input type="text" id="userNick" class="retro-input" placeholder="Tvoje prezdivka">
-        <button onclick="poslatKod()" class="retro-button">Odeslat ověřovací kód</button>
+        
+        <button id="sendCodeBtn" onclick="poslatKod()" class="retro-button">Odeslat ověřovací kód</button>
         
         <div id="otpBox" style="display:none; margin-top: 15px;">
             <label>Zadej 4místný kód z e-mailu:</label>
@@ -229,7 +223,6 @@
             }
             nactiData();
             nactiMinulyTyden();
-            nactiSineSlavy();
         };
 
         async function poslatKod() {
@@ -253,6 +246,14 @@
 
                 if (response.ok) {
                     alert("Ověřovací kód byl úspěšně odeslán na tvůj e-mail!");
+                    
+                    // Uzamknutí políček, aby nešla přezdívka ani e-mail měnit
+                    document.getElementById('userEmail').disabled = true;
+                    document.getElementById('userNick').disabled = true;
+                    document.getElementById('sendCodeBtn').style.display = 'none';
+                    document.getElementById('loginInstruction').innerText = "Kód byl odeslán. Zadej ho níže:";
+
+                    // Zobrazení boxu pro kód
                     document.getElementById('otpBox').style.display = 'block';
                 } else {
                     const result = await response.json();
@@ -366,52 +367,17 @@
             progressDiv.style.display = 'none';
         }
 
-        // Hlasování s možností změny hlasu (přenesení srdíčka na jinou fotku)
         function hlasovat(fotoId) {
             const emailKey = btoa(currentUser.email).replace(/=/g,'');
-            const fotkyRef = db.ref('soutezApp/fotky');
-
-            fotkyRef.transaction(fotky => {
-                if (!fotky) fotky = {};
-
-                // 1. Nejprve projdeme všechny fotky a smažeme případný starý hlas tohoto uživatele
-                Object.keys(fotky).forEach(id => {
-                    if (fotky[id].votedEmails && fotky[id].votedEmails[emailKey]) {
-                        delete fotky[id].votedEmails[emailKey];
-                        fotky[id].likes = Math.max(0, (fotky[id].likes || 1) - 1);
-                    }
-                });
-
-                // 2. Přidáme hlas nové vybrané fotce (nebo přepneme/odebereme, pokud kliknul na stejnou)
-                if (fotky[fotoId]) {
-                    if (!fotky[fotoId].votedEmails) {
-                        fotky[fotoId].votedEmails = {};
-                    }
-                    
-                    // Pokud uživatel klikl na fotku, kde už hlas měl, tak jsme mu ho v kroku 1 vzali (umožníme tím vzít hlas zpět do zásoby).
-                    // Pokud to byla jiná fotka, tak mu ho nyní připíšeme k nové:
-                    let wasAlreadyVotedHere = false; // po kroku 1 už je vymazáno, takže teď vždy přidáme k nové
-                    
-                    // Zjistíme, zda uživatel neklikl na stejnou fotku (předchozím krokem by se smazala a už by nebyla přičtena)
-                    // Chceme, aby šlo hlas odebrat úplně kliknutím na vlastní již lajknutou fotku:
-                    // Uděláme to chytře: ověříme v lokální paměti nebo přímo. Pro jednoduchost: kliknutím dáš hlas.
-                }
-
-                return fotky;
-            });
-
-            // Čistší implementace pro transakci s jedním hlasem v zásobě:
             prepnoutHlas(fotoId, emailKey);
         }
 
-        // Bezpečná transakce pro správu 1 hlasu na e-mail s možností přenosu
         function prepnoutHlas(targetFotoId, emailKey) {
             db.ref('soutezApp/fotky').transaction(fotky => {
                 if (!fotky) return fotky;
 
                 let userCurrentVotedId = null;
 
-                // Najdeme, zda už tento e-mail pro něco hlasoval
                 Object.keys(fotky).forEach(id => {
                     if (fotky[id].votedEmails && fotky[id].votedEmails[emailKey]) {
                         userCurrentVotedId = id;
@@ -419,16 +385,13 @@
                 });
 
                 if (userCurrentVotedId === targetFotoId) {
-                    // Uživatel klikl na fotku, kterou už má lajknutou -> vezmeme mu srdíčko zpět do zásoby (odebereme lajk)
                     delete fotky[targetFotoId].votedEmails[emailKey];
                     fotky[targetFotoId].likes = Math.max(0, (fotky[targetFotoId].likes || 1) - 1);
                 } else {
-                    // Pokud měl hlas jinde, odebereme ho
                     if (userCurrentVotedId) {
                         delete fotky[userCurrentVotedId].votedEmails[emailKey];
                         fotky[userCurrentVotedId].likes = Math.max(0, (fotky[userCurrentVotedId].likes || 1) - 1);
                     }
-                    // Přidáme hlas nové fotce
                     if (!fotky[targetFotoId].votedEmails) {
                         fotky[targetFotoId].votedEmails = {};
                     }
@@ -507,33 +470,6 @@
                 top5.forEach((vitez, index) => {
                     let imgHtml = vitez.url ? `<img src="${vitez.url}" style="width:40px; height:40px; object-fit:cover; border-radius:3px; vertical-align:middle; margin-right:8px;" />` : '';
                     container.innerHTML += `<div style="margin: 8px 0; display:flex; align-items:center;">${imgHtml} <div>#${index+1}: <strong>${vitez.autorNick}</strong> (${vitez.popisek}) - ❤️ ${vitez.likes}</div></div>`;
-                });
-            });
-        }
-
-        function nactiSineSlavy() {
-            db.ref('soutezApp/historieKol').on('value', snapshot => {
-                const historia = snapshot.val();
-                const container = document.getElementById('sineSlavyContainer');
-                if (!historia) {
-                    container.innerHTML = '<p>Síň slávy je zatím prázdná. Po skončení prvního kola se tu objeví archivy vítězů!</p>';
-                    return;
-                }
-                container.innerHTML = '';
-                Object.entries(historia).reverse().forEach(([koloId, koloData]) => {
-                    let htmlKolo = `<div style="background:#fff; border:1px solid #d4b126; padding:10px; margin:10px 0; border-radius:4px;">
-                        <strong>📅 Kolo / Týden: ${koloId}</strong><div style="margin-top:8px;">`;
-                    if (koloData.top5) {
-                        koloData.top5.forEach((v, idx) => {
-                            let fotoViteze = v.url ? `<img src="${v.url}" style="width:50px; height:50px; object-fit:cover; border-radius:3px; border:1px solid #94a3b8; margin-right:10px;" />` : '';
-                            htmlKolo += `<div style="display:flex; align-items:center; margin-bottom:6px;">
-                                ${fotoViteze}
-                                <div><strong>#${idx+1} ${v.autorNick}</strong> — "${v.popisek}"<br><small>❤️ ${v.likes} srdíček</small></div>
-                            </div>`;
-                        });
-                    }
-                    htmlKolo += `</div></div>`;
-                    container.innerHTML += htmlKolo;
                 });
             });
         }
