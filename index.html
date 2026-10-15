@@ -220,6 +220,11 @@
 
     <p style="font-size: 13px;"><i id="homeFooterText">Vyrobeno v náhodný večer před třema písemkama. Neukládáme žádná osobní data, zatím.(vlastně chat ukládáme)</i></p>
 
+    <!-- Diskrétní odkaz na právní podmínky dole v patičce -->
+    <p style="font-size: 11px; text-align: center; margin: 12px 0;">
+        <a href="./legal/" style="color: #666; text-decoration: underline;">Ochrana soukromí & Právní podmínky (GDPR)</a>
+    </p>
+
     <hr class="oddeleni">
     <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
     
@@ -229,18 +234,16 @@
     </p>
 
     <script>
-        // 7 hlášek pro 7 dní v týdnu (0 = Neděle, 1 = Pondělí, 2 = Úterý, 3 = Středa, 4 = Čtvrtek, 5 = Pátek, 6 = Sobota)
         const hlaskyTydne = [
             "„Neděle: proc zitra chodit do skoly, kdyz muzes pestovat jahody“",          
             "„Pondělí: jest pondeli jeste tyden pred nami, jdu sesbirat vsechny banany“",        
             "„Úterý: pice nic me nenapada“",       
-            "„Středa: Polovina utrpení je za námi. Je cas na vikend pripravit plany“",              
-            "„Čtvrtek: den, kdy kazdy do zdi civi a patek v mysli vidi“",           
+            "„Středa: Polovina utrpení je za námi. Je cas na vikend pripravit plany“",             
+            "„Čtvrtek: den, kdy kazdy do zdi civi a patek v mysli vidi“",            
             "„Pátek! dnes konec utrpeni tydeniho je, Hlavacek se raduje“",              
             "„Sobota: dnes vsichni volno mame gjw my ovladame“"   
         ];
 
-        // Automatické vybrání hlášky podle aktuálního dne
         const dnesDen = new Date().getDay();
         document.getElementById('hlaskaDneContainer').innerText = hlaskyTydne[dnesDen];
 
@@ -248,7 +251,6 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Počítadlo návštěv přes Firebase
         const counterRef = db.ref('stats/navstevy');
         counterRef.transaction((currentValue) => {
             return (currentValue || 0) + 1;
