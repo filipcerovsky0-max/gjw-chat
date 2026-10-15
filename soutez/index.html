@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Školní soutěž fotek učitelů - GJW</title>
+    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            margin: 15px;
+            padding: 10px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .stred { text-align: center; }
+        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
+        h1 { font-size: 20px; font-weight: bold; margin: 15px 0; color: #000000; }
+        p { font-size: 14px; line-height: 1.5; color: #333; }
+        .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; }
+        .back-link:hover { text-decoration: underline; }
+        
+        .box {
+            background: #fff;
+            border: 1px solid #b0b0a8;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .retro-input {
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #94a3b8;
+            border-radius: 3px;
+            width: 100%;
+            max-width: 300px;
+            margin: 5px 0 15px 0;
+            box-sizing: border-box;
+            display: block;
+        }
+        .retro-button {
+            background: #e2e8f0;
+            border: 1px solid #94a3b8;
+            padding: 8px 16px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #000;
+            border-radius: 3px;
+        }
+        .retro-button:hover { background: #cbd5e1; }
+        
+        .podium-box {
+            background: #fff8c5;
+            border: 1px solid #e2d27f;
+            border-left: 5px solid #d4b126;
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            font-family: 'Papyrus', fantasy, sans-serif;
+        }
+        .fotka-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .fotka-card {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .fotka-card img {
+            max-width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 3px;
+            border: 1px solid #94a3b8;
+        }
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .leaderboard-table th, .leaderboard-table td {
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            text-align: left;
+            font-size: 13px;
+        }
+        .leaderboard-table th { background: #e2e8f0; }
+    </style>
+</head>
+<body>
+    <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
+    <hr class="oddeleni">
+
+    <div class="stred">
+        <h1>🏆 Týdenní soutěž fotek učitelů</h1>
+        <p>Nahraj fotku, sbírej lajky (1 hlas na e-mail). Končí každou neděli v 00:00 a začíná nové kolo! Výherci vstoupí do síně slávy</p>
+    </div>
+
+    <!-- Výsledky minulého kola (Top 5) -->
+    <div class="podium-box">
+        <h3>🥇 Výsledky z minulého kola (Top 5)</h3>
+        <div id="minulyKoloContainer">Načítám výsledky...</div>
+    </div>
+
+    <!-- Přihlášení přes e-mail (One-Time Login) -->
+    <div id="loginSection" class="box">
+        <h3>Přihlášení pro účast v soutěži & hlasování</h3>
+        <p>Zadej svůj e-mail a přezdívku. Pošleme ti ověřovací kód přes Resend.</p>
+        <label>E-mail:</label>
+        <input type="email" id="userEmail" class="retro-input" placeholder="student@gjw.cz">
+        <label>Přezdívka (do leaderboardu):</label>
+        <input type="text" id="userNick" class="retro-input" placeholder="Tvoje prezdivka">
+        <button onclick="poslatKod()" class="retro-button">Odeslat ověřovací kód</button>
+        
+        <div id="otpBox" style="display:none; margin-top: 15px;">
+            <label>Zadej 4místný kód z e-mailu:</label>
+            <input type="text" id="otpCodeInput" class="retro-input" placeholder="1234">
+            <button onclick="overitKod()" class="retro-button">Ověřit a přihlásit</button>
+        </div>
+    </div>
+
+    <!-- Hlavní sekce po přihlášení -->
+    <div id="appSection" style="display:none;">
+        <div class="box" style="background: #f0fdf4; border-color: #86efac;">
+            <p>Přihlášen jako: <strong id="loggedUserDisplay"></strong> (<span id="loggedEmailDisplay"></span>)</p>
+            <button onclick="odhlasit()" class="retro-button" style="background: #fee2e2;">Odhlásit se</button>
+        </div>
+
+        <div class="box">
+            <h3>📤 Nahrát novou fotku do soutěže</h3>
+            <input type="text" id="fotoPopisek" class="retro-input" placeholder="Popisek / jméno učitele" style="max-width: 100%;">
+            <input type="text" id="fotoUrl" class="retro-input" placeholder="URL obrázku (např. odkaz na obrázek)" style="max-width: 100%;">
+            <button onclick="nahratFotku()" class="retro-button">Nahrát do soutěže</button>
+        </div>
+
+        <div class="box">
+            <h3>⭐ Soutěžní galerie & Hlasování</h3>
+            <div id="galerieContainer" class="fotka-grid">Načítám fotky...</div>
+        </div>
+
+        <div class="box">
+            <h3>📊 Aktuální Leaderboard</h3>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr><th>Pořadí</th><th>Přezdívka</th><th>Počet lajků</th></tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <tr><td colspan="3">Načítám žebříček...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <hr class="oddeleni">
+    <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let generatedOtp = null;
+        let currentUser = null;
+
+        window.onload = function() {
+            const savedUser = localStorage.getItem('gjw_soutez_user');
+            const savedEmail = localStorage.getItem('gjw_soutez_email');
+            if (savedUser && savedEmail) {
+                currentUser = { nick: savedUser, email: savedEmail };
+                zobrazitApp();
+            }
+            nactiData();
+            nactiMinulyTyden();
+        };
+
+        async function poslatKod() {
+            const email = document.getElementById('userEmail').value.trim();
+            const nick = document.getElementById('userNick').value.trim();
+
+            if (!email || !nick) {
+                alert("Zadej prosím e-mail i přezdívku!");
+                return;
+            }
+
+            generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+            alert("Odesílám ověřovací kód na e-mail...");
+
+            try {
+                const response = await fetch('/api/send-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, nick: nick, code: generatedOtp })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert("Ověřovací kód byl úspěšně odeslán na tvůj e-mail!");
+                    document.getElementById('otpBox').style.display = 'block';
+                } else {
+                    alert("Chyba při odesílání: " + (result.error || 'Neznámá chyba'));
+                }
+            } catch (err) {
+                alert("Chyba připojení k serveru.");
+                console.error(err);
+            }
+        }
+
+        function overitKod() {
+            const zadanyKod = document.getElementById('otpCodeInput').value.trim();
+            if (zadanyKod === generatedOtp) {
+                currentUser = {
+                    nick: document.getElementById('userNick').value.trim(),
+                    email: document.getElementById('userEmail').value.trim()
+                };
+                localStorage.setItem('gjw_soutez_user', currentUser.nick);
+                localStorage.setItem('gjw_soutez_email', currentUser.email);
+                
+                db.ref('soutezApp/uzivatele/' + btoa(currentUser.email).replace(/=/g,'')).set({
+                    nick: currentUser.nick,
+                    email: currentUser.email
+                });
+
+                zobrazitApp();
+            } else {
+                alert("Nesprávný ověřovací kód!");
+            }
+        }
+
+        function zobrazitApp() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('appSection').style.display = 'block';
+            document.getElementById('loggedUserDisplay').innerText = currentUser.nick;
+            document.getElementById('loggedEmailDisplay').innerText = currentUser.email;
+        }
+
+        function odhlasit() {
+            localStorage.removeItem('gjw_soutez_user');
+            localStorage.removeItem('gjw_soutez_email');
+            location.reload();
+        }
+
+        function nahratFotku() {
+            const popisek = document.getElementById('fotoPopisek').value.trim();
+            const url = document.getElementById('fotoUrl').value.trim();
+
+            if (!popisek || !url) {
+                alert("Vyplň popisek i URL obrázku!");
+                return;
+            }
+
+            const novaFotkaRef = db.ref('soutezApp/fotky').push();
+            novaFotkaRef.set({
+                id: novaFotkaRef.key,
+                popisek: popisek,
+                url: url,
+                autorNick: currentUser.nick,
+                autorEmail: currentUser.email,
+                likes: 0,
+                votedEmails: {}
+            }, (error) => {
+                if (!error) {
+                    document.getElementById('fotoPopisek').value = '';
+                    document.getElementById('fotoUrl').value = '';
+                    alert("Fotka byla nahrána do soutěže!");
+                }
+            });
+        }
+
+        function hlasovat(fotoId) {
+            const emailKey = btoa(currentUser.email).replace(/=/g,'');
+            const fotoRef = db.ref('soutezApp/fotky/' + fotoId);
+
+            fotoRef.transaction(fotka => {
+                if (fotka) {
+                    if (!fotka.votedEmails) fotka.votedEmails = {};
+                    
+                    if (fotka.votedEmails[emailKey]) {
+                        alert("Tento e-mail už pro tuto fotku hlasoval!");
+                        return;
+                    }
+
+                    fotka.votedEmails[emailKey] = true;
+                    fotka.likes = (fotka.likes || 0) + 1;
+                }
+                return fotka;
+            }, (error, committed) => {
+                if (committed) {
+                    aktualizovatLeaderboard();
+                }
+            });
+        }
+
+        function nactiData() {
+            db.ref('soutezApp/fotky').on('value', snapshot => {
+                const data = snapshot.val();
+                const galerie = document.getElementById('galerieContainer');
+                galerie.innerHTML = '';
+
+                let leaderboardMap = {};
+
+                if (!data) {
+                    galerie.innerHTML = '<p>Zatím žádné fotky v soutěži.</p>';
+                    return;
+                }
+
+                Object.values(data).forEach(fotka => {
+                    leaderboardMap[fotka.autorNick] = (leaderboardMap[fotka.autorNick] || 0) + (fotka.likes || 0);
+
+                    const card = document.createElement('div');
+                    card.className = 'fotka-card';
+                    card.innerHTML = `
+                        <img src="${fotka.url}" alt="Fotka">
+                        <p><strong>${fotka.popisek}</strong><br><small>Autor: ${fotka.autorNick}</small></p>
+                        <p>❤️ Lajky: <strong>${fotka.likes || 0}</strong></p>
+                        <button onclick="hlasovat('${fotka.id}')" class="retro-button">Dát lajk 👍</button>
+                    `;
+                    galerie.appendChild(card);
+                });
+
+                vykreslitLeaderboard(leaderboardMap);
+            });
+        }
+
+        function vykreslitLeaderboard(mapa) {
+            const tbody = document.getElementById('leaderboardBody');
+            tbody.innerHTML = '';
+
+            const seřazeno = Object.entries(mapa).sort((a,b) => b[1] - a[1]);
+
+            if (seřazeno.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3">Žádná data v žebříčku.</td></tr>';
+                return;
+            }
+
+            seřazeno.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>#${index + 1}</td><td>${item[0]}</td><td>${item[1]} lajků</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function nactiMinulyTyden() {
+            db.ref('soutezApp/minulyTydenTop5').on('value', snapshot => {
+                const top5 = snapshot.val();
+                const container = document.getElementById('minulyKoloContainer');
+                if (!top5) {
+                    container.innerHTML = 'Zatím se čeká na první nedělní půlnoční vyhodnocení';
+                    return;
+                }
+                container.innerHTML = '';
+                top5.forEach((vitez, index) => {
+                    container.innerHTML += `<div>#${index+1}: <strong>${vitez.autorNick}</strong> (${vitez.popisek}) - ${vitez.likes} lajků</div>`;
+                });
+            });
+        }
+    </script>
+</body>
+</html>
