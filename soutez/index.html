@@ -212,7 +212,7 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const storage = firebase.storage();
+        const storage = firebase.app().storage("gs://gjw-chat.firebasestorage.app");
 
         let generatedOtp = null;
         let currentUser = null;
