@@ -206,7 +206,10 @@
     <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
 
     <script>
-        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        const firebaseConfig = { 
+            databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app",
+            storageBucket: "gjw-chat.appspot.com"
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const storage = firebase.storage();
@@ -247,13 +250,10 @@
                 if (response.ok) {
                     alert("Ověřovací kód byl úspěšně odeslán na tvůj e-mail!");
                     
-                    // Uzamknutí políček, aby nešla přezdívka ani e-mail měnit
                     document.getElementById('userEmail').disabled = true;
                     document.getElementById('userNick').disabled = true;
                     document.getElementById('sendCodeBtn').style.display = 'none';
                     document.getElementById('loginInstruction').innerText = "Kód byl odeslán. Zadej ho níže:";
-
-                    // Zobrazení boxu pro kód
                     document.getElementById('otpBox').style.display = 'block';
                 } else {
                     const result = await response.json();
@@ -299,6 +299,35 @@
             location.reload();
         }
 
+        function zmensitFotku(file, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function (event) {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    const MAX_WIDTH = 1200;
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        callback(blob);
+                    }, 'image/jpeg', 0.8);
+                }
+            }
+        }
+
         function nahratFotku() {
             const popisek = document.getElementById('fotoPopisek').value.trim();
             const fileInput = document.getElementById('fotoSoubor');
@@ -311,35 +340,37 @@
 
             const uploadBtn = document.getElementById('uploadBtn');
             uploadBtn.disabled = true;
-            uploadBtn.innerText = "Nahrávám...";
+            uploadBtn.innerText = "Zpracovávám a nahrávám...";
             
             const progressBar = document.getElementById('uploadProgress');
             const progressFill = document.getElementById('progressBarFill');
             progressBar.style.display = 'block';
 
-            const timestamp = new Date().getTime();
-            const filePath = 'soutez_fotky/' + timestamp + '_' + file.name;
-            const storageRef = storage.ref().child(filePath);
+            zmensitFotku(file, (compressedBlob) => {
+                const timestamp = new Date().getTime();
+                const filePath = 'soutez_fotky/' + timestamp + '_compressed.jpg';
+                const storageRef = storage.ref().child(filePath);
 
-            const uploadTask = storageRef.put(file);
+                const uploadTask = storageRef.put(compressedBlob);
 
-            uploadTask.on('state_changed', 
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    progressFill.style.width = progress + '%';
-                }, 
-                (error) => {
-                    console.error('Chyba při nahrávání:', error);
-                    alert('Nepodařilo se nahrát soubor: ' + error.message);
-                    resetUploadButton(uploadBtn, progressBar);
-                }, 
-                () => {
-                    uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                        ulozitInfoDoDB(popisek, downloadURL);
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        progressFill.style.width = progress + '%';
+                    }, 
+                    (error) => {
+                        console.error('Chyba při nahrávání:', error);
+                        alert('Nepodařilo se nahrát soubor: ' + error.message);
                         resetUploadButton(uploadBtn, progressBar);
-                    });
-                }
-            );
+                    }, 
+                    () => {
+                        uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                            ulozitInfoDoDB(popisek, downloadURL);
+                            resetUploadButton(uploadBtn, progressBar);
+                        });
+                    }
+                );
+            });
         }
 
         function ulozitInfoDoDB(popisek, url) {
