@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Kdo to bude?</title>
+	<link rel="icon" type="image/x-icon" href="https://i.imgur.com/UyU5bWX.png">
+	<a href="index.html"><img class="logo" src="https://i.imgur.com/bOEeFQy.png"></a>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+	<br>
+	<br>
+	<br>
+	<h1 id="casinonadpis">Kdo bude dnešní svině?</h1>
+	<br>
+	<br>
+	<FORM class="formakdo"NAME="WordForm">
+	<INPUT class="forma1"TYPE=TEXT SIZE=10 NAME="WordBox">
+	<br>
+	<br>
+	<p><INPUT class="tlacitkdo"TYPE=BUTTON VALUE="Kdo bude ta svině?" onClick="PickRandomWord(document.WordForm);" >
+	<input class="tlacitkdo"TYPE="reset" VALUE="Přejete si vyčistit?" onClick="clearForm(this.form)"></p>
+	<br>
+	<p class="buttonystred"><img class="backbutton" src="https://i.imgur.com/Dt6rr3J.png" onclick="window.location.href='loteria.html'">
+	<img class="homebutton" src="https://i.imgur.com/CyluEHt.png" onclick="window.location.href='index.html'"></p>
+
+</body>
+<script>
+var NumberOfWords = 28
+
+var words = new BuildArray(NumberOfWords)
+
+// Use the following variables to
+// define your random words:
+words[1] = "Apltauerová-Žáková Iveta"
+words[2] = "Bálintová Zuzana"
+words[3] = "Becková Eva"
+words[4] = "Berard Marion"
+words[5] = "Cekulová Adéla"
+words[6] = "Ciková Veronika"
+words[7] = "Corrigan Johana"
+words[8] = "Dankovičová Ludmila"
+words[9] = "Divišová Kateřina"
+words[10] = "Doleželová Marcela"
+words[11] = "Dopita Lukáš"
+words[12] = "Fojtík Jakub"
+words[13] = "Hádrová Lenka"
+words[14] = "Hájková Ivanka"
+words[15] = "Haluza Jakub"
+words[16] = "Hlaváček Josef"
+words[17] = "Hnilicová Michaela"
+words[18] = "Hnízdilová Hana"
+words[19] = "Chytilová Monika"
+words[20] = "Jančíková Marie"
+words[21] = "Jančíková Vendula"
+words[22] = "Jiříčková Pavla"
+words[23] = "Juráková Ivana"
+words[24] = "Klíč Bronislav"
+words[25] = "Kolařík Tomáš"
+words[26] = "Krahulcová Iveta"
+words[27] = "Krychtálková Kamila"
+words[28] = "Lakomá Šárka"
+words[29] = "Marek Michal"
+words[30] = "Marčan Libor"
+words[31] = "Marková Magdalena"
+words[32] = "Matoušek Lukáš"
+words[33] = "Mikulková Alena"
+words[34] = "Mlateček Ivan"
+words[35] = "Moudrá Renata"
+words[36] = "Müller Michal"
+words[37] = "Nečasová Jelena"
+words[38] = "Nevlud Pavel"
+words[39] = "Novotná Jana"
+words[40] = "Opavská Helena"
+words[41] = "Oříšková Hana"
+words[42] = "Pechová Ilona"
+words[43] = "Pospíšil Aleš"
+words[44] = "Procházka Aleš"
+words[45] = "Průšová Anna"
+words[46] = "Přibylová Petra "
+words[47] = "Přikrylová Dita"
+words[48] = "Raček Ondřej"
+words[49] = "Rašková Hana"
+words[50] = "Ropová Denisa"
+words[51] = "Ryšavá Lucie"
+words[52] = "Sadílková Zdeňka"
+words[53] = "Schwartzhoff Steven"
+words[54] = "Staňková Alena"
+words[55] = "Stýblová Radka"
+words[56] = "Střídecký František"
+words[57] = "Svobodová Gabriela "
+words[58] = "Svobodová Radka"
+words[59] = "Svozilová Helena"
+words[60] = "Šišková Jana"
+words[61] = "Škvařil Luděk"
+words[62] = "Šubert Radim"
+words[63] = "Valoušková Barbora"
+words[64] = "Vanča Jaromír"
+words[65] = "Volek René"
+
+
+function BuildArray(size){
+this.length = size
+for (var i = 1; i <= size; i++){
+this[i] = null}
+return this
+}
+
+function PickRandomWord(frm) {
+// Generate a random number between 1 and NumberOfWords
+var rnd = Math.ceil(Math.random() * NumberOfWords)
+
+// Display the word inside the text box
+frm.WordBox.value = words[rnd]
+}
+</script>
+</html>

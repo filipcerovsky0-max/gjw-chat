@@ -1,0 +1,22 @@
+body{
+	background-color: rgb(23, 32, 40);
+}
+.mlatasfotk{ 
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}
+#nadpis{
+	color: whitesmoke;
+	text-align: center;
+	font-size: 40px;
+	font-family: Lucida Handwriting;
+}
+.mlas{
+	text-align: center;
+	color: whitesmoke;
+	margin-right: auto;
+	margin-left: auto;
+	font-family: Papyrus;
+}
