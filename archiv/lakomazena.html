@@ -1,32 +1,57 @@
 <!DOCTYPE html>
-<html>
+<html lang="cs">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="icon" type="image/x-icon" href="https://i.imgur.com/UyU5bWX.png">
-	<title>LakomaZena</title>
-	<style>
-		body {
-			background-color: rgb(213, 216, 220);
-			font-family: Arial, Helvetica, sans-serif;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			height: 100vh;
-			margin: 0;
-		}
-		.msg {
-			font-size: 18px;
-			color: #333;
-			font-style: italic;
-			text-align: center;
-		}
-	</style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nedochováno</title>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .box {
+            background: #fff;
+            border: 1px solid #b0b0a8;
+            padding: 30px;
+            border-radius: 6px;
+            box-shadow: 2px 3px 6px rgba(0,0,0,0.08);
+            max-width: 400px;
+        }
+        p {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .retro-button {
+            background: #e2e8f0;
+            border: 1px solid #94a3b8;
+            padding: 8px 16px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #000;
+            border-radius: 3px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .retro-button:hover { 
+            background: #cbd5e1; 
+        }
+    </style>
 </head>
 <body>
-	<div class="msg">
-		<p>bohužel nedochovano :(</p>
-		<p><a href="index.html" style="color: #0000EE; font-size: 14px;">&laquo; Zpět na archiv</a></p>
-	</div>
+    <div class="box">
+        <p>bohužel toto se nam nedochovalo :(</p>
+        <a href="javascript:history.back()" class="retro-button">&laquo; Zpět</a>
+    </div>
 </body>
 </html>
