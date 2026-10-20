@@ -1,74 +1,96 @@
 <!DOCTYPE html>
-<html lang="cs">
+<!-- ty se jako divas do zdrojovyho kodu tos posral teda okamzite vypadni -->
+<html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archiv studenstva GJW</title>
-    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
-    <link rel="stylesheet" href="styles.css">
+	
+    <link rel="apple-touch-icon" sizes="180x180" href="https://i.imgur.com/ZpfZJ74.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://i.imgur.com/J8BmLLi.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://i.imgur.com/P2cmsxA.png">
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=0">
+	<title>Studenstvo GJW</title>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+	<script type="text/javascript" defer src="script.js"></script>
+	<meta content="#D5D8DC" data-react-helmet="true" name="theme-color" />
+	<meta name="description" content="komický stránec pro studenty a zamněstnance Gymnázia Jiřího Wolkera v Prostějově. Přijď se podívat!">
 </head>
 <body>
-    <!-- Horní návratová lišta na hlavní web -->
-    <p style="font-size: 11px;">
-        <a href="../" style="color: #0000EE; text-decoration: none;">&laquo; Zpět na nový portál GJW</a>
-    </p>
+	<p class="stred"><a href="https://gjwprostejov.com/archiv/"><img class="logo" src="https://i.imgur.com/QvqvK3M.png"></a></p>
+	<div class="stred">
+<p>
+<button class="hornipanel" onclick="window.location.href='https://gjwprostejov.com/archiv/nedochovalo.html'"><img src="https://i.imgur.com/c8lHe3s.png" width="13">Diskuze</button>
+<button class="hornipanel"  onclick="window.location.href='https://gjwprostejov.com/archiv/nedochovalo.html'"><img src="https://i.imgur.com/gi0d2SC.png" width="14">Fórum</button>
+</p>
+</div>
+	<hr class="oddeleni">
 
-    <p class="stred">
-        <a href="index.html"><img class="logo" src="https://i.imgur.com/QvqvK3M.png" alt="GJW Logo"></a>
-    </p>
-    <hr class="oddeleni">
-        
-    <div class="stred">
-        <h2 id="druhynadpis">Studenti GJW, Proletujte se! (Archiv)</h2>
-        
-        <p class="novinky">
-            <strong>19/4/22</strong> - Stále žijeme v archivu!<br>
-            <strong>18/4/22</strong> - Vážíme si toho, že nám posíláte fanouškovské stránky!<br>
-            <strong>8/4/22</strong> - Vanča na hrad!<br>
-            <strong>14/3/22</strong> - Sdílejte QR kódy, vytvářejte komunitu!
-        </p>
-    </div>
-    <hr class="oddeleni">
+	<h2 id="druhynadpis">Novinky</h2>
+			<p class="novinky"><strong>10/11/22</strong> - Chystáme zbrusu nový vzhled</p>
+		<p class="novinky"><strong>6/9/22</strong> - <a class="jaromil" href="https://gjwprostejov.com/archiv/polep.html"><b>NÁLEPKY KE STAŽENÍ</b></a> - Vytvoř s námi komunitu!</p>
+		<p class="novinky"><strong>1/9/22</strong> - Jsme zpátky!</p>
+		<p class="novinky"><strong>18/4/22</strong> - Vážíme si toho, že nám posílate <a class="jaromil" href="https://gjwprostejov.com/archiv/rozvodna.html">fanouškovské stránky!</a></p>
+	<br>
+	<hr class="oddeleni">
 
-    <h2 id="druhynadpis">Legendární fanouškovské stránky pedagogů</h2>
-    <p class="stred" style="line-height: 1.8;">
-        <a class="fanstranky" href="pablo.html">Pavel Nevlud</a> | 
-        <a class="fanstranky" href="mlatas.html">Ivan Mlateček</a> | 
-        <a class="fanstranky" href="barca.php">Barbora Valoušková</a> | 
-        <a class="fanstranky" href="krychel.html">Kamila Krychtálková</a> | 
-        <a class="fanstranky" href="beck.html">Eva Becková</a> | 
-        <a class="fanstranky" href="miler.html">Michal Müller</a> | 
-        <a class="fanstranky" href="marek.html">Michal Marek</a> | 
-        <a class="fanstranky" href="jaro.html">Jaromír</a> | 
-        <a class="fanstranky" href="blazena.html">Marcela Doleželová</a> | 
-        <a class="fanstranky" href="matosek.html">Lukáš Matoušek</a> | 
-        <a class="fanstranky" href="subert.html">Šubert</a> | 
-        <a class="fanstranky" href="nohavica.html">Nohavica</a> | 
-        <a class="fanstranky" href="lakomazena.html">Šárka Lakomá</a>
-    </p>
-    <hr class="oddeleni">
 
-    <h2 id="druhynadpis"><a class="fanstranky" href="memikoveobrazky.html">Memové obrázky</a></h2>
-    <p class="tady">Volný přístup k memovým obrázkům – klikni a podívej se</p>
-    <hr class="oddeleni">
 
-    <h2 id="druhynadpis"><a class="fanstranky" href="cestohlas.html">Zpravodaj & Cestohlas</a></h2>
-    <p class="tady">Svobodný přístup k informacím z historie portálu</p>
-    <hr class="oddeleni">
+	<h2 id="druhynadpis"><a id="druhynadpis" href="https://gjwprostejov.com/archiv/rozvodna.html"><img src="https://i.imgur.com/vxuW8Rj.png" width="19">Fanouškovské stránky pedagogů</a></h2>
+	<p class="tady">Co jste nám poslali</p>
+	<hr class="oddeleni">
 
-    <h2 id="druhynadpis"><a class="fanstranky" href="loteria.html">Loteria & Zkoušení</a></h2>
-    <p class="tady">Funkce tobě užitečné (předpovídač zkoušení, kámen nůžky papír)</p>
-    <hr class="oddeleni">
+	<h2 id="druhynadpis"><a id="druhynadpis" href="https://gjwprostejov.com/archiv/nedochovalo.html"><img src="https://i.imgur.com/gi0d2SC.png" width="19">Fórum</a></h2>
+	<p class="tady">Moderní celoškolské fórum</p>
+	<hr class="oddeleni">
 
-    <h2 id="druhynadpis"><a class="fanstranky" href="rozvodna.html">Rozvodna</a></h2>
-    <p class="tady">Rozvodna odkazující na všechny staré sekce</p>
-    <hr class="oddeleni">
+	<h2 id="druhynadpis"><a id="druhynadpis" href="https://gjwprostejov.com/archiv/zpravodaj/index.html"><img src="https://i.imgur.com/ZQuvgPm.png" width="19">Zpravodaj</a></h2>
+	<p class="tady">Svobodný přístup k infromacím</p>
+	<hr class="oddeleni">
+	
+	<h2 id="druhynadpis"><a id="druhynadpis" href="https://gjwprostejov.com/archiv/nedochovalo.html"><img src="https://i.imgur.com/c8lHe3s.png" width="19">Diskuzní Portál</a></h2>
+	<p class="tady">Chat pro celou školu</p>
+	<hr class="oddeleni">
+	
+	<h2 id="druhynadpis"><a id="druhynadpis" href="https://gjwprostejov.com/archiv/memikoveobrazky.html"><img src="https://i.imgur.com/abPFQdx.png" width="19">Memískové Obrázky</a></h2>
+	<p class="tady">Volný přístup k memovým obrázkům</p>
+	<hr class="oddeleni">
+	
+	<h2 id="druhynadpis"><a id="druhynadpis" href="https://gjwprostejov.com/archiv/nedochovalo.html"><img src="https://i.imgur.com/ate3KNa.png" width="19">Launchpad</a></h2>
+	<p class="tady">popřej svým učitelům pěkný den na jejich email</p>
+	<hr class="oddeleni">
 
-    <h2 id="druhynadpis"><a class="fanstranky" href="adminstvo.html">Adminstvo & Smluvní Podmínky</a></h2>
-    <p class="stred">Kdo za tím vším tehdy stál?</p>
-    
-    <hr class="oddeleni">	
-    <p class="stred" style="font-size: 13px;"><i>Vyrobeno v sauně Gymnázia Jiřího Wolkera 2007. Nekrademe žádné osobní údaje, zatím.</i></p>
-    <p class="stred" style="font-size: 11px; color: #666;"><a href="../" style="color: #666; text-decoration: underline;">&laquo; Zpět na hlavní novodobý portál GJW</a></p>
+	<h2 id="druhynadpis"><a onclick="loteria()" id="druhynadpis" href="https://gjwprostejov.com/archiv/loteria.html"><img src="https://i.imgur.com/Apc1eyS.png" width="19">Loteria</a></h2>
+	<p class="tady">Zábavné a interaktivní aktivity</p>
+	<hr class="oddeleni">
+
+	<h2 id="druhynadpis"><a id="druhynadpis" href="https://gjwprostejov.com/archiv/tobeuzitecne.html"><img src="https://i.imgur.com/RiPIC7E.png" width="19">Funkce tobě užitečný</a></h2>
+		<p class="tady">Nástroje pro tvůj užitek</p>
+
+	<hr class="oddeleni">
+	
+	
+
+	<h2 id="druhynadpis">Informácie</h2>
+	<p class="dva">Máš nějaké informace které chceš zveřejnit? pošli je na mail <br> Kontaktuj nás na <strong><a style="color: black;" href="mailto:adminstvo@gjwpv.cz">adminstvo@gjwpv.cz</a></strong></p>
+	
+
+	<h2 id="mininadpis"><a id="mininadpis" href="https://gjwprostejov.com/archiv/adminstvo.html"><img src="https://i.imgur.com/wTOw3uT.png" width="13">Adminstvo</a></h2>
+	<hr class="minioddeleni">
+	<h2 id="mininadpis"><a id="mininadpis" href="https://creativecommons.org/licenses/by/4.0/"><img src="https://i.imgur.com/BHls5El.png" width="13">Licence</a></h2>
+	<hr class="minioddeleni">
+	<h2 id="mininadpis"><a id="mininadpis" href="https://gjwprostejov.com/archiv/zpravodaj/proc.html"><img src="https://i.imgur.com/MFrBGJy.png" width="13">Je stránka pomalá?</a></h2>
+
+
+	<p class="stred"><button onclick="tmavyrezim()" class="tmavetlacitko">Tmavý režim</button></p>
+	
+
+	<hr class="oddeleni">
+	
+
+
+  <p style="font-size: 13px;" ><i>Vyrobeno v sauně Gymnázia Jiřího Wolkera 2007. Neukládáme žádná osobní data, zatím.</i></p>
+
+
+
 </body>
+
 </html>

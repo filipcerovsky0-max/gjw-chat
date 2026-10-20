@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Co to bude?</title>
+	<link rel="icon" type="image/x-icon" href="https://i.imgur.com/UyU5bWX.png">
+	<a href="https://gjwprostejov.com/archiv/"><img class="logo" src="https://i.imgur.com/bOEeFQy.png"></a>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+	<br>
+	<br>
+	<br>
+	<h1 id="casinonadpis">Co dnes dostaneš jako domácí úkol?</h1>
+	<br>
+	<br>
+	<FORM class="formakdo"NAME="WordForm">
+	<INPUT class="forma2"TYPE=TEXT SIZE=10 NAME="WordBox">
+	<br>
+	<br>
+	<p><INPUT class="tlacitkdo"TYPE=BUTTON VALUE="Co to bude?" onClick="PickRandomWord(document.WordForm);" >
+	<input class="tlacitkdo"TYPE="reset" VALUE="Přejete si vyčistit?" onClick="clearForm(this.form)"></p>
+	<br>
+	<p class="buttonystred"><img class="backbutton" src="https://i.imgur.com/Dt6rr3J.png" onclick="window.location.href='https://gjwprostejov.com/archiv/loteria.html'">
+	<img class="homebutton" src="https://i.imgur.com/CyluEHt.png" onclick="window.location.href='https://gjwprostejov.com/archiv/'"></p>
+
+</body>
+<script>
+var NumberOfWords = 28
+
+var words = new BuildArray(NumberOfWords)
+
+// Use the following variables to
+// define your random words:
+words[1] = "Naučit se nazpaměť Korán"
+words[2] = "Obsadit Portugalsko"
+words[3] = "Referát na historii Sovětského Svazu"
+words[4] = "Upéct chléb"
+words[5] = "Naučit se zumbu"
+words[6] = "Nastavit monarchii v českých zemích"
+words[7] = "Naučit se nazpaměť hymnu Mongolska"
+words[8] = "Relaxovat"
+words[9] = "Naučit se nazpaměť celou diskografii Radiohead"
+words[10] = "Spáchat atentát na dánskou královnu"
+words[11] = "Vytvořit termonukleární zbraň"
+words[12] = "Vypočítat objem obou budov dvojčat"
+words[13] = "Sepsat scénář pro Breaking Bad 2"
+words[14] = "Autoportrét třídního pedagoga"
+words[15] = "Zaplavit kuchyň olejem"
+words[16] = "Přečíst starý zákon bible"
+words[17] = "Vypsat jména všech politických vězňů NDR (1950-1989)"
+words[18] = "Autoportrét oblíbené uklízečky"
+words[19] = "Naučit se nazpaměť celou diskografii Hany Zagorové"
+words[20] = "Zahájit masovou demonstraci na Náměstí T.G.M. v Prostějově"
+words[21] = "Upéct bábovku"
+words[22] = "Získat občanství v Brazílii"
+words[23] = "Vypít motor z oleje"
+words[24] = "Jít s broňou na pivo"
+words[25] = "Uvařit heřmánkový čaj"
+words[26] = "Rozmlátit vytrínu papírnictví"
+words[27] = "Rozprodat mikroskopy z učebny biologie"
+words[28] = "Jít na toaletu s panem Marčanem"
+words[29] = "Masivně spláchnout rajčata"
+words[30] = "Vytrhnout spolužákov ioka msdcmcxn zub (bez umrtvení)"
+words[31] = "Vyhrát cenu prestižního spoluobčana (1938)"
+words[32] = "Strhnout sochu T.G.M. na náměstí - Nahradit Alenou Raškovou"
+words[33] = "Uvařit čočku"
+words[34] = "Zakoupit 400akcií agrostroje"
+words[35] = "Políbit Adélu Cekulovou"
+words[36] = "Jít s Marcelou Doleželovou na kafíčko"
+words[37] = "Vylít srnčí guláš na dveře kabinetu zeměpisu"
+words[38] = "Sníst plutonium"
+words[39] = "Upoutat na sebe pozornost policie ČR"
+words[40] = "Vysrat hovna na protest"
+words[41] = "Roztloukat oříšky uchem"
+words[42] = "Rajčatový protlak"
+words[43] = "afchkabsd hjvasiudbv ahsdgvfkyuweagsv CIFytawegshfcv auSCDV"
+words[44] = "Vypít vodu z akvária"
+words[45] = "Osamostatnit moravu"
+words[46] = "Znovuspojit Osmanskou říši"
+words[47] = "Rozmlátit kabinet pana Vředitele"
+words[48] = "Pokud vám v posledních dnech přišel do schránky e-mail, ve kterém jste vyžádáni abyste potvrdili svou e-mailovou adresu, protože se prochází upgradem nového serveru,  tak prosím na nic v tomto"
+words[49] = "Hovado"
+words[50] = "Stát se ropným magnátem"
+words[51] = "Sníst magnety"
+words[52] = "Objevit objevení"
+words[53] = "Kalendář z uhlí"
+words[54] = "NAHÉ ŽENY HLEDAT"
+words[55] = "Pozvat paní kuchařku k sobě domů na vínko a čoko"
+words[56] = "Rozmlátit strop v aule"
+words[57] = "Rozmlátit aulu"
+words[58] = "Defenestrovat tři učitele volného výběru"
+words[59] = "Řvát SEX v aule"
+words[60] = "Uškvařit pana Škvařila"
+words[61] = "Vykoupit školu"
+words[62] = "Vytopit školu"
+words[63] = "Vyhořet školu"
+words[64] = "Nukleární destrukce areálu školy"
+words[65] = "Defragmentace všech disků v IT učebně"
+
+
+function BuildArray(size){
+this.length = size
+for (var i = 1; i <= size; i++){
+this[i] = null}
+return this
+}
+
+function PickRandomWord(frm) {
+// Generate a random number between 1 and NumberOfWords
+var rnd = Math.ceil(Math.random() * NumberOfWords)
+
+// Display the word inside the text box
+frm.WordBox.value = words[rnd]
+}
+</script>
+</html>

@@ -1,0 +1,7 @@
+{
+  "routes": [
+    { "src": "^/archiv$", "status": 308, "headers": { "Location": "/archiv/" } },
+    { "handle": "filesystem" },
+    { "src": "/archiv/(.*)", "status": 404, "dest": "/archiv/404.html" }
+  ]
+}

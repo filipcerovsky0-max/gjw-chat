@@ -10,6 +10,7 @@ function tmavyrezim() {
   console.log("Alert uspesne zobrazen")
   var element = document.body;
   element.classList.toggle("dark-mode");
+  
 }
 function loteria() {
   console.log("Alert uspesne zobrazen")
