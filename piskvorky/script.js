@@ -163,7 +163,7 @@ function startVotingSession(matchId, oppId, oppName) {
     document.getElementById('lobbySection').style.display = 'none';
     document.getElementById('voteModal').style.display = 'flex';
 
-    let timeLeft = 5;
+    let timeLeft = 10; // Zde nastaveno 10 sekund na hlasování
     document.getElementById('voteTimerText').innerText = `Vyber obtížnost (zbývá ${timeLeft}s):`;
 
     clearInterval(votingTimer);
@@ -175,6 +175,14 @@ function startVotingSession(matchId, oppId, oppName) {
             submitVote();
         }
     }, 1000);
+
+    db.ref(`piskvorky/matches/${matchId}`).on('value', (snapshot) => {
+        const m = snapshot.val();
+        if (m && m.status === 'ready' && m.chosenMode) {
+            db.ref(`piskvorky/matches/${matchId}`).off();
+            proceedToGame(matchId, m.chosenMode);
+        }
+    });
 }
 
 function submitVote() {
@@ -183,75 +191,106 @@ function submitVote() {
     document.getElementById('voteModal').style.display = 'none';
 
     db.ref(`piskvorky/matches/${activeGameId}/votes/${myId}`).set(mode).then(() => {
-        db.ref(`piskvorky/matches/${activeGameId}/votes`).once('value', (snapshot) => {
-            const votes = snapshot.val() || {};
+        db.ref(`piskvorky/matches/${activeGameId}`).once('value', (snapshot) => {
+            const match = snapshot.val();
+            if (!match || match.status !== 'voting') return;
+
+            const votes = match.votes || {};
             const voteValues = Object.values(votes);
             if (voteValues.length === 2 && !voteValues.includes(null)) {
-                evaluateVotes(votes, activeGameId);
+                if (match.player1 === myId) {
+                    evaluateAndResolveVotes(match, activeGameId);
+                }
             }
         });
     });
-
-    db.ref(`piskvorky/matches/${activeGameId}/votes`).on('value', (snapshot) => {
-        const votes = snapshot.val() || {};
-        const voteValues = Object.values(votes);
-        if (voteValues.length === 2 && !voteValues.includes(null)) {
-            db.ref(`piskvorky/matches/${activeGameId}/votes`).off();
-            evaluateVotes(votes, activeGameId);
-        }
-    });
 }
 
-function evaluateVotes(votes, matchId) {
-    const vals = Object.values(votes);
+function evaluateAndResolveVotes(match, matchId) {
+    const vals = Object.values(match.votes);
     let chosenMode = 'easy';
 
     if (vals[0] === vals[1]) {
         chosenMode = vals[0];
-        initRealGame(matchId, chosenMode);
+        db.ref(`piskvorky/matches/${matchId}`).update({
+            status: 'ready',
+            chosenMode: chosenMode
+        });
     } else {
-        document.getElementById('voteModal').style.display = 'none';
-        document.getElementById('lotteryModal').style.display = 'flex';
-        
-        let counter = 0;
-        const interval = setInterval(() => {
-            counter++;
-            const tempMode = counter % 2 === 0 ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
-            document.getElementById('lotteryResultText').innerText = tempMode;
-            if (counter > 10) {
-                clearInterval(interval);
-                const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
-                document.getElementById('lotteryResultText').innerText = finalMode === 'easy' ? '🎉 Jednodušší (3x3)' : '🔥 Těžší (15x15)';
-                setTimeout(() => {
-                    document.getElementById('lotteryModal').style.display = 'none';
-                    initRealGame(matchId, finalMode);
-                }, 1500);
-            }
-        }, 150);
+        db.ref(`piskvorky/matches/${matchId}`).update({ status: 'lottery' });
+        triggerLotteryAnimation(matchId);
     }
 }
 
-function initRealGame(matchId, mode) {
+db.ref('piskvorky/matches').on('child_changed', (snapshot) => {
+    const match = snapshot.val();
+    const matchId = snapshot.key;
+    if (activeGameId === matchId && match.status === 'lottery' && document.getElementById('lotteryModal').style.display !== 'flex') {
+        document.getElementById('voteModal').style.display = 'none';
+        document.getElementById('lotteryModal').style.display = 'flex';
+        runLotteryVisuals();
+    }
+});
+
+function triggerLotteryAnimation(matchId) {
+    document.getElementById('voteModal').style.display = 'none';
+    document.getElementById('lotteryModal').style.display = 'flex';
+    runLotteryVisuals();
+
+    // 3 sekundy trvající animace losování
+    setTimeout(() => {
+        const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
+        db.ref(`piskvorky/matches/${matchId}`).update({
+            status: 'ready',
+            chosenMode: finalMode
+        });
+    }, 3000);
+}
+
+function runLotteryVisuals() {
+    let counter = 0;
+    const interval = setInterval(() => {
+        counter++;
+        const tempMode = counter % 2 === 0 ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
+        document.getElementById('lotteryResultText').innerText = tempMode;
+        if (counter >= 12) { // 12 * 250ms = 3 sekundy
+            clearInterval(interval);
+        }
+    }, 250);
+}
+
+function proceedToGame(matchId, mode) {
+    document.getElementById('voteModal').style.display = 'none';
+    document.getElementById('lotteryModal').style.display = 'none';
+    document.getElementById('inviteModal').style.display = 'none';
+
     boardSize = mode === 'easy' ? 3 : 15;
     winLength = mode === 'easy' ? 3 : 5;
 
-    const toss = Math.random() < 0.5;
-    const p1 = toss ? myId : opponentId;
-    const p2 = toss ? opponentId : myId;
+    db.ref(`piskvorky/games/${matchId}`).once('value', (snap) => {
+        if (!snap.exists()) {
+            db.ref(`piskvorky/matches/${matchId}`).once('value', (mSnap) => {
+                const mData = mSnap.val();
+                const toss = Math.random() < 0.5;
+                const p1 = toss ? mData.player1 : mData.player2;
+                const p2 = toss ? mData.player2 : mData.player1;
 
-    db.ref(`piskvorky/games/${matchId}`).set({
-        boardSize: boardSize,
-        winLength: winLength,
-        board: new Array(boardSize * boardSize).fill(''),
-        turn: p1,
-        player1: { id: p1, symbol: 'X' },
-        player2: { id: p2, symbol: 'O' },
-        status: 'playing',
-        rematchVotes: { [myId]: false, [opponentId]: false }
+                db.ref(`piskvorky/games/${matchId}`).set({
+                    boardSize: boardSize,
+                    winLength: winLength,
+                    board: new Array(boardSize * boardSize).fill(''),
+                    turn: p1,
+                    player1: { id: p1, symbol: 'X' },
+                    player2: { id: p2, symbol: 'O' },
+                    status: 'playing',
+                    rematchVotes: { [mData.player1]: false, [mData.player2]: false }
+                });
+
+                db.ref(`piskvorky/lobby/${mData.player1}/status`).set('playing');
+                db.ref(`piskvorky/lobby/${mData.player2}/status`).set('playing');
+            });
+        }
     });
-
-    db.ref(`piskvorky/lobby/${myId}/status`).set('playing');
-    db.ref(`piskvorky/lobby/${opponentId}/status`).set('playing');
 
     setupGameUI();
 }
@@ -503,5 +542,7 @@ function exitGame() {
         chatListenerRegistered = false;
     }
     document.getElementById('gameSection').style.display = 'none';
+    document.getElementById('voteModal').style.display = 'none';
+    document.getElementById('lotteryModal').style.display = 'none';
     document.getElementById('lobbySection').style.display = 'block';
 }
