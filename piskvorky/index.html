@@ -46,10 +46,6 @@
                 <option value="4.A">4.A</option>
                 <option value="4.B">4.B</option>
             </select>
-            <select id="gameModeSelect">
-                <option value="easy">Jednodušší (3x3, spoj 3)</option>
-                <option value="hard">Těžší (15x15, spoj 5)</option>
-            </select>
             <button class="btn primary" onclick="joinLobby()">Vstoupit do hry</button>
         </div>
 
@@ -57,7 +53,7 @@
         <div id="lobbySection" class="card" style="display: none;">
             <div class="user-info">
                 <span>Hraješ jako: <strong id="currentNickname"></strong></span>
-                <button class="btn small" onclick="leaveLobby">Odhlásit</button>
+                <button class="btn small" onclick="leaveLobby()">Odhlásit</button>
             </div>
             
             <div class="lobby-grid">
@@ -72,7 +68,7 @@
             </div>
         </div>
 
-        <!-- KROK 3: VÝZVA (MODAL / PŘIJMUTÍ) -->
+        <!-- KROK 3: VÝZVA (PŘIJMUTÍ) -->
         <div id="inviteModal" class="modal" style="display: none;">
             <div class="modal-content">
                 <h3>Máš novou výzvu!</h3>
@@ -84,15 +80,37 @@
             </div>
         </div>
 
+        <!-- KROK 3.5: HLASOVÁNÍ O OBTÍŽNOSTI (5s) -->
+        <div id="voteModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Hlasování o obtížnosti</h3>
+                <p id="voteTimerText">Vyber obtížnost (zbývá 5s):</p>
+                <select id="voteModeSelect">
+                    <option value="easy">Jednodušší (3x3, spoj 3)</option>
+                    <option value="hard">Těžší (15x15, spoj 5)</option>
+                </select>
+                <button class="btn primary" onclick="submitVote()" style="margin-top: 10px;">Zahlasovat</button>
+            </div>
+        </div>
+
+        <!-- KROK 3.6: LOTERIE (KRYTÍ REMÍZY 1/1) -->
+        <div id="lotteryModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>🎰 Školní Loterie 🎰</h3>
+                <p>Hlasy byly 1:1! Losujeme mód hry...</p>
+                <h2 id="lotteryResultText" style="color: #b30000; margin: 20px 0;">Losuji...</h2>
+            </div>
+        </div>
+
         <!-- KROK 4: HERNÍ PLOCHA A CHAT -->
         <div id="gameSection" style="display: none;">
             <div class="game-header">
                 <div class="match-info">
                     <span id="opponentInfo">Soupeř: -</span> | 
-                    <span id="mySymbol">Tento symbol: -</span> | 
+                    <span id="mySymbol">Symbol: -</span> | 
                     <span id="turnIndicator">Na tahu: -</span>
                 </div>
-                <div id="coinTossInfo" class="coin-toss">Hod mincí...</div>
+                <div id="coinTossInfo">Hod mincí...</div>
             </div>
 
             <div class="game-container">
@@ -102,7 +120,7 @@
                     <div id="rematchContainer" style="display: none; margin-top: 15px;">
                         <button id="rematchBtn" class="btn secondary" onclick="requestRematch()">Požádat o odvetu (0/2)</button>
                     </div>
-                    <button class="btn danger" onclick="surrenderGame()" style="margin-top: 10px;">Vzdat hru / Odejít</button>
+                    <button class="btn danger" onclick="surrenderGame()" style="margin-top: 10px; width: 100%;">Vzdat hru / Odejít</button>
                 </div>
 
                 <!-- INGAME CHAT + QUICK EMOJIS -->

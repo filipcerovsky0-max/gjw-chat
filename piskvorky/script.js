@@ -5,19 +5,18 @@ const db = firebase.database();
 let myId = 'user_' + Math.random().toString(36).substr(2, 9);
 let myNickname = '';
 let myClass = '';
-let currentMode = 'easy';
 let activeGameId = null;
-let mySymbol = ''; 
+let mySymbol = '';
 let opponentId = null;
 let opponentName = '';
 let myTurn = false;
 let boardSize = 3;
 let winLength = 3;
+let chatListenerRegistered = false;
 
 function joinLobby() {
     const nameInput = document.getElementById('playerName').value.trim();
     const classInput = document.getElementById('playerClass').value;
-    const modeSelect = document.getElementById('gameModeSelect').value;
 
     if (!nameInput) {
         alert('Zadej prosím svou přezdívku!');
@@ -26,9 +25,6 @@ function joinLobby() {
 
     myNickname = nameInput;
     myClass = classInput;
-    currentMode = modeSelect;
-    boardSize = currentMode === 'easy' ? 3 : 15;
-    winLength = currentMode === 'easy' ? 3 : 5;
 
     document.getElementById('currentNickname').innerText = `${myNickname} ${myClass ? '(' + myClass + ')' : ''}`;
     document.getElementById('loginSection').style.display = 'none';
@@ -38,7 +34,6 @@ function joinLobby() {
     userRef.set({
         name: myNickname,
         class: myClass,
-        mode: currentMode,
         status: 'idle',
         timestamp: firebase.database.ServerValue.TIMESTAMP
     });
@@ -47,6 +42,11 @@ function joinLobby() {
     listenLobby();
     listenInvites();
     listenLeaderboard();
+}
+
+function leaveLobby() {
+    db.ref(`piskvorky/lobby/${myId}`).remove();
+    location.reload();
 }
 
 function listenLobby() {
@@ -65,7 +65,7 @@ function listenLobby() {
             div.className = 'player-item';
             
             const infoSpan = document.createElement('span');
-            infoSpan.innerText = `${u.name} ${u.class ? '(' + u.class + ')' : ''} [${u.mode === 'easy' ? '3x3' : '15x15'}]`;
+            infoSpan.innerText = `${u.name} ${u.class ? '(' + u.class + ')' : ''}`;
             
             const btn = document.createElement('button');
             btn.className = 'btn small primary';
@@ -92,10 +92,7 @@ function listenLobby() {
 function sendInvite(targetId, targetName) {
     db.ref(`piskvorky/invites/${targetId}`).set({
         fromId: myId,
-        fromName: myNickname,
-        mode: currentMode,
-        boardSize: boardSize,
-        winLength: winLength
+        fromName: myNickname
     });
     alert(`Výzva byla odeslána hráči ${targetName}. Čeká se na odpověď...`);
 }
@@ -109,7 +106,7 @@ function listenInvites() {
         }
 
         window.currentInvite = invite;
-        document.getElementById('inviteText').innerText = `${invite.fromName} tě vyzval na souboj (${invite.boardSize === 3 ? 'Jednodušší 3x3' : 'Těžší 15x15'})!`;
+        document.getElementById('inviteText').innerText = `${invite.fromName} tě vyzval na souboj v piškvorkách!`;
         document.getElementById('inviteModal').style.display = 'flex';
     });
 }
@@ -119,31 +116,21 @@ function acceptInvite() {
     if (!invite) return;
 
     db.ref(`piskvorky/invites/${myId}`).remove();
+    document.getElementById('inviteModal').style.display = 'none';
 
-    const gameId = 'game_' + Math.random().toString(36).substr(2, 9);
-    const toss = Math.random() < 0.5;
-    const player1Symbol = toss ? 'X' : 'O';
-    const player2Symbol = toss ? 'O' : 'X';
-    const starterId = toss ? myId : invite.fromId;
-
-    const totalCells = invite.boardSize * invite.boardSize;
-    const initialBoard = new Array(totalCells).fill('');
-
-    db.ref(`piskvorky/games/${gameId}`).set({
-        boardSize: invite.boardSize,
-        winLength: invite.winLength,
-        board: initialBoard,
-        turn: starterId,
-        player1: { id: invite.fromId, symbol: player1Symbol },
-        player2: { id: myId, symbol: player2Symbol },
-        status: 'playing',
-        rematchVotes: { [invite.fromId]: false, [myId]: false }
+    // Vytvoření relace pro hlasování
+    const matchId = 'match_' + Math.random().toString(36).substr(2, 9);
+    db.ref(`piskvorky/matches/${matchId}`).set({
+        player1: invite.fromId,
+        player2: myId,
+        votes: {
+            [invite.fromId]: null,
+            [myId]: null
+        },
+        status: 'voting'
     });
 
-    db.ref(`piskvorky/lobby/${myId}/status`).set('playing');
-    db.ref(`piskvorky/lobby/${invite.fromId}/status`).set('playing');
-
-    setupGame(gameId, invite.fromId, invite.fromName, invite.boardSize, invite.winLength);
+    startVotingSession(matchId, invite.fromId, invite.fromName);
 }
 
 function rejectInvite() {
@@ -151,47 +138,174 @@ function rejectInvite() {
     document.getElementById('inviteModal').style.display = 'none';
 }
 
-db.ref('piskvorky/games').on('child_added', (snapshot) => {
-    const game = snapshot.val();
-    const gameId = snapshot.key;
+// Sledování vytvořených zápasů (pokud mě někdo vyzval a já přijal přes notifikaci)
+db.ref('piskvorky/matches').on('child_added', (snapshot) => {
+    const match = snapshot.val();
+    const matchId = snapshot.key;
     if (activeGameId) return;
 
-    if (game.player1.id === myId || game.player2.id === myId) {
-        const opp = game.player1.id === myId ? game.player2 : game.player1;
-        db.ref(`piskvorky/lobby/${opp.id}/name`).once('value', (snap) => {
+    if ((match.player1 === myId || match.player2 === myId) && match.status === 'voting') {
+        const oppId = match.player1 === myId ? match.player2 : match.player1;
+        db.ref(`piskvorky/lobby/${oppId}/name`).once('value', (snap) => {
             const oppName = snap.val() || 'Soupeř';
-            setupGame(gameId, opp.id, oppName, game.boardSize, game.winLength);
+            if (document.getElementById('voteModal').style.display !== 'flex' && document.getElementById('gameSection').style.display !== 'block') {
+                startVotingSession(matchId, oppId, oppName);
+            }
         });
     }
 });
 
-function setupGame(gameId, oppId, oppName, bSize, wLen) {
-    activeGameId = gameId;
+let votingTimer = null;
+function startVotingSession(matchId, oppId, oppName) {
     opponentId = oppId;
     opponentName = oppName;
-    boardSize = bSize;
-    winLength = wLen;
+    activeGameId = matchId;
 
     document.getElementById('lobbySection').style.display = 'none';
+    document.getElementById('voteModal').style.display = 'flex';
+
+    let timeLeft = 5;
+    document.getElementById('voteTimerText').innerText = `Vyber obtížnost (zbývá ${timeLeft}s):`;
+
+    clearInterval(votingTimer);
+    votingTimer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('voteTimerText').innerText = `Vyber obtížnost (zbývá ${timeLeft}s):`;
+        if (timeLeft <= 0) {
+            clearInterval(votingTimer);
+            submitVote(); // Automatické odeslání hlasu při vypršení času
+        }
+    }, 1000);
+}
+
+function submitVote() {
+    clearInterval(votingTimer);
+    const mode = document.getElementById('voteModeSelect').value;
+    document.getElementById('voteModal').style.display = 'none';
+
+    db.ref(`piskvorky/matches/${activeGameId}/votes/${myId}`).set(mode).then(() => {
+        // Kontrola, zda již oba hlasovali
+        db.ref(`piskvorky/matches/${activeGameId}/votes`).once('value', (snapshot) => {
+            const votes = snapshot.val() || {};
+            const voteValues = Object.values(votes);
+            if (voteValues.length === 2 && !voteValues.includes(null)) {
+                evaluateVotes(votes, activeGameId);
+            }
+        });
+    });
+
+    // Sledování hlasů soupeře
+    db.ref(`piskvorky/matches/${activeGameId}/votes`).on('value', (snapshot) => {
+        const votes = snapshot.val() || {};
+        const voteValues = Object.values(votes);
+        if (voteValues.length === 2 && !voteValues.includes(null)) {
+            db.ref(`piskvorky/matches/${activeGameId}/votes`).off();
+            evaluateVotes(votes, activeGameId);
+        }
+    });
+}
+
+function evaluateVotes(votes, matchId) {
+    const vals = Object.values(votes);
+    let chosenMode = 'easy';
+
+    if (vals[0] === vals[1]) {
+        chosenMode = vals[0];
+        initRealGame(matchId, chosenMode);
+    } else {
+        // Remíza 1/1 -> Spustit loterii
+        document.getElementById('voteModal').style.display = 'none';
+        document.getElementById('lotteryModal').style.display = 'flex';
+        
+        let counter = 0;
+        const interval = setInterval(() => {
+            counter++;
+            const tempMode = counter % 2 === 0 ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
+            document.getElementById('lotteryResultText').innerText = tempMode;
+            if (counter > 10) {
+                clearInterval(interval);
+                const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
+                document.getElementById('lotteryResultText').innerText = finalMode === 'easy' ? '🎉 Jednodušší (3x3)' : '🔥 Těžší (15x15)';
+                setTimeout(() => {
+                    document.getElementById('lotteryModal').style.display = 'none';
+                    initRealGame(matchId, finalMode);
+                }, 1500);
+            }
+        }, 150);
+    }
+}
+
+function initRealGame(matchId, mode) {
+    boardSize = mode === 'easy' ? 3 : 15;
+    winLength = mode === 'easy' ? 3 : 5;
+
+    const toss = Math.random() < 0.5;
+    const p1 = toss ? myId : opponentId;
+    const p2 = toss ? opponentId : myId;
+
+    db.ref(`piskvorky/games/${matchId}`).set({
+        boardSize: boardSize,
+        winLength: winLength,
+        board: new Array(boardSize * boardSize).fill(''),
+        turn: p1,
+        player1: { id: p1, symbol: 'X' },
+        player2: { id: p2, symbol: 'O' },
+        status: 'playing',
+        rematchVotes: { [myId]: false, [opponentId]: false }
+    });
+
+    db.ref(`piskvorky/lobby/${myId}/status`).set('playing');
+    db.ref(`piskvorky/lobby/${opponentId}/status`).set('playing');
+
+    setupGameUI();
+}
+
+// Sledování zahájení skutečné hry
+db.ref('piskvorky/games').on('child_added', (snapshot) => {
+    const game = snapshot.val();
+    const gameId = snapshot.key;
+    if (activeGameId === gameId && document.getElementById('gameSection').style.display === 'block') return;
+
+    if (game && (game.player1.id === myId || game.player2.id === myId)) {
+        activeGameId = gameId;
+        boardSize = game.boardSize;
+        winLength = game.winLength;
+        const opp = game.player1.id === myId ? game.player2 : game.player1;
+        
+        db.ref(`piskvorky/lobby/${opp.id}/name`).once('value', (snap) => {
+            opponentId = opp.id;
+            opponentName = snap.val() || 'Soupeř';
+            setupGameUI();
+        });
+    }
+});
+
+function setupGameUI() {
+    document.getElementById('lobbySection').style.display = 'none';
+    document.getElementById('voteModal').style.display = 'none';
+    document.getElementById('lotteryModal').style.display = 'none';
     document.getElementById('inviteModal').style.display = 'none';
     document.getElementById('gameSection').style.display = 'block';
     document.getElementById('opponentInfo').innerText = `Soupeř: ${opponentName}`;
 
     buildBoardUI();
     listenGame();
-    listenChat();
+    if (!chatListenerRegistered) {
+        listenChat();
+        chatListenerRegistered = true;
+    }
 }
 
 function buildBoardUI() {
     const boardEl = document.getElementById('gameBoard');
     boardEl.innerHTML = '';
-    boardEl.style.gridTemplateColumns = `repeat(${boardSize}, ${boardSize === 3 ? '80px' : '30px'})`;
-    boardEl.style.gridTemplateRows = `repeat(${boardSize}, ${boardSize === 3 ? '80px' : '30px'})`;
+    boardEl.style.gridTemplateColumns = `repeat(${boardSize}, ${boardSize === 3 ? '75px' : '26px'})`;
+    boardEl.style.gridTemplateRows = `repeat(${boardSize}, ${boardSize === 3 ? '75px' : '26px'})`;
 
     for (let i = 0; i < boardSize * boardSize; i++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
-        if(boardSize !== 3) cell.style.fontSize = '14px';
+        if(boardSize !== 3) cell.style.fontSize = '12px';
         cell.dataset.index = i;
         cell.onclick = () => makeMove(i);
         boardEl.appendChild(cell);
@@ -201,18 +315,22 @@ function buildBoardUI() {
 function listenGame() {
     db.ref(`piskvorky/games/${activeGameId}`).on('value', (snapshot) => {
         const game = snapshot.val();
-        if (!game) return;
+        if (!game) {
+            // Soupeř opustil hru / zrušil ji
+            alert('Soupeř opustil hru!');
+            exitGame();
+            return;
+        }
 
         mySymbol = game.player1.id === myId ? game.player1.symbol : game.player2.symbol;
-        document.getElementById('mySymbol').innerText = `Tvůj symbol: ${mySymbol}`;
+        document.getElementById('mySymbol').innerText = `Symbol: ${mySymbol}`;
 
         myTurn = game.turn === myId;
         document.getElementById('turnIndicator').innerText = myTurn ? 'Na tahu: TY' : `Na tahu: ${opponentName}`;
-        document.getElementById('coinTossInfo').innerText = `Hra spuštěna! Symboly rozděleny mincí.`;
 
         const cells = document.querySelectorAll('.cell');
         game.board.forEach((val, idx) => {
-            cells[idx].innerText = val;
+            if(cells[idx]) cells[idx].innerText = val;
         });
 
         if (game.status === 'won') {
@@ -303,7 +421,7 @@ function listenLeaderboard() {
         list.forEach((item, idx) => {
             const div = document.createElement('div');
             div.className = 'player-item';
-            div.innerHTML = `<span>${idx + 1}. ${item.name}</span><strong>${item.count} výher v řadě</strong>`;
+            div.innerHTML = `<span>${idx + 1}. ${item.name}</span><strong>${item.count} výher</strong>`;
             lbEl.appendChild(div);
         });
         if (list.length === 0) {
@@ -337,6 +455,7 @@ function resetGameForRematch() {
     });
 }
 
+// Opravený chat (zabraňuje duplicitnímu přidávání zpráv)
 function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
@@ -363,9 +482,10 @@ function handleChatKeyPress(e) {
 }
 
 function listenChat() {
+    const chatEl = document.getElementById('chatMessages');
+    chatEl.innerHTML = ''; // Vyčištění pro zamezení duplicit
     db.ref(`piskvorky/chats/${activeGameId}`).on('child_added', (snapshot) => {
         const msg = snapshot.val();
-        const chatEl = document.getElementById('chatMessages');
         const div = document.createElement('div');
         div.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text}`;
         chatEl.appendChild(div);
@@ -375,17 +495,19 @@ function listenChat() {
 
 function surrenderGame() {
     if (confirm('Opravdu chceš hru vzdát?')) {
-        db.ref(`piskvorky/games/${activeGameId}/status`).set('won');
-        db.ref(`piskvorky/games/${activeGameId}/winner`).set(opponentId);
-        recordWinStreak(opponentId);
+        if(activeGameId) {
+            db.ref(`piskvorky/games/${activeGameId}`).remove(); // Smazání hry kickne druhého hráče zpět do lobby
+        }
         exitGame();
     }
 }
 
 function exitGame() {
     if (activeGameId) {
+        db.ref(`piskvorky/games/${activeGameId}`).remove();
         db.ref(`piskvorky/lobby/${myId}/status`).set('idle');
         activeGameId = null;
+        chatListenerRegistered = false;
     }
     document.getElementById('gameSection').style.display = 'none';
     document.getElementById('lobbySection').style.display = 'block';
