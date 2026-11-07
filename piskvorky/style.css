@@ -93,9 +93,9 @@ input, select {
 }
 .modal-content {
     background: #fff;
-    padding: 20px;
+    padding: 25px;
     width: 100%;
-    max-width: 380px;
+    max-width: 400px;
     text-align: center;
     border-radius: 5px;
     border: 2px solid #333;
@@ -120,6 +120,7 @@ input, select {
     display: flex;
     gap: 15px;
     flex-wrap: wrap;
+    justify-content: center;
 }
 .board-wrapper {
     flex: 2;
@@ -132,16 +133,24 @@ input, select {
     background: #333;
     border: 2px solid #333;
     margin: 0 auto;
+    width: fit-content;
 }
 .cell {
     background: #fff;
+    width: 75px;
+    height: 75px;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 22px;
+    font-size: 32px;
     font-weight: bold;
     cursor: pointer;
     user-select: none;
+}
+.cell.hard-cell {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
 }
 .cell:hover { background: #f0f0f0; }
 .chat-wrapper {

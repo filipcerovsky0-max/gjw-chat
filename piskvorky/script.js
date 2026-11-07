@@ -164,7 +164,7 @@ function startVotingSession(matchId, oppId, oppName) {
     document.getElementById('inviteModal').style.display = 'none';
     document.getElementById('voteModal').style.display = 'flex';
 
-    let timeLeft = 10;
+    let timeLeft = 10; // 10 sekund na hlasování
     document.getElementById('voteTimerText').innerText = `Vyber obtížnost (zbývá ${timeLeft}s):`;
 
     clearInterval(votingTimer);
@@ -238,6 +238,7 @@ function triggerLotteryAnimation(matchId) {
     document.getElementById('lotteryModal').style.display = 'flex';
     runLotteryVisuals();
 
+    // 3 sekundy animace loterie
     setTimeout(() => {
         const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
         db.ref(`piskvorky/matches/${matchId}`).update({
@@ -269,28 +270,42 @@ function startCoinflipAnimation(matchId, mode) {
         count++;
         const randSymbol = Math.random() < 0.5 ? '❌' : '⭕';
         document.getElementById('coinflipResultText').innerText = randSymbol;
-        if (count >= 12) {
+        
+        if (count >= 12) { // po 3 sekundách animace
             clearInterval(coinInterval);
-            // Pouze player1 vytvoří finální hru v databázi po animaci
+            
+            // Zjištění a zafixování výsledku pro hráče
             db.ref(`piskvorky/matches/${matchId}`).once('value', (snap) => {
                 const mData = snap.val();
-                if (mData && mData.player1 === myId && (!mData.gameCreated)) {
-                    db.ref(`piskvorky/matches/${matchId}`).update({ gameCreated: true });
-                    createGameInDB(matchId, mode, mData);
-                }
+                if (!mData) return;
+
+                // Určení symbolů
+                const p1GetsX = Math.random() < 0.5;
+                const p1Symbol = p1GetsX ? 'X' : 'O';
+                const p2Symbol = p1GetsX ? 'O' : 'X';
+                
+                const myAssignedSymbol = mData.player1 === myId ? p1Symbol : p2Symbol;
+                const modeText = mode === 'easy' ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
+
+                // Ukázání výsledku na 3 sekundy, aby si to každý mohl přečíst
+                document.getElementById('coinflipResultText').innerText = `${myAssignedSymbol} (${myAssignedSymbol === 'X' ? 'Začínáš!' : 'Jsi druhý'}) \n Mód: ${modeText}`;
+
+                setTimeout(() => {
+                    if (mData.player1 === myId && (!mData.gameCreated)) {
+                        db.ref(`piskvorky/matches/${matchId}`).update({ gameCreated: true });
+                        createGameInDB(matchId, mode, mData, p1Symbol, p2Symbol);
+                    }
+                }, 3000); // 3 sekundy čtení výsledku
             });
         }
     }, 250);
 }
 
-function createGameInDB(matchId, mode, mData) {
+function createGameInDB(matchId, mode, mData, p1Symbol, p2Symbol) {
     boardSize = mode === 'easy' ? 3 : 15;
     winLength = mode === 'easy' ? 3 : 5;
 
-    const p1GetsX = Math.random() < 0.5;
-    const p1Symbol = p1GetsX ? 'X' : 'O';
-    const p2Symbol = p1GetsX ? 'O' : 'X';
-    const starterId = p1GetsX ? mData.player1 : mData.player2;
+    const starterId = p1Symbol === 'X' ? mData.player1 : mData.player2;
 
     db.ref(`piskvorky/games/${matchId}`).set({
         boardSize: boardSize,
@@ -307,7 +322,6 @@ function createGameInDB(matchId, mode, mData) {
     db.ref(`piskvorky/lobby/${mData.player2}/status`).set('playing');
 }
 
-// Spolehlivý poslech pro spuštění hry u obou hráčů
 db.ref('piskvorky/games').on('child_added', (snapshot) => {
     const game = snapshot.val();
     const gameId = snapshot.key;
@@ -347,13 +361,12 @@ function setupGameUI() {
 function buildBoardUI() {
     const boardEl = document.getElementById('gameBoard');
     boardEl.innerHTML = '';
-    boardEl.style.gridTemplateColumns = `repeat(${boardSize}, ${boardSize === 3 ? '75px' : '26px'})`;
-    boardEl.style.gridTemplateRows = `repeat(${boardSize}, ${boardSize === 3 ? '75px' : '26px'})`;
+    boardEl.style.gridTemplateColumns = `repeat(${boardSize}, ${boardSize === 3 ? '75px' : '24px'})`;
+    boardEl.style.gridTemplateRows = `repeat(${boardSize}, ${boardSize === 3 ? '75px' : '24px'})`;
 
     for (let i = 0; i < boardSize * boardSize; i++) {
         const cell = document.createElement('div');
-        cell.className = 'cell';
-        if(boardSize !== 3) cell.style.fontSize = '12px';
+        cell.className = boardSize === 3 ? 'cell' : 'cell hard-cell';
         cell.dataset.index = i;
         cell.onclick = () => makeMove(i);
         boardEl.appendChild(cell);
