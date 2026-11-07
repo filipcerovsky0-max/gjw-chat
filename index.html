@@ -103,6 +103,28 @@
         .jaromil { color: #0000EE; text-decoration: none; font-family: 'Papyrus', fantasy, sans-serif; }
         .jaromil:hover { text-decoration: underline; }
         .legal-text { font-size: 11px; color: #666; line-height: 1.5; margin: 6px 0 12px 0; }
+
+        /* Styl pro svítící/blikající štítek Novinka! */
+        .badge-novinka {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 8px rgba(255, 65, 108, 0.6);
+            animation: sviticiEfekt 1.5s infinite alternate;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+
+        @keyframes sviticiEfekt {
+            0% { opacity: 0.7; transform: scale(1); box-shadow: 0 0 4px rgba(255, 65, 108, 0.4); }
+            100% { opacity: 1; transform: scale(1.08); box-shadow: 0 0 12px rgba(255, 75, 43, 0.9); }
+        }
         
         @media (max-width: 600px) {
             body { margin: 10px; padding: 5px; font-size: 15px; }
@@ -154,7 +176,7 @@
     <p class="tady">Naše starý stránky nyní v podobě archivu!</p>
     <hr class="oddeleni">
 
-    <h2 id="druhynadpis"><a href="./piskvorky/">❌ Piškvorky⭕</a></h2>
+    <h2 id="druhynadpis"><a href="./piskvorky/">❌ Piškvorky⭕</a> <span class="badge-novinka">Novinka!</span></h2>
     <p class="tady">Všichni hrajeme v hodinách piškvorky tak proč ne s kýmkoliv ze školy a online ?!</p>
     <hr class="oddeleni">
 
