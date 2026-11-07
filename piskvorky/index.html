@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piškvorky | Studenstvo GJW</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>❌ Piškvorky GJW ⭕</h1>
+        <p class="subtitle">Zahraj si s kýmkoliv kdo je zrovna online na škole!</p>
+
+        <!-- KROK 1: VSTUP DO LOBBY -->
+        <div id="loginSection" class="card">
+            <h3>Zadej své údaje do lobby</h3>
+            <input type="text" id="playerName" placeholder="Tvůj nickname (např. Nevlud)" maxlength="15">
+            <select id="playerClass">
+                <option value="">Vyber třídu (volitelné)</option>
+                <option value="01.A">01.A</option>
+                <option value="01.B">01.B</option>
+                <option value="02.A">02.A</option>
+                <option value="02.B">02.B</option>
+                <option value="03.A">03.A</option>
+                <option value="03.B">03.B</option>
+                <option value="04.A">04.A</option>
+                <option value="04.B">04.B</option>
+                <option value="05.A">05.A</option>
+                <option value="05.B">05.B</option>
+                <option value="06.A">06.A</option>
+                <option value="06.B">06.B</option>
+                <option value="07.A">07.A</option>
+                <option value="07.B">07.B</option>
+                <option value="08.A">08.A</option>
+                <option value="08.B">08.B</option>
+                <option value="1.A">1.A</option>
+                <option value="1.B">1.B</option>
+                <option value="2.A">2.A</option>
+                <option value="2.B">2.B</option>
+                <option value="3.A">3.A</option>
+                <option value="3.B">3.B</option>
+                <option value="4.A">4.A</option>
+                <option value="4.B">4.B</option>
+            </select>
+            <select id="gameModeSelect">
+                <option value="easy">Jednodušší (3x3, spoj 3)</option>
+                <option value="hard">Těžší (15x15, spoj 5)</option>
+            </select>
+            <button class="btn primary" onclick="joinLobby()">Vstoupit do hry</button>
+        </div>
+
+        <!-- KROK 2: LOBBY A SEZNAM HRÁČŮ -->
+        <div id="lobbySection" class="card" style="display: none;">
+            <div class="user-info">
+                <span>Hraješ jako: <strong id="currentNickname"></strong></span>
+                <button class="btn small" onclick="leaveLobby">Odhlásit</button>
+            </div>
+            
+            <div class="lobby-grid">
+                <div class="players-box">
+                    <h3>Aktivní hráči v lobby</h3>
+                    <div id="playersList">Načítám hráče...</div>
+                </div>
+                <div class="leaderboard-box">
+                    <h3>🏆 Top 3 Win Streaky</h3>
+                    <div id="leaderboardList">Načítám žebříček...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KROK 3: VÝZVA (MODAL / PŘIJMUTÍ) -->
+        <div id="inviteModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Máš novou výzvu!</h3>
+                <p id="inviteText">Hráč tě vyzval na souboj v piškvorkách.</p>
+                <div class="modal-buttons">
+                    <button class="btn success" onclick="acceptInvite()">Přijmout</button>
+                    <button class="btn danger" onclick="rejectInvite()">Odmítnout</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KROK 4: HERNÍ PLOCHA A CHAT -->
+        <div id="gameSection" style="display: none;">
+            <div class="game-header">
+                <div class="match-info">
+                    <span id="opponentInfo">Soupeř: -</span> | 
+                    <span id="mySymbol">Tento symbol: -</span> | 
+                    <span id="turnIndicator">Na tahu: -</span>
+                </div>
+                <div id="coinTossInfo" class="coin-toss">Hod mincí...</div>
+            </div>
+
+            <div class="game-container">
+                <div class="board-wrapper">
+                    <div id="gameBoard" class="board"></div>
+                    <div id="gameStatus" class="game-status">Čeká se na tah...</div>
+                    <div id="rematchContainer" style="display: none; margin-top: 15px;">
+                        <button id="rematchBtn" class="btn secondary" onclick="requestRematch()">Požádat o odvetu (0/2)</button>
+                    </div>
+                    <button class="btn danger" onclick="surrenderGame()" style="margin-top: 10px;">Vzdat hru / Odejít</button>
+                </div>
+
+                <!-- INGAME CHAT + QUICK EMOJIS -->
+                <div class="chat-wrapper">
+                    <h3>In-game Chat</h3>
+                    <div class="quick-emojis">
+                        <button onclick="sendEmoji('👍')">👍</button>
+                        <button onclick="sendEmoji('👎')">👎</button>
+                        <button onclick="sendEmoji('😂')">😂</button>
+                        <button onclick="sendEmoji('😭')">😭</button>
+                        <button onclick="sendEmoji('🤯')">🤯</button>
+                    </div>
+                    <div id="chatMessages" class="chat-messages"></div>
+                    <div class="chat-input-row">
+                        <input type="text" id="chatInput" placeholder="Napiš zprávu..." onkeypress="handleChatKeyPress(event)">
+                        <button class="btn primary" onclick="sendChatMessage()">Odeslat</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Hlavní skript logiky hry -->
+    <script src="script.js"></script>
+</body>
+</html>
