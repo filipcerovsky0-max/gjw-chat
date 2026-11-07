@@ -164,7 +164,7 @@ function startVotingSession(matchId, oppId, oppName) {
     document.getElementById('inviteModal').style.display = 'none';
     document.getElementById('voteModal').style.display = 'flex';
 
-    let timeLeft = 10; // 10 sekund na hlasování
+    let timeLeft = 10;
     document.getElementById('voteTimerText').innerText = `Vyber obtížnost (zbývá ${timeLeft}s):`;
 
     clearInterval(votingTimer);
@@ -238,7 +238,6 @@ function triggerLotteryAnimation(matchId) {
     document.getElementById('lotteryModal').style.display = 'flex';
     runLotteryVisuals();
 
-    // 3 sekundy animace loterie
     setTimeout(() => {
         const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
         db.ref(`piskvorky/matches/${matchId}`).update({
@@ -269,17 +268,16 @@ function startCoinflipAnimation(matchId, mode) {
     const coinInterval = setInterval(() => {
         count++;
         const randSymbol = Math.random() < 0.5 ? '❌' : '⭕';
-        document.getElementById('coinflipResultText').innerText = randSymbol;
+        const el = document.getElementById('coinflipResultText');
+        if (el) el.innerText = randSymbol;
         
-        if (count >= 12) { // po 3 sekundách animace
+        if (count >= 12) {
             clearInterval(coinInterval);
             
-            // Zjištění a zafixování výsledku pro hráče
             db.ref(`piskvorky/matches/${matchId}`).once('value', (snap) => {
                 const mData = snap.val();
                 if (!mData) return;
 
-                // Určení symbolů
                 const p1GetsX = Math.random() < 0.5;
                 const p1Symbol = p1GetsX ? 'X' : 'O';
                 const p2Symbol = p1GetsX ? 'O' : 'X';
@@ -287,15 +285,17 @@ function startCoinflipAnimation(matchId, mode) {
                 const myAssignedSymbol = mData.player1 === myId ? p1Symbol : p2Symbol;
                 const modeText = mode === 'easy' ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
 
-                // Ukázání výsledku na 3 sekundy, aby si to každý mohl přečíst
-                document.getElementById('coinflipResultText').innerText = `${myAssignedSymbol} (${myAssignedSymbol === 'X' ? 'Začínáš!' : 'Jsi druhý'}) \n Mód: ${modeText}`;
+                const resEl = document.getElementById('coinflipResultText');
+                if (resEl) {
+                    resEl.innerHTML = `Padlo ti: <strong>${myAssignedSymbol}</strong> (${myAssignedSymbol === 'X' ? 'Začínáš!' : 'Jsi druhý'})<br><br>Obtížnost: ${modeText}`;
+                }
 
                 setTimeout(() => {
                     if (mData.player1 === myId && (!mData.gameCreated)) {
                         db.ref(`piskvorky/matches/${matchId}`).update({ gameCreated: true });
                         createGameInDB(matchId, mode, mData, p1Symbol, p2Symbol);
                     }
-                }, 3000); // 3 sekundy čtení výsledku
+                }, 3000);
             });
         }
     }, 250);
@@ -403,7 +403,7 @@ function listenGame() {
             document.getElementById('rematchContainer').style.display = 'block';
             updateRematchBtn(game.rematchVotes);
         } else {
-            document.getElementById('gameStatus').innerText = myTurn ? 'Jsi na tahu!' : 'Čekáš na tah soupeře...';
+            document.getElementById('gameStatus').innerText = myTurn ? 'Jsi na tahu!' : 'Čekás na tah soupeře...';
             document.getElementById('rematchContainer').style.display = 'none';
         }
     });
