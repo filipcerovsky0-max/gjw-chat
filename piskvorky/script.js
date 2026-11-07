@@ -46,7 +46,8 @@ function joinLobby() {
 
 function leaveLobby() {
     db.ref(`piskvorky/lobby/${myId}`).remove();
-    location.reload();
+    document.getElementById('lobbySection').style.display = 'none';
+    document.getElementById('loginSection').style.display = 'block';
 }
 
 function listenLobby() {
@@ -118,7 +119,6 @@ function acceptInvite() {
     db.ref(`piskvorky/invites/${myId}`).remove();
     document.getElementById('inviteModal').style.display = 'none';
 
-    // Vytvoření relace pro hlasování
     const matchId = 'match_' + Math.random().toString(36).substr(2, 9);
     db.ref(`piskvorky/matches/${matchId}`).set({
         player1: invite.fromId,
@@ -138,7 +138,6 @@ function rejectInvite() {
     document.getElementById('inviteModal').style.display = 'none';
 }
 
-// Sledování vytvořených zápasů (pokud mě někdo vyzval a já přijal přes notifikaci)
 db.ref('piskvorky/matches').on('child_added', (snapshot) => {
     const match = snapshot.val();
     const matchId = snapshot.key;
@@ -173,7 +172,7 @@ function startVotingSession(matchId, oppId, oppName) {
         document.getElementById('voteTimerText').innerText = `Vyber obtížnost (zbývá ${timeLeft}s):`;
         if (timeLeft <= 0) {
             clearInterval(votingTimer);
-            submitVote(); // Automatické odeslání hlasu při vypršení času
+            submitVote();
         }
     }, 1000);
 }
@@ -184,7 +183,6 @@ function submitVote() {
     document.getElementById('voteModal').style.display = 'none';
 
     db.ref(`piskvorky/matches/${activeGameId}/votes/${myId}`).set(mode).then(() => {
-        // Kontrola, zda již oba hlasovali
         db.ref(`piskvorky/matches/${activeGameId}/votes`).once('value', (snapshot) => {
             const votes = snapshot.val() || {};
             const voteValues = Object.values(votes);
@@ -194,7 +192,6 @@ function submitVote() {
         });
     });
 
-    // Sledování hlasů soupeře
     db.ref(`piskvorky/matches/${activeGameId}/votes`).on('value', (snapshot) => {
         const votes = snapshot.val() || {};
         const voteValues = Object.values(votes);
@@ -213,7 +210,6 @@ function evaluateVotes(votes, matchId) {
         chosenMode = vals[0];
         initRealGame(matchId, chosenMode);
     } else {
-        // Remíza 1/1 -> Spustit loterii
         document.getElementById('voteModal').style.display = 'none';
         document.getElementById('lotteryModal').style.display = 'flex';
         
@@ -260,7 +256,6 @@ function initRealGame(matchId, mode) {
     setupGameUI();
 }
 
-// Sledování zahájení skutečné hry
 db.ref('piskvorky/games').on('child_added', (snapshot) => {
     const game = snapshot.val();
     const gameId = snapshot.key;
@@ -316,7 +311,6 @@ function listenGame() {
     db.ref(`piskvorky/games/${activeGameId}`).on('value', (snapshot) => {
         const game = snapshot.val();
         if (!game) {
-            // Soupeř opustil hru / zrušil ji
             alert('Soupeř opustil hru!');
             exitGame();
             return;
@@ -455,7 +449,6 @@ function resetGameForRematch() {
     });
 }
 
-// Opravený chat (zabraňuje duplicitnímu přidávání zpráv)
 function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
@@ -483,7 +476,7 @@ function handleChatKeyPress(e) {
 
 function listenChat() {
     const chatEl = document.getElementById('chatMessages');
-    chatEl.innerHTML = ''; // Vyčištění pro zamezení duplicit
+    chatEl.innerHTML = '';
     db.ref(`piskvorky/chats/${activeGameId}`).on('child_added', (snapshot) => {
         const msg = snapshot.val();
         const div = document.createElement('div');
@@ -496,7 +489,7 @@ function listenChat() {
 function surrenderGame() {
     if (confirm('Opravdu chceš hru vzdát?')) {
         if(activeGameId) {
-            db.ref(`piskvorky/games/${activeGameId}`).remove(); // Smazání hry kickne druhého hráče zpět do lobby
+            db.ref(`piskvorky/games/${activeGameId}`).remove();
         }
         exitGame();
     }
