@@ -163,7 +163,7 @@ function startVotingSession(matchId, oppId, oppName) {
     document.getElementById('lobbySection').style.display = 'none';
     document.getElementById('voteModal').style.display = 'flex';
 
-    let timeLeft = 10; // Zde nastaveno 10 sekund na hlasování
+    let timeLeft = 10; // 10 sekund na hlasování
     document.getElementById('voteTimerText').innerText = `Vyber obtížnost (zbývá ${timeLeft}s):`;
 
     clearInterval(votingTimer);
@@ -253,7 +253,7 @@ function runLotteryVisuals() {
         counter++;
         const tempMode = counter % 2 === 0 ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
         document.getElementById('lotteryResultText').innerText = tempMode;
-        if (counter >= 12) { // 12 * 250ms = 3 sekundy
+        if (counter >= 12) {
             clearInterval(interval);
         }
     }, 250);
@@ -271,17 +271,20 @@ function proceedToGame(matchId, mode) {
         if (!snap.exists()) {
             db.ref(`piskvorky/matches/${matchId}`).once('value', (mSnap) => {
                 const mData = mSnap.val();
-                const toss = Math.random() < 0.5;
-                const p1 = toss ? mData.player1 : mData.player2;
-                const p2 = toss ? mData.player2 : mData.player1;
+                
+                // Coinflip pro symboly (každému padne něco jiného, křížky X začínají vždy první)
+                const p1GetsX = Math.random() < 0.5;
+                const p1Symbol = p1GetsX ? 'X' : 'O';
+                const p2Symbol = p1GetsX ? 'O' : 'X';
+                const starterId = p1GetsX ? mData.player1 : mData.player2;
 
                 db.ref(`piskvorky/games/${matchId}`).set({
                     boardSize: boardSize,
                     winLength: winLength,
                     board: new Array(boardSize * boardSize).fill(''),
-                    turn: p1,
-                    player1: { id: p1, symbol: 'X' },
-                    player2: { id: p2, symbol: 'O' },
+                    turn: starterId,
+                    player1: { id: mData.player1, symbol: p1Symbol },
+                    player2: { id: mData.player2, symbol: p2Symbol },
                     status: 'playing',
                     rematchVotes: { [mData.player1]: false, [mData.player2]: false }
                 });
@@ -356,10 +359,11 @@ function listenGame() {
         }
 
         mySymbol = game.player1.id === myId ? game.player1.symbol : game.player2.symbol;
-        document.getElementById('mySymbol').innerText = `Symbol: ${mySymbol}`;
+        document.getElementById('mySymbol').innerText = `Symbol: ${mySymbol} (${mySymbol === 'X' ? 'Začínáš!' : 'Jsi druhý'})`;
 
         myTurn = game.turn === myId;
         document.getElementById('turnIndicator').innerText = myTurn ? 'Na tahu: TY' : `Na tahu: ${opponentName}`;
+        document.getElementById('coinTossInfo').innerText = `Coinflip hotov! Ty máš ${mySymbol}.`;
 
         const cells = document.querySelectorAll('.cell');
         game.board.forEach((val, idx) => {
