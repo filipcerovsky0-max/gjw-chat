@@ -2,22 +2,21 @@ const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let myId = 'user_' + Math.random().toString(36.substr(2, 9));
+let myId = 'user_' + Math.random().toString(36).substr(2, 9);
 let myNickname = '';
 let myClass = '';
 let currentMode = 'easy';
 let activeGameId = null;
-let mySymbol = ''; // 'X' nebo 'O'
+let mySymbol = ''; 
 let opponentId = null;
 let opponentName = '';
 let myTurn = false;
 let boardSize = 3;
 let winLength = 3;
 
-// Inicializace hráče v lobby
 function joinLobby() {
     const nameInput = document.getElementById('playerName').value.trim();
-    const classInput = document.getElementById('playerClass').value.trim();
+    const classInput = document.getElementById('playerClass').value;
     const modeSelect = document.getElementById('gameModeSelect').value;
 
     if (!nameInput) {
@@ -35,13 +34,12 @@ function joinLobby() {
     document.getElementById('loginSection').style.display = 'none';
     document.getElementById('lobbySection').style.display = 'block';
 
-    // Registrace do Firebase přítomnosti
     const userRef = db.ref(`piskvorky/lobby/${myId}`);
     userRef.set({
         name: myNickname,
         class: myClass,
         mode: currentMode,
-        status: 'idle', // idle, playing
+        status: 'idle',
         timestamp: firebase.database.ServerValue.TIMESTAMP
     });
     userRef.onDisconnect().remove();
@@ -51,7 +49,6 @@ function joinLobby() {
     listenLeaderboard();
 }
 
-// Sledování lobby (ostatní hráči)
 function listenLobby() {
     db.ref('piskvorky/lobby').on('value', (snapshot) => {
         const users = snapshot.val() || {};
@@ -60,7 +57,7 @@ function listenLobby() {
 
         let count = 0;
         for (let id in users) {
-            if (id === myId) continue; // Neukazuj sebe
+            if (id === myId) continue;
             const u = users[id];
             count++;
 
@@ -92,7 +89,6 @@ function listenLobby() {
     });
 }
 
-// Posílání výzvy
 function sendInvite(targetId, targetName) {
     db.ref(`piskvorky/invites/${targetId}`).set({
         fromId: myId,
@@ -104,7 +100,6 @@ function sendInvite(targetId, targetName) {
     alert(`Výzva byla odeslána hráči ${targetName}. Čeká se na odpověď...`);
 }
 
-// Naslouchání příchozím výzvám
 function listenInvites() {
     db.ref(`piskvorky/invites/${myId}`).on('value', (snapshot) => {
         const invite = snapshot.val();
@@ -125,16 +120,12 @@ function acceptInvite() {
 
     db.ref(`piskvorky/invites/${myId}`).remove();
 
-    // Vytvoření nové hry
     const gameId = 'game_' + Math.random().toString(36).substr(2, 9);
-    
-    // Hod mincí (kdo začíná a symboly)
     const toss = Math.random() < 0.5;
     const player1Symbol = toss ? 'X' : 'O';
     const player2Symbol = toss ? 'O' : 'X';
     const starterId = toss ? myId : invite.fromId;
 
-    // Inicializace hrací plochy
     const totalCells = invite.boardSize * invite.boardSize;
     const initialBoard = new Array(totalCells).fill('');
 
@@ -149,7 +140,6 @@ function acceptInvite() {
         rematchVotes: { [invite.fromId]: false, [myId]: false }
     });
 
-    // Označit oba jako zaneprázdněné v lobby
     db.ref(`piskvorky/lobby/${myId}/status`).set('playing');
     db.ref(`piskvorky/lobby/${invite.fromId}/status`).set('playing');
 
@@ -161,8 +151,6 @@ function rejectInvite() {
     document.getElementById('inviteModal').style.display = 'none';
 }
 
-// Sledování vytvořených her (pokud mě někdo vyzval a já přijal)
-// Nebo obecný listener pro zahájení hry
 db.ref('piskvorky/games').on('child_added', (snapshot) => {
     const game = snapshot.val();
     const gameId = snapshot.key;
@@ -170,7 +158,6 @@ db.ref('piskvorky/games').on('child_added', (snapshot) => {
 
     if (game.player1.id === myId || game.player2.id === myId) {
         const opp = game.player1.id === myId ? game.player2 : game.player1;
-        // Zjištění jména soupeře z lobby
         db.ref(`piskvorky/lobby/${opp.id}/name`).once('value', (snap) => {
             const oppName = snap.val() || 'Soupeř';
             setupGame(gameId, opp.id, oppName, game.boardSize, game.winLength);
@@ -223,13 +210,11 @@ function listenGame() {
         document.getElementById('turnIndicator').innerText = myTurn ? 'Na tahu: TY' : `Na tahu: ${opponentName}`;
         document.getElementById('coinTossInfo').innerText = `Hra spuštěna! Symboly rozděleny mincí.`;
 
-        // Vykreslení desky
         const cells = document.querySelectorAll('.cell');
         game.board.forEach((val, idx) => {
             cells[idx].innerText = val;
         });
 
-        // Kontrola stavu hry
         if (game.status === 'won') {
             const winnerText = game.winner === myId ? '🎉 VYHRÁL JSI!' : `😢 Prohrál jsi. Vyhrál ${opponentName}.`;
             document.getElementById('gameStatus').innerText = winnerText;
@@ -251,12 +236,11 @@ function makeMove(index) {
     
     db.ref(`piskvorky/games/${activeGameId}`).transaction((game) => {
         if (!game || game.status !== 'playing') return;
-        if (game.board[index] !== '') return; // obsazeno
+        if (game.board[index] !== '') return;
         if (game.turn !== myId) return;
 
         game.board[index] = mySymbol;
 
-        // Kontrola výhry
         if (checkWin(game.board, mySymbol, boardSize, winLength)) {
             game.status = 'won';
             game.winner = myId;
@@ -271,14 +255,10 @@ function makeMove(index) {
     });
 }
 
-// Algoritmus kontroly spojení tří / pěti
 function checkWin(board, symbol, size, wLen) {
-    // Kontrola řádků, sloupců a diagonál
     for (let r = 0; r < size; r++) {
         for (let c = 0; c < size; c++) {
             if (board[r * size + c] !== symbol) continue;
-
-            // Směry: doprava, dolů, doprava-dolů, doprava-nahoru
             const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
             for (let [dr, dc] of directions) {
                 let count = 0;
@@ -298,7 +278,6 @@ function checkWin(board, symbol, size, wLen) {
     return false;
 }
 
-// Win Streak a Leaderboard
 function recordWinStreak(winnerId) {
     const streakRef = db.ref(`piskvorky/streaks/${winnerId}`);
     streakRef.transaction((current) => {
@@ -306,7 +285,6 @@ function recordWinStreak(winnerId) {
         return { name: myNickname, count: (current.count || 0) + 1 };
     });
     
-    // Reset streak pro poraženého
     const loserId = winnerId === myId ? opponentId : myId;
     db.ref(`piskvorky/streaks/${loserId}/count`).set(0);
 }
@@ -334,7 +312,6 @@ function listenLeaderboard() {
     });
 }
 
-// Odveta
 function requestRematch() {
     db.ref(`piskvorky/games/${activeGameId}/rematchVotes/${myId}`).set(true);
 }
@@ -346,7 +323,6 @@ function updateRematchBtn(votes) {
     btn.innerText = `Požádat o odvetu (${count}/2)`;
 
     if (count === 2 && myId === Object.keys(votes)[0]) {
-        // Reset desky pro odvetu
         resetGameForRematch();
     }
 }
@@ -361,7 +337,6 @@ function resetGameForRematch() {
     });
 }
 
-// Chat a Emojis
 function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
