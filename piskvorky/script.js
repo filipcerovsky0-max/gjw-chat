@@ -179,7 +179,7 @@ function startVotingSession(matchId, oppId, oppName) {
 
     db.ref(`piskvorky/matches/${matchId}`).on('value', (snapshot) => {
         const m = snapshot.val();
-        if (m && m.status === 'coinflip' && m.chosenMode) {
+        if (m && (m.status === 'coinflip' || m.status === 'ready') && m.chosenMode) {
             db.ref(`piskvorky/matches/${matchId}`).off();
             startCoinflipAnimation(matchId, m.chosenMode);
         }
@@ -278,28 +278,54 @@ function startCoinflipAnimation(matchId, mode) {
                 const mData = snap.val();
                 if (!mData) return;
 
-                const p1GetsX = Math.random() < 0.5;
-                const p1Symbol = p1GetsX ? 'X' : 'O';
-                const p2Symbol = p1GetsX ? 'O' : 'X';
-                
-                const myAssignedSymbol = mData.player1 === myId ? p1Symbol : p2Symbol;
-                const modeText = mode === 'easy' ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
-
-                const resEl = document.getElementById('coinflipResultText');
-                if (resEl) {
-                    resEl.innerHTML = `Padlo ti: <strong>${myAssignedSymbol}</strong> (${myAssignedSymbol === 'X' ? 'Začínáš!' : 'Jsi druhý'})<br><br>Obtížnost: ${modeText}`;
+                // Bezpečné vygenerování symbolů (pokud ještě neexistují v DB, player1 je vygeneruje a upevní)
+                if (mData.p1Symbol && mData.p2Symbol) {
+                    showFinalCoinflipResult(mData, mode);
+                } else if (mData.player1 === myId) {
+                    const p1GetsX = Math.random() < 0.5;
+                    const p1Symbol = p1GetsX ? 'X' : 'O';
+                    const p2Symbol = p1GetsX ? 'O' : 'X';
+                    db.ref(`piskvorky/matches/${matchId}`).update({
+                        p1Symbol: p1Symbol,
+                        p2Symbol: p2Symbol
+                    });
+                    showFinalCoinflipResult({ ...mData, p1Symbol, p2Symbol }, mode);
+                } else {
+                    // Počkáme chvíli na player1
+                    setTimeout(() => {
+                        db.ref(`piskvorky/matches/${matchId}`).once('value', (s2) => {
+                            showFinalCoinflipResult(s2.val(), mode);
+                        });
+                    }, 500);
                 }
-
-                setTimeout(() => {
-                    if (mData.player1 === myId && (!mData.gameCreated)) {
-                        db.ref(`piskvorky/matches/${matchId}`).update({ gameCreated: true });
-                        createGameInDB(matchId, mode, mData, p1Symbol, p2Symbol);
-                    }
-                }, 3000);
             });
         }
     }, 250);
 }
+
+function showFinalCoinflipResult(mData, mode) {
+    if (!mData) return;
+    const myAssignedSymbol = mData.player1 === myId ? mData.p1Symbol : mData.p2Symbol;
+    const modeText = mode === 'easy' ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
+
+    const resEl = document.getElementById('coinflipResultText');
+    if (resEl) {
+        resEl.innerHTML = `Padlo ti: <strong>${myAssignedSymbol}</strong> (${myAssignedSymbol === 'X' ? 'Začínáš!' : 'Jsi druhý'})<br><br>Obtížnost: ${modeText}`;
+    }
+
+    setTimeout(() => {
+        if (mData.player1 === myId && (!mData.gameCreated)) {
+            db.ref(`piskvorky/matches/${matchId_safe || activeGameId}`).update({ gameCreated: true });
+            createGameInDB(activeGameId, mode, mData, mData.p1Symbol, mData.p2Symbol);
+        }
+    }, 3000);
+}
+
+// Pomocná proměnná pro bezpečné předání ID
+let matchId_safe = null;
+db.ref('piskvorky/matches').on('child_added', (snapshot) => {
+    matchId_safe = snapshot.key;
+});
 
 function createGameInDB(matchId, mode, mData, p1Symbol, p2Symbol) {
     boardSize = mode === 'easy' ? 3 : 15;
@@ -403,7 +429,7 @@ function listenGame() {
             document.getElementById('rematchContainer').style.display = 'block';
             updateRematchBtn(game.rematchVotes);
         } else {
-            document.getElementById('gameStatus').innerText = myTurn ? 'Jsi na tahu!' : 'Čekás na tah soupeře...';
+            document.getElementById('gameStatus').innerText = myTurn ? 'Jsi na tahu!' : 'Čekáš na tah soupeře...';
             document.getElementById('rematchContainer').style.display = 'none';
         }
     });
