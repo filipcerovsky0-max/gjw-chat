@@ -14,6 +14,7 @@ let boardSize = 3;
 let winLength = 3;
 let chatListenerRegistered = false;
 let matchId_safe = null;
+let afkInterval = null;
 
 function joinLobby() {
     const nameInput = document.getElementById('playerName').value.trim();
@@ -253,19 +254,16 @@ function runLotteryVisuals(matchId) {
         if (counter >= 12) {
             clearInterval(interval);
             
-            // Určení finálního módu a pozastavení na 2 sekundy
             const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
             const modeName = finalMode === 'easy' ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
             if (el) el.innerHTML = `Vylosováno: <br><strong>${modeName}</strong>`;
 
             setTimeout(() => {
-                if (myId === db.ref().push().key || true) {
-                    db.ref(`piskvorky/matches/${matchId}`).update({
-                        status: 'coinflip',
-                        chosenMode: finalMode
-                    });
-                }
-            }, 2000); // 2 sekundy pauza na přečtení výsledku loterie
+                db.ref(`piskvorky/matches/${matchId}`).update({
+                    status: 'coinflip',
+                    chosenMode: finalMode
+                });
+            }, 2000);
         }
     }, 250);
 }
@@ -322,7 +320,6 @@ function showFinalCoinflipResult(mData, mode) {
         resEl.innerHTML = `Padlo ti: <strong>${myAssignedSymbol}</strong> (${myAssignedSymbol === 'X' ? 'Začínáš!' : 'Jsi druhý'})<br><br>Obtížnost: ${modeText}`;
     }
 
-    // Pozastavení na 2 sekundy pro přečtení výsledku coinflipu
     setTimeout(() => {
         if (mData.player1 === myId && (!mData.gameCreated)) {
             db.ref(`piskvorky/matches/${matchId_safe || activeGameId}`).update({ gameCreated: true });
@@ -342,6 +339,7 @@ function createGameInDB(matchId, mode, mData, p1Symbol, p2Symbol) {
         winLength: winLength,
         board: new Array(boardSize * boardSize).fill(''),
         turn: starterId,
+        lastMoveTime: firebase.database.ServerValue.TIMESTAMP,
         player1: { id: mData.player1, symbol: p1Symbol },
         player2: { id: mData.player2, symbol: p2Symbol },
         status: 'playing',
@@ -386,6 +384,42 @@ function setupGameUI() {
         listenChat();
         chatListenerRegistered = true;
     }
+    startAfkChecker();
+}
+
+// Sledování neaktivity (AFK timeout 2 minuty)
+function startAfkChecker() {
+    clearInterval(afkInterval);
+    afkInterval = setInterval(() => {
+        if (!activeGameId) return;
+
+        db.ref(`piskvorky/games/${activeGameId}`).once('value', (snapshot) => {
+            const game = snapshot.val();
+            if (!game || game.status !== 'playing') return;
+
+            const now = Date.now();
+            const lastMove = game.lastMoveTime || now;
+            const diffSeconds = (now - lastMove) / 1000;
+
+            // Pokud uplynulo víc než 120 sekund (2 minuty) od posledního tahu
+            if (diffSeconds > 120) {
+                // Hráč na tahu prohrál kvůli neaktivitě
+                const afkPlayer = game.turn;
+                const winnerId = afkPlayer === game.player1.id ? game.player2.id : game.player1.id;
+
+                db.ref(`piskvorky/games/${activeGameId}`).update({
+                    status: 'won',
+                    winner: winnerId
+                });
+
+                if (myId === winnerId) {
+                    alert('Soupeř byl neaktivní déle než 2 minuty. Vyhráváš kontumací!');
+                } else {
+                    alert('Byl jsi neaktivní déle než 2 minuty. Hra byla ukončena!');
+                }
+            }
+        });
+    }, 10000); // Kontrola každých 10 sekund
 }
 
 function buildBoardUI() {
@@ -448,6 +482,7 @@ function makeMove(index) {
         if (game.turn !== myId) return;
 
         game.board[index] = mySymbol;
+        game.lastMoveTime = firebase.database.ServerValue.TIMESTAMP; // Reset časovače neaktivity
 
         if (checkWin(game.board, mySymbol, boardSize, winLength)) {
             game.status = 'won';
@@ -535,7 +570,6 @@ function updateRematchBtn(votes) {
     }
 }
 
-// Spuštění nového losování coinflipu při odvetě
 function triggerRematchCoinflip() {
     document.getElementById('rematchContainer').style.display = 'none';
     document.getElementById('gameSection').style.display = 'none';
@@ -567,7 +601,6 @@ function triggerRematchCoinflip() {
                     resEl.innerHTML = `Odvetný Coinflip!<br>Padlo ti: <strong>${myAssignedSymbol}</strong> (${myAssignedSymbol === 'X' ? 'Začínáš!' : 'Jsi druhý'})`;
                 }
 
-                // Pozastavení na 2 sekundy pro přečtení výsledku odvetného coinflipu
                 setTimeout(() => {
                     document.getElementById('coinflipModal').style.display = 'none';
                     const totalCells = boardSize * boardSize;
@@ -576,6 +609,7 @@ function triggerRematchCoinflip() {
                         status: 'playing',
                         winner: null,
                         turn: starterId,
+                        lastMoveTime: firebase.database.ServerValue.TIMESTAMP,
                         'player1/symbol': p1Symbol,
                         'player2/symbol': p2Symbol,
                         rematchVotes: { [gData.player1.id]: false, [gData.player2.id]: false }
@@ -634,6 +668,7 @@ function surrenderGame() {
 }
 
 function exitGame() {
+    clearInterval(afkInterval);
     if (activeGameId) {
         db.ref(`piskvorky/games/${activeGameId}`).remove();
         db.ref(`piskvorky/lobby/${myId}/status`).set('idle');
