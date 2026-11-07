@@ -7,7 +7,7 @@ body {
     box-sizing: border-box;
 }
 .container {
-    max-width: 950px;
+    max-width: 900px;
     margin: 0 auto;
     background: #fff;
     border: 1px solid #ccc;
@@ -56,11 +56,12 @@ input, select {
 }
 .players-box, .leaderboard-box {
     flex: 1;
-    min-width: 280px;
+    min-width: 260px;
     background: #fff;
     border: 1px solid #ccc;
     padding: 12px;
     min-height: 180px;
+    box-sizing: border-box;
 }
 .player-item {
     display: flex;
@@ -124,7 +125,6 @@ input, select {
     flex: 2;
     min-width: 280px;
     text-align: center;
-    overflow-x: auto;
 }
 .board {
     display: grid;
@@ -152,7 +152,7 @@ input, select {
     padding: 10px;
     display: flex;
     flex-direction: column;
-    height: 400px;
+    height: 380px;
     box-sizing: border-box;
 }
 .quick-emojis {
@@ -190,12 +190,11 @@ input, select {
     font-size: 14px;
 }
 
-/* Responzivita pro mobily */
 @media (max-width: 768px) {
     .game-container {
         flex-direction: column;
     }
     .chat-wrapper {
-        height: 300px;
+        height: 280px;
     }
 }

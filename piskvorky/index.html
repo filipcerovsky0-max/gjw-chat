@@ -80,11 +80,11 @@
             </div>
         </div>
 
-        <!-- KROK 3.5: HLASOVÁNÍ O OBTÍŽNOSTI (5s) -->
+        <!-- KROK 3.5: HLASOVÁNÍ O OBTÍŽNOSTI (10s) -->
         <div id="voteModal" class="modal" style="display: none;">
             <div class="modal-content">
                 <h3>Hlasování o obtížnosti</h3>
-                <p id="voteTimerText">Vyber obtížnost (zbývá 5s):</p>
+                <p id="voteTimerText">Vyber obtížnost (zbývá 10s):</p>
                 <select id="voteModeSelect">
                     <option value="easy">Jednodušší (3x3, spoj 3)</option>
                     <option value="hard">Těžší (15x15, spoj 5)</option>
@@ -93,12 +93,21 @@
             </div>
         </div>
 
-        <!-- KROK 3.6: LOTERIE (KRYTÍ REMÍZY 1/1) -->
+        <!-- KROK 3.6: LOTERIE (3s) -->
         <div id="lotteryModal" class="modal" style="display: none;">
             <div class="modal-content">
                 <h3>🎰 Školní Loterie 🎰</h3>
                 <p>Hlasy byly 1:1! Losujeme mód hry...</p>
                 <h2 id="lotteryResultText" style="color: #b30000; margin: 20px 0;">Losuji...</h2>
+            </div>
+        </div>
+
+        <!-- KROK 3.7: COINFLIP ANIMACE SYMBOLŮ -->
+        <div id="coinflipModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>🪙 Hod mincí (Coinflip) 🪙</h3>
+                <p>Losujeme tvoje znamení a pořadí tahů...</p>
+                <h1 id="coinflipResultText" style="font-size: 40px; color: #0000EE; margin: 20px 0;">🪙</h1>
             </div>
         </div>
 
@@ -110,7 +119,7 @@
                     <span id="mySymbol">Symbol: -</span> | 
                     <span id="turnIndicator">Na tahu: -</span>
                 </div>
-                <div id="coinTossInfo">Hod mincí...</div>
+                <div id="coinTossInfo">Hra spuštěna!</div>
             </div>
 
             <div class="game-container">

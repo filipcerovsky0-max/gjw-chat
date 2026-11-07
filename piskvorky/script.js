@@ -161,6 +161,7 @@ function startVotingSession(matchId, oppId, oppName) {
     activeGameId = matchId;
 
     document.getElementById('lobbySection').style.display = 'none';
+    document.getElementById('inviteModal').style.display = 'none';
     document.getElementById('voteModal').style.display = 'flex';
 
     let timeLeft = 10; // 10 sekund na hlasování
@@ -178,9 +179,9 @@ function startVotingSession(matchId, oppId, oppName) {
 
     db.ref(`piskvorky/matches/${matchId}`).on('value', (snapshot) => {
         const m = snapshot.val();
-        if (m && m.status === 'ready' && m.chosenMode) {
+        if (m && m.status === 'coinflip' && m.chosenMode) {
             db.ref(`piskvorky/matches/${matchId}`).off();
-            proceedToGame(matchId, m.chosenMode);
+            startCoinflipAnimation(matchId, m.chosenMode);
         }
     });
 }
@@ -213,7 +214,7 @@ function evaluateAndResolveVotes(match, matchId) {
     if (vals[0] === vals[1]) {
         chosenMode = vals[0];
         db.ref(`piskvorky/matches/${matchId}`).update({
-            status: 'ready',
+            status: 'coinflip',
             chosenMode: chosenMode
         });
     } else {
@@ -237,11 +238,11 @@ function triggerLotteryAnimation(matchId) {
     document.getElementById('lotteryModal').style.display = 'flex';
     runLotteryVisuals();
 
-    // 3 sekundy trvající animace losování
+    // 3 sekundy trvající animace losování módu
     setTimeout(() => {
         const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
         db.ref(`piskvorky/matches/${matchId}`).update({
-            status: 'ready',
+            status: 'coinflip',
             chosenMode: finalMode
         });
     }, 3000);
@@ -259,20 +260,41 @@ function runLotteryVisuals() {
     }, 250);
 }
 
-function proceedToGame(matchId, mode) {
+function startCoinflipAnimation(matchId, mode) {
     document.getElementById('voteModal').style.display = 'none';
     document.getElementById('lotteryModal').style.display = 'none';
-    document.getElementById('inviteModal').style.display = 'none';
+    document.getElementById('coinflipModal').style.display = 'flex';
 
-    boardSize = mode === 'easy' ? 3 : 15;
-    winLength = mode === 'easy' ? 3 : 5;
+    let count = 0;
+    const coinInterval = setInterval(() => {
+        count++;
+        const randSymbol = Math.random() < 0.5 ? '❌' : '⭕';
+        document.getElementById('coinflipResultText').innerText = randSymbol;
+        if (count >= 12) { // 3 sekundy animace hodu mincí
+            clearInterval(coinInterval);
+            if (myId === db.ref().push().key || true) { // Zajistí spuštění pro oba
+                setTimeout(() => {
+                    if (myId === db.ref(`piskvorky/matches/${matchId}`).child('player1').getKey() || true) {
+                        // Vytvoření finální hry s coinflipem
+                        finalizeGameCreation(matchId, mode);
+                    }
+                }, 500);
+            }
+        }
+    }, 250);
+}
 
+function finalizeGameCreation(matchId, mode) {
     db.ref(`piskvorky/games/${matchId}`).once('value', (snap) => {
         if (!snap.exists()) {
             db.ref(`piskvorky/matches/${matchId}`).once('value', (mSnap) => {
                 const mData = mSnap.val();
-                
-                // Coinflip pro symboly (každému padne něco jiného, křížky X začínají vždy první)
+                if (!mData) return;
+
+                boardSize = mode === 'easy' ? 3 : 15;
+                winLength = mode === 'easy' ? 3 : 5;
+
+                // Coinflip pro symboly
                 const p1GetsX = Math.random() < 0.5;
                 const p1Symbol = p1GetsX ? 'X' : 'O';
                 const p2Symbol = p1GetsX ? 'O' : 'X';
@@ -294,8 +316,6 @@ function proceedToGame(matchId, mode) {
             });
         }
     });
-
-    setupGameUI();
 }
 
 db.ref('piskvorky/games').on('child_added', (snapshot) => {
@@ -321,6 +341,7 @@ function setupGameUI() {
     document.getElementById('lobbySection').style.display = 'none';
     document.getElementById('voteModal').style.display = 'none';
     document.getElementById('lotteryModal').style.display = 'none';
+    document.getElementById('coinflipModal').style.display = 'none';
     document.getElementById('inviteModal').style.display = 'none';
     document.getElementById('gameSection').style.display = 'block';
     document.getElementById('opponentInfo').innerText = `Soupeř: ${opponentName}`;
@@ -363,7 +384,6 @@ function listenGame() {
 
         myTurn = game.turn === myId;
         document.getElementById('turnIndicator').innerText = myTurn ? 'Na tahu: TY' : `Na tahu: ${opponentName}`;
-        document.getElementById('coinTossInfo').innerText = `Coinflip hotov! Ty máš ${mySymbol}.`;
 
         const cells = document.querySelectorAll('.cell');
         game.board.forEach((val, idx) => {
@@ -548,5 +568,6 @@ function exitGame() {
     document.getElementById('gameSection').style.display = 'none';
     document.getElementById('voteModal').style.display = 'none';
     document.getElementById('lotteryModal').style.display = 'none';
+    document.getElementById('coinflipModal').style.display = 'none';
     document.getElementById('lobbySection').style.display = 'block';
 }
