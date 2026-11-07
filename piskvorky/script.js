@@ -164,7 +164,7 @@ function startVotingSession(matchId, oppId, oppName) {
     document.getElementById('inviteModal').style.display = 'none';
     document.getElementById('voteModal').style.display = 'flex';
 
-    let timeLeft = 10; // 10 sekund na hlasování
+    let timeLeft = 10;
     document.getElementById('voteTimerText').innerText = `Vyber obtížnost (zbývá ${timeLeft}s):`;
 
     clearInterval(votingTimer);
@@ -238,7 +238,6 @@ function triggerLotteryAnimation(matchId) {
     document.getElementById('lotteryModal').style.display = 'flex';
     runLotteryVisuals();
 
-    // 3 sekundy trvající animace losování módu
     setTimeout(() => {
         const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
         db.ref(`piskvorky/matches/${matchId}`).update({
@@ -270,54 +269,45 @@ function startCoinflipAnimation(matchId, mode) {
         count++;
         const randSymbol = Math.random() < 0.5 ? '❌' : '⭕';
         document.getElementById('coinflipResultText').innerText = randSymbol;
-        if (count >= 12) { // 3 sekundy animace hodu mincí
+        if (count >= 12) {
             clearInterval(coinInterval);
-            if (myId === db.ref().push().key || true) { // Zajistí spuštění pro oba
-                setTimeout(() => {
-                    if (myId === db.ref(`piskvorky/matches/${matchId}`).child('player1').getKey() || true) {
-                        // Vytvoření finální hry s coinflipem
-                        finalizeGameCreation(matchId, mode);
-                    }
-                }, 500);
-            }
+            // Pouze player1 vytvoří finální hru v databázi po animaci
+            db.ref(`piskvorky/matches/${matchId}`).once('value', (snap) => {
+                const mData = snap.val();
+                if (mData && mData.player1 === myId && (!mData.gameCreated)) {
+                    db.ref(`piskvorky/matches/${matchId}`).update({ gameCreated: true });
+                    createGameInDB(matchId, mode, mData);
+                }
+            });
         }
     }, 250);
 }
 
-function finalizeGameCreation(matchId, mode) {
-    db.ref(`piskvorky/games/${matchId}`).once('value', (snap) => {
-        if (!snap.exists()) {
-            db.ref(`piskvorky/matches/${matchId}`).once('value', (mSnap) => {
-                const mData = mSnap.val();
-                if (!mData) return;
+function createGameInDB(matchId, mode, mData) {
+    boardSize = mode === 'easy' ? 3 : 15;
+    winLength = mode === 'easy' ? 3 : 5;
 
-                boardSize = mode === 'easy' ? 3 : 15;
-                winLength = mode === 'easy' ? 3 : 5;
+    const p1GetsX = Math.random() < 0.5;
+    const p1Symbol = p1GetsX ? 'X' : 'O';
+    const p2Symbol = p1GetsX ? 'O' : 'X';
+    const starterId = p1GetsX ? mData.player1 : mData.player2;
 
-                // Coinflip pro symboly
-                const p1GetsX = Math.random() < 0.5;
-                const p1Symbol = p1GetsX ? 'X' : 'O';
-                const p2Symbol = p1GetsX ? 'O' : 'X';
-                const starterId = p1GetsX ? mData.player1 : mData.player2;
-
-                db.ref(`piskvorky/games/${matchId}`).set({
-                    boardSize: boardSize,
-                    winLength: winLength,
-                    board: new Array(boardSize * boardSize).fill(''),
-                    turn: starterId,
-                    player1: { id: mData.player1, symbol: p1Symbol },
-                    player2: { id: mData.player2, symbol: p2Symbol },
-                    status: 'playing',
-                    rematchVotes: { [mData.player1]: false, [mData.player2]: false }
-                });
-
-                db.ref(`piskvorky/lobby/${mData.player1}/status`).set('playing');
-                db.ref(`piskvorky/lobby/${mData.player2}/status`).set('playing');
-            });
-        }
+    db.ref(`piskvorky/games/${matchId}`).set({
+        boardSize: boardSize,
+        winLength: winLength,
+        board: new Array(boardSize * boardSize).fill(''),
+        turn: starterId,
+        player1: { id: mData.player1, symbol: p1Symbol },
+        player2: { id: mData.player2, symbol: p2Symbol },
+        status: 'playing',
+        rematchVotes: { [mData.player1]: false, [mData.player2]: false }
     });
+
+    db.ref(`piskvorky/lobby/${mData.player1}/status`).set('playing');
+    db.ref(`piskvorky/lobby/${mData.player2}/status`).set('playing');
 }
 
+// Spolehlivý poslech pro spuštění hry u obou hráčů
 db.ref('piskvorky/games').on('child_added', (snapshot) => {
     const game = snapshot.val();
     const gameId = snapshot.key;
