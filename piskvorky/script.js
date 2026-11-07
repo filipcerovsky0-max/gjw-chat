@@ -13,6 +13,7 @@ let myTurn = false;
 let boardSize = 3;
 let winLength = 3;
 let chatListenerRegistered = false;
+let matchId_safe = null;
 
 function joinLobby() {
     const nameInput = document.getElementById('playerName').value.trim();
@@ -120,6 +121,7 @@ function acceptInvite() {
     document.getElementById('inviteModal').style.display = 'none';
 
     const matchId = 'match_' + Math.random().toString(36).substr(2, 9);
+    matchId_safe = matchId;
     db.ref(`piskvorky/matches/${matchId}`).set({
         player1: invite.fromId,
         player2: myId,
@@ -141,6 +143,7 @@ function rejectInvite() {
 db.ref('piskvorky/matches').on('child_added', (snapshot) => {
     const match = snapshot.val();
     const matchId = snapshot.key;
+    matchId_safe = matchId;
     if (activeGameId) return;
 
     if ((match.player1 === myId || match.player2 === myId) && match.status === 'voting') {
@@ -229,32 +232,40 @@ db.ref('piskvorky/matches').on('child_changed', (snapshot) => {
     if (activeGameId === matchId && match.status === 'lottery' && document.getElementById('lotteryModal').style.display !== 'flex') {
         document.getElementById('voteModal').style.display = 'none';
         document.getElementById('lotteryModal').style.display = 'flex';
-        runLotteryVisuals();
+        runLotteryVisuals(matchId);
     }
 });
 
 function triggerLotteryAnimation(matchId) {
     document.getElementById('voteModal').style.display = 'none';
     document.getElementById('lotteryModal').style.display = 'flex';
-    runLotteryVisuals();
-
-    setTimeout(() => {
-        const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
-        db.ref(`piskvorky/matches/${matchId}`).update({
-            status: 'coinflip',
-            chosenMode: finalMode
-        });
-    }, 3000);
+    runLotteryVisuals(matchId);
 }
 
-function runLotteryVisuals() {
+function runLotteryVisuals(matchId) {
     let counter = 0;
     const interval = setInterval(() => {
         counter++;
         const tempMode = counter % 2 === 0 ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
-        document.getElementById('lotteryResultText').innerText = tempMode;
+        const el = document.getElementById('lotteryResultText');
+        if (el) el.innerText = tempMode;
+        
         if (counter >= 12) {
             clearInterval(interval);
+            
+            // Určení finálního módu a pozastavení na 2 sekundy
+            const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
+            const modeName = finalMode === 'easy' ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
+            if (el) el.innerHTML = `Vylosováno: <br><strong>${modeName}</strong>`;
+
+            setTimeout(() => {
+                if (myId === db.ref().push().key || true) {
+                    db.ref(`piskvorky/matches/${matchId}`).update({
+                        status: 'coinflip',
+                        chosenMode: finalMode
+                    });
+                }
+            }, 2000); // 2 sekundy pauza na přečtení výsledku loterie
         }
     }, 250);
 }
@@ -278,7 +289,6 @@ function startCoinflipAnimation(matchId, mode) {
                 const mData = snap.val();
                 if (!mData) return;
 
-                // Bezpečné vygenerování symbolů (pokud ještě neexistují v DB, player1 je vygeneruje a upevní)
                 if (mData.p1Symbol && mData.p2Symbol) {
                     showFinalCoinflipResult(mData, mode);
                 } else if (mData.player1 === myId) {
@@ -291,7 +301,6 @@ function startCoinflipAnimation(matchId, mode) {
                     });
                     showFinalCoinflipResult({ ...mData, p1Symbol, p2Symbol }, mode);
                 } else {
-                    // Počkáme chvíli na player1
                     setTimeout(() => {
                         db.ref(`piskvorky/matches/${matchId}`).once('value', (s2) => {
                             showFinalCoinflipResult(s2.val(), mode);
@@ -313,19 +322,14 @@ function showFinalCoinflipResult(mData, mode) {
         resEl.innerHTML = `Padlo ti: <strong>${myAssignedSymbol}</strong> (${myAssignedSymbol === 'X' ? 'Začínáš!' : 'Jsi druhý'})<br><br>Obtížnost: ${modeText}`;
     }
 
+    // Pozastavení na 2 sekundy pro přečtení výsledku coinflipu
     setTimeout(() => {
         if (mData.player1 === myId && (!mData.gameCreated)) {
             db.ref(`piskvorky/matches/${matchId_safe || activeGameId}`).update({ gameCreated: true });
             createGameInDB(activeGameId, mode, mData, mData.p1Symbol, mData.p2Symbol);
         }
-    }, 3000);
+    }, 2000);
 }
-
-// Pomocná proměnná pro bezpečné předání ID
-let matchId_safe = null;
-db.ref('piskvorky/matches').on('child_added', (snapshot) => {
-    matchId_safe = snapshot.key;
-});
 
 function createGameInDB(matchId, mode, mData, p1Symbol, p2Symbol) {
     boardSize = mode === 'easy' ? 3 : 15;
@@ -429,7 +433,7 @@ function listenGame() {
             document.getElementById('rematchContainer').style.display = 'block';
             updateRematchBtn(game.rematchVotes);
         } else {
-            document.getElementById('gameStatus').innerText = myTurn ? 'Jsi na tahu!' : 'Čekáš na tah soupeře...';
+            document.getElementById('gameStatus').innerText = myTurn ? 'Jsi na tahu!' : 'Čeká se na tah soupeře...';
             document.getElementById('rematchContainer').style.display = 'none';
         }
     });
@@ -527,18 +531,60 @@ function updateRematchBtn(votes) {
     btn.innerText = `Požádat o odvetu (${count}/2)`;
 
     if (count === 2 && myId === Object.keys(votes)[0]) {
-        resetGameForRematch();
+        triggerRematchCoinflip();
     }
 }
 
-function resetGameForRematch() {
-    const totalCells = boardSize * boardSize;
-    db.ref(`piskvorky/games/${activeGameId}`).update({
-        board: new Array(totalCells).fill(''),
-        status: 'playing',
-        winner: null,
-        rematchVotes: { [myId]: false, [opponentId]: false }
-    });
+// Spuštění nového losování coinflipu při odvetě
+function triggerRematchCoinflip() {
+    document.getElementById('rematchContainer').style.display = 'none';
+    document.getElementById('gameSection').style.display = 'none';
+    document.getElementById('coinflipModal').style.display = 'flex';
+
+    let count = 0;
+    const coinInterval = setInterval(() => {
+        count++;
+        const randSymbol = Math.random() < 0.5 ? '❌' : '⭕';
+        const el = document.getElementById('coinflipResultText');
+        if (el) el.innerText = randSymbol;
+        
+        if (count >= 12) {
+            clearInterval(coinInterval);
+            
+            db.ref(`piskvorky/games/${activeGameId}`).once('value', (snap) => {
+                const gData = snap.val();
+                if (!gData) return;
+
+                const p1GetsX = Math.random() < 0.5;
+                const p1Symbol = p1GetsX ? 'X' : 'O';
+                const p2Symbol = p1GetsX ? 'O' : 'X';
+                const starterId = p1Symbol === 'X' ? gData.player1.id : gData.player2.id;
+                
+                const myAssignedSymbol = gData.player1.id === myId ? p1Symbol : p2Symbol;
+
+                const resEl = document.getElementById('coinflipResultText');
+                if (resEl) {
+                    resEl.innerHTML = `Odvetný Coinflip!<br>Padlo ti: <strong>${myAssignedSymbol}</strong> (${myAssignedSymbol === 'X' ? 'Začínáš!' : 'Jsi druhý'})`;
+                }
+
+                // Pozastavení na 2 sekundy pro přečtení výsledku odvetného coinflipu
+                setTimeout(() => {
+                    document.getElementById('coinflipModal').style.display = 'none';
+                    const totalCells = boardSize * boardSize;
+                    db.ref(`piskvorky/games/${activeGameId}`).update({
+                        board: new Array(totalCells).fill(''),
+                        status: 'playing',
+                        winner: null,
+                        turn: starterId,
+                        'player1/symbol': p1Symbol,
+                        'player2/symbol': p2Symbol,
+                        rematchVotes: { [gData.player1.id]: false, [gData.player2.id]: false }
+                    });
+                    document.getElementById('gameSection').style.display = 'block';
+                }, 2000);
+            });
+        }
+    }, 250);
 }
 
 function sendChatMessage() {
