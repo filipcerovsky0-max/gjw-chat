@@ -42,6 +42,7 @@
             max-width: 100%; height: auto; display: block; margin-top: 6px; border: 1px solid #eee;
         }
         a { color: #0000EE; text-decoration: underline; }
+        .loading-status { text-align: center; font-size: 12px; color: #666; margin: 15px 0; }
     </style>
 </head>
 <body>
@@ -55,21 +56,31 @@
         <h3 style="font-size: 13px; margin: 0 0 8px 0; font-weight: bold;">Nahrát nový důkaz:</h3>
         <input type="text" id="darkCaptionInput" placeholder="Popisek důkazu..." class="retro-input">
         <input type="file" id="darkFileInput" accept="image/*" class="retro-input">
-        <button onclick="uploadDarkEvidence()" class="retro-button font-bold">Nahrát do galerie</button>
+        <button onclick="uploadDarkEvidence()" class="retro-button font-bold" id="uploadBtn">Nahrát do galerie</button>
     </div>
 
     <div id="darkGalleryList">
         <!-- Zde se dynamicky načtou fotky -->
+        <p class="tady italic">Načítám nejnovější důkazy...</p>
     </div>
+
+    <div id="loadingStatus" class="loading-status" style="display: none;">Načítám další starší důkazy...</div>
 
     <script>
         const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        let allEvidenceKeys = [];
+        let loadedCount = 0;
+        const pageSize = 4; // Kolik se jich načte v jedné dávce
+        let cachedData = {};
+        let isFetchingMore = false;
+
         function uploadDarkEvidence() {
             const captionInput = document.getElementById('darkCaptionInput');
             const fileInput = document.getElementById('darkFileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
             const caption = captionInput.value.trim() || "Bez popisku";
             
             if (fileInput.files.length === 0) {
@@ -79,6 +90,10 @@
 
             const file = fileInput.files[0];
             const reader = new FileReader();
+            
+            uploadBtn.innerText = "Nahrávám...";
+            uploadBtn.disabled = true;
+
             reader.onload = function(e) {
                 const base64Image = e.target.result;
                 
@@ -87,6 +102,8 @@
                     image: base64Image,
                     time: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 }, (error) => {
+                    uploadBtn.innerText = "Nahrát do galerie";
+                    uploadBtn.disabled = false;
                     if (error) {
                         alert("Chyba při nahrávání.");
                     } else {
@@ -99,26 +116,70 @@
             reader.readAsDataURL(file);
         }
 
+        const galleryList = document.getElementById('darkGalleryList');
+        const loadingStatus = document.getElementById('loadingStatus');
+
+        // Sledování dat z databáze
         db.ref('darkEvidence').on('value', (snapshot) => {
-            const data = snapshot.val();
-            const galleryList = document.getElementById('darkGalleryList');
-            galleryList.innerHTML = '';
-            
-            if (!data) {
-                galleryList.innerHTML = '<p class="tady italic text-gray-500">Zatím nebyly nahrány žádné důkazy.</p>';
+            cachedData = snapshot.val();
+            if (!cachedData) {
+                galleryList.innerHTML = '<p class="tady italic">Zatím nebyly nahrány žádné důkazy.</p>';
+                loadingStatus.style.display = 'none';
                 return;
             }
 
-            Object.entries(data).reverse().forEach(([key, item]) => {
-                const div = document.createElement('div');
-                div.className = "gallery-item";
-                div.innerHTML = `
-                    <div style="font-weight: bold; font-size: 13px; color: #1d4372; margin-bottom: 4px;">${item.caption}</div>
-                    <img src="${item.image}" alt="Důkaz">
-                    <div style="font-size: 10px; color: #777; margin-top: 6px; text-align: right;">Nahráno: ${item.time}</div>
-                `;
-                galleryList.appendChild(div);
-            });
+            allEvidenceKeys = Object.keys(cachedData).reverse(); // Nejnovější první
+            loadedCount = 0;
+            galleryList.innerHTML = '';
+            loadNextBatch();
+        });
+
+        function loadNextBatch() {
+            const nextKeys = allEvidenceKeys.slice(loadedCount, loadedCount + pageSize);
+            if (nextKeys.length === 0) {
+                loadingStatus.style.display = 'none';
+                return;
+            }
+
+            // Pokud zrovna načítáme, ukážeme drobnou notifikaci dole
+            if (loadedCount > 0) {
+                loadingStatus.style.display = 'block';
+            }
+
+            // Krátká prodleva pro plynulý "reels" efekt (postupné skládání)
+            setTimeout(() => {
+                nextKeys.forEach((key) => {
+                    const item = cachedData[key];
+                    const div = document.createElement('div');
+                    div.className = "gallery-item";
+                    div.innerHTML = `
+                        <div style="font-weight: bold; font-size: 13px; color: #1d4372; margin-bottom: 4px;">${item.caption}</div>
+                        <img src="${item.image}" alt="Důkaz" loading="lazy">
+                        <div style="font-size: 10px; color: #777; margin-top: 6px; text-align: right;">Nahráno: ${item.time}</div>
+                    `;
+                    galleryList.appendChild(div);
+                });
+
+                loadedCount += nextKeys.length;
+
+                // Jestli ještě zbývají nějaké starší důkazy, hned automaticky načteme další dávku
+                if (loadedCount < allEvidenceKeys.length) {
+                    loadNextBatch();
+                } else {
+                    loadingStatus.style.display = 'none';
+                }
+            }, 150); // Rychlost postupného skládání (150 ms mezi dávkami)
+        }
+
+        // Nekonečný scrollovací efekt (pokud dojedeš dolů, automaticky popojede načítání)
+        window.addEventListener('scroll', () => {
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
+                if (loadedCount < allEvidenceKeys.length && !isFetchingMore) {
+                    isFetchingMore = true;
+                    loadNextBatch();
+                    setTimeout(() => { isFetchingMore = false; }, 500);
+                }
+            }
         });
     </script>
 </body>
