@@ -113,8 +113,8 @@
         const galleryList = document.getElementById('darkGalleryList');
         const loadingStatus = document.getElementById('loadingStatus');
 
-        // Postupné načítání jednoho po druhém (nejdřív nejnovější, pak hned další atd.)
-        db.ref('darkEvidence').on('value', (snapshot) => {
+        // Stáhneme pouze seznam klíčů (IDs), což je extrémně rychlé a stáhne se to hned
+        db.ref('darkEvidence').orderByKey().once('value', (snapshot) => {
             const data = snapshot.val();
             if (!data) {
                 galleryList.innerHTML = '<p class="tady italic">Zatím nebyly nahrány žádné důkazy.</p>';
@@ -122,12 +122,13 @@
                 return;
             }
 
-            const keys = Object.keys(data).reverse(); // Od nejnovějšího po nejstarší
-            galleryList.innerHTML = ''; // Vyčištění před vykreslením
+            // Převedeme klíče na pole a otočíme od nejnovějšího po nejstarší
+            const keys = Object.keys(data).reverse();
+            galleryList.innerHTML = ''; // Vyčištění nápisu "Načítám..."
 
             let index = 0;
 
-            function renderNext() {
+            function loadItem() {
                 if (index >= keys.length) {
                     loadingStatus.style.display = 'none';
                     return;
@@ -138,24 +139,28 @@
                 }
 
                 const key = keys[index];
-                const item = data[key];
+                
+                // Stáhneme z databáze detail *pouze* pro tuto jednu konkrétní fotku
+                db.ref(`darkEvidence/${key}`).once('value', (itemSnap) => {
+                    const item = itemSnap.val();
+                    if (item) {
+                        const div = document.createElement('div');
+                        div.className = "gallery-item";
+                        div.innerHTML = `
+                            <div style="font-weight: bold; font-size: 13px; color: #1d4372; margin-bottom: 4px;">${item.caption}</div>
+                            <img src="${item.image}" alt="Důkaz" loading="lazy">
+                            <div style="font-size: 10px; color: #777; margin-top: 6px; text-align: right;">Nahráno: ${item.time}</div>
+                        `;
+                        galleryList.appendChild(div);
+                    }
 
-                const div = document.createElement('div');
-                div.className = "gallery-item";
-                div.innerHTML = `
-                    <div style="font-weight: bold; font-size: 13px; color: #1d4372; margin-bottom: 4px;">${item.caption}</div>
-                    <img src="${item.image}" alt="Důkaz" loading="lazy">
-                    <div style="font-size: 10px; color: #777; margin-top: 6px; text-align: right;">Nahráno: ${item.time}</div>
-                `;
-                galleryList.appendChild(div);
-
-                index++;
-
-                // Hned jak se vykreslí jeden, okamžitě (bez zbytečné prodlevy) se pustí vykreslení dalšího
-                requestAnimationFrame(renderNext);
+                    index++;
+                    // Hned jak se vykreslí tahle fotka, vyžádáme si další v pořadí
+                    requestAnimationFrame(loadItem);
+                });
             }
 
-            renderNext();
+            loadItem();
         });
     </script>
 </body>
