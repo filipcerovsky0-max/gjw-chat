@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anonymní zpovědnice - GJW</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            margin: 15px;
+            padding: 10px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .stred { text-align: center; }
+        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
+        #nadpis { font-size: 18px; font-weight: bold; margin: 15px 0 8px 0; color: #000000; }
+        .tady { font-size: 12px; color: #333; margin: 4px 0 12px 0; line-height: 1.5; }
+        .retro-box { background: #ffffff; border: 1px solid #b0b0a8; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+        .retro-button {
+            background: #e2e8f0; border: 1px solid #94a3b8; padding: 6px 14px;
+            font-family: Arial, sans-serif; font-size: 12px; cursor: pointer; color: #000; border-radius: 3px; font-weight: bold;
+        }
+        .retro-button:hover { background: #cbd5e1; }
+        .retro-textarea {
+            background: #ffffff; border: 1px solid #94a3b8; padding: 8px;
+            font-family: Arial, sans-serif; font-size: 13px; color: #000; border-radius: 3px; width: 100%; box-sizing: border-box; margin-bottom: 10px;
+            resize: vertical; height: 90px;
+        }
+        .confession-card {
+            background: #fff; border: 1px solid #ccc; padding: 12px; margin-bottom: 12px; border-radius: 4px;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
+        }
+        .confession-text {
+            font-size: 14px; color: #111; line-height: 1.5; word-break: break-word; white-space: pre-wrap;
+        }
+        .confession-footer {
+            font-size: 11px; color: #666; margin-top: 8px; display: flex; justify-content: space-between; align-items: center;
+            border-top: 1px solid #eee; padding-top: 6px;
+        }
+        a { color: #0000EE; text-decoration: underline; }
+        .loading-status { text-align: center; font-size: 12px; color: #777; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <p><a href="../">&laquo; Zpět na hlavní stránku</a></p>
+    <hr class="oddeleni">
+
+    <h1 id="nadpis">anonymní přiznání GJW</h1>
+    <p class="tady">Chceš se k něčemu přiznat, ale zůstat u toho anonymní? Zde je to správné místo!</p>
+    
+    <div class="retro-box">
+        <h3 style="font-size: 13px; margin: 0 0 8px 0; font-weight: bold;">Napsat novou zpověď:</h3>
+        <textarea id="confessionInput" class="retro-textarea" placeholder="Napiš svou zpověď sem... (zůstaneš anonymní)"></textarea>
+        <button onclick="submitConfession()" class="retro-button" id="submitBtn">Odeslat zpověď</button>
+    </div>
+
+    <h2 style="font-size: 15px; font-weight: bold; margin: 20px 0 10px 0;">Nejnovější zpovědi GJW:</h2>
+    <div id="confessionsList">
+        <p class="tady italic">Načítám zpovědi...</p>
+    </div>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function submitConfession() {
+            const input = document.getElementById('confessionInput');
+            const btn = document.getElementById('submitBtn');
+            const text = input.value.trim();
+
+            if (!text) {
+                alert("Napiš nejdřív nějakou zpověď!");
+                return;
+            }
+
+            if (text.length > 500) {
+                alert("Zpověď je moc dlouhá (max 500 znaků).");
+                return;
+            }
+
+            btn.innerText = "Odesílám...";
+            btn.disabled = true;
+
+            const timeStr = new Date().toLocaleDateString('cs-CZ') + ' v ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            db.ref('confessions').push({
+                text: text,
+                time: timeStr
+            }, (error) => {
+                btn.innerText = "Odeslat zpověď";
+                btn.disabled = false;
+                if (error) {
+                    alert("Chyba při odesílání zpovědi.");
+                } else {
+                    input.value = '';
+                    alert("Zpověď byla úspěšně zveřejněna!");
+                }
+            });
+        }
+
+        const confessionsList = document.getElementById('confessionsList');
+
+        // Načítání zpovědí v reálném čase od nejnovějších
+        db.ref('confessions').on('value', (snapshot) => {
+            const data = snapshot.val();
+            confessionsList.innerHTML = '';
+
+            if (!data) {
+                confessionsList.innerHTML = '<p class="tady italic">Zatím tu není žádná zpověď. Buď první!</p>';
+                return;
+            }
+
+            const keys = Object.keys(data).reverse(); // Od nejnovějších
+
+            keys.forEach((key) => {
+                const item = data[key];
+                const div = document.createElement('div');
+                div.className = "confession-card";
+                div.innerHTML = `
+                    <div class="confession-text">${escapeHtml(item.text)}</div>
+                    <div class="confession-footer">
+                        <span>#gjwzpovedi</span>
+                        <span>${item.time}</span>
+                    </div>
+                `;
+                confessionsList.appendChild(div);
+            });
+        });
+
+        // Bezpečnostní funkce proti XSS útokům (aby uživatelé nemohli psát HTML/JS kódy do inputu)
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(>g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
