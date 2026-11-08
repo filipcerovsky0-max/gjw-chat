@@ -42,7 +42,7 @@
             max-width: 100%; height: auto; display: block; margin-top: 6px; border: 1px solid #eee;
         }
         a { color: #0000EE; text-decoration: underline; }
-        .loading-status { text-align: center; font-size: 12px; color: #666; margin: 15px 0; }
+        .loading-status { text-align: center; font-size: 11px; color: #777; margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -61,7 +61,7 @@
 
     <div id="darkGalleryList">
         <!-- Zde se dynamicky načtou fotky -->
-        <p class="tady italic">Načítám nejnovější důkazy...</p>
+        <p class="tady italic">Načítám důkazy...</p>
     </div>
 
     <div id="loadingStatus" class="loading-status" style="display: none;">Načítám další starší důkazy...</div>
@@ -70,12 +70,6 @@
         const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-        let allEvidenceKeys = [];
-        let loadedCount = 0;
-        const pageSize = 4; // Kolik se jich načte v jedné dávce
-        let cachedData = {};
-        let isFetchingMore = false;
 
         function uploadDarkEvidence() {
             const captionInput = document.getElementById('darkCaptionInput');
@@ -119,67 +113,49 @@
         const galleryList = document.getElementById('darkGalleryList');
         const loadingStatus = document.getElementById('loadingStatus');
 
-        // Sledování dat z databáze
+        // Postupné načítání jednoho po druhém (nejdřív nejnovější, pak hned další atd.)
         db.ref('darkEvidence').on('value', (snapshot) => {
-            cachedData = snapshot.val();
-            if (!cachedData) {
+            const data = snapshot.val();
+            if (!data) {
                 galleryList.innerHTML = '<p class="tady italic">Zatím nebyly nahrány žádné důkazy.</p>';
                 loadingStatus.style.display = 'none';
                 return;
             }
 
-            allEvidenceKeys = Object.keys(cachedData).reverse(); // Nejnovější první
-            loadedCount = 0;
-            galleryList.innerHTML = '';
-            loadNextBatch();
-        });
+            const keys = Object.keys(data).reverse(); // Od nejnovějšího po nejstarší
+            galleryList.innerHTML = ''; // Vyčištění před vykreslením
 
-        function loadNextBatch() {
-            const nextKeys = allEvidenceKeys.slice(loadedCount, loadedCount + pageSize);
-            if (nextKeys.length === 0) {
-                loadingStatus.style.display = 'none';
-                return;
-            }
+            let index = 0;
 
-            // Pokud zrovna načítáme, ukážeme drobnou notifikaci dole
-            if (loadedCount > 0) {
-                loadingStatus.style.display = 'block';
-            }
-
-            // Krátká prodleva pro plynulý "reels" efekt (postupné skládání)
-            setTimeout(() => {
-                nextKeys.forEach((key) => {
-                    const item = cachedData[key];
-                    const div = document.createElement('div');
-                    div.className = "gallery-item";
-                    div.innerHTML = `
-                        <div style="font-weight: bold; font-size: 13px; color: #1d4372; margin-bottom: 4px;">${item.caption}</div>
-                        <img src="${item.image}" alt="Důkaz" loading="lazy">
-                        <div style="font-size: 10px; color: #777; margin-top: 6px; text-align: right;">Nahráno: ${item.time}</div>
-                    `;
-                    galleryList.appendChild(div);
-                });
-
-                loadedCount += nextKeys.length;
-
-                // Jestli ještě zbývají nějaké starší důkazy, hned automaticky načteme další dávku
-                if (loadedCount < allEvidenceKeys.length) {
-                    loadNextBatch();
-                } else {
+            function renderNext() {
+                if (index >= keys.length) {
                     loadingStatus.style.display = 'none';
+                    return;
                 }
-            }, 150); // Rychlost postupného skládání (150 ms mezi dávkami)
-        }
 
-        // Nekonečný scrollovací efekt (pokud dojedeš dolů, automaticky popojede načítání)
-        window.addEventListener('scroll', () => {
-            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
-                if (loadedCount < allEvidenceKeys.length && !isFetchingMore) {
-                    isFetchingMore = true;
-                    loadNextBatch();
-                    setTimeout(() => { isFetchingMore = false; }, 500);
+                if (index > 0) {
+                    loadingStatus.style.display = 'block';
                 }
+
+                const key = keys[index];
+                const item = data[key];
+
+                const div = document.createElement('div');
+                div.className = "gallery-item";
+                div.innerHTML = `
+                    <div style="font-weight: bold; font-size: 13px; color: #1d4372; margin-bottom: 4px;">${item.caption}</div>
+                    <img src="${item.image}" alt="Důkaz" loading="lazy">
+                    <div style="font-size: 10px; color: #777; margin-top: 6px; text-align: right;">Nahráno: ${item.time}</div>
+                `;
+                galleryList.appendChild(div);
+
+                index++;
+
+                // Hned jak se vykreslí jeden, okamžitě (bez zbytečné prodlevy) se pustí vykreslení dalšího
+                requestAnimationFrame(renderNext);
             }
+
+            renderNext();
         });
     </script>
 </body>
