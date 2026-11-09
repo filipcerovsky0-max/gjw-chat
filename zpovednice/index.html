@@ -31,11 +31,12 @@
             font-family: Arial, sans-serif; font-size: 12px; cursor: pointer; color: #000; border-radius: 3px; font-weight: bold;
         }
         .retro-button:hover { background: #cbd5e1; }
-        .retro-textarea {
+        .retro-textarea, .retro-input {
             background: #ffffff; border: 1px solid #94a3b8; padding: 8px;
             font-family: Arial, sans-serif; font-size: 13px; color: #000; border-radius: 3px; width: 100%; box-sizing: border-box; margin-bottom: 10px;
-            resize: vertical; height: 90px;
+            resize: vertical;
         }
+        .retro-textarea { height: 90px; }
         .confession-card {
             background: #fff; border: 1px solid #ccc; padding: 12px; margin-bottom: 12px; border-radius: 4px;
             box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
@@ -47,8 +48,16 @@
             font-size: 11px; color: #666; margin-top: 8px; display: flex; justify-content: space-between; align-items: center;
             border-top: 1px solid #eee; padding-top: 6px;
         }
+        .comment-toggle-btn {
+            background: none; border: none; color: #0000EE; cursor: pointer; font-size: 11px; padding: 0; text-decoration: underline; font-family: Arial, sans-serif;
+        }
+        .comments-section {
+            margin-top: 10px; background: #fafafa; border: 1px solid #ddd; padding: 10px; border-radius: 3px; display: none;
+        }
+        .comment-item { font-size: 11px; border-bottom: 1px solid #eee; padding: 5px 0; color: #333; word-break: break-word; }
+        .comment-item:last-child { border-bottom: none; }
+        .comment-input-row { display: flex; gap: 6px; margin-top: 8px; }
         a { color: #0000EE; text-decoration: underline; }
-        .loading-status { text-align: center; font-size: 12px; color: #777; margin: 15px 0; }
     </style>
 </head>
 <body>
@@ -94,7 +103,6 @@
 
             const timeStr = new Date().toLocaleDateString('cs-CZ') + ' v ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            // Uložíme zpověď včetně serverového timestampu pro spolehlivé řazení
             db.ref('confessions').push({
                 text: text,
                 time: timeStr,
@@ -123,10 +131,9 @@
                 return;
             }
 
-            // Převedeme data na pole a otočíme je, aby nejnovější byly nahoře
             const confessionsArray = [];
             for (let key in data) {
-                confessionsArray.push(data[key]);
+                confessionsArray.push({ id: key, ...data[key] });
             }
             confessionsArray.reverse();
 
@@ -136,15 +143,82 @@
                 div.innerHTML = `
                     <div class="confession-text">${escapeHtml(item.text || '')}</div>
                     <div class="confession-footer">
-                        <span>#gjwzpovedi</span>
-                        <span>${item.time || 'Neznámý čas'}</span>
+                        <span>#gjwzpovedi • ${item.time || 'Neznámý čas'}</span>
+                        <button class="comment-toggle-btn" onclick="toggleComments('${item.id}')" id="btn-toggle-${item.id}">💬 Komentáře</button>
+                    </div>
+                    <div id="comments-section-${item.id}" class="comments-section">
+                        <div id="comments-list-${item.id}">Načítám komentáře...</div>
+                        <div class="comment-input-row">
+                            <input type="text" id="comment-input-${item.id}" placeholder="Napiš anonymní komentář..." class="retro-input" style="margin:0; font-size:11px;">
+                            <button onclick="addComment('${item.id}')" class="retro-button" style="font-size:10px; padding:4px 8px;">Odeslat</button>
+                        </div>
                     </div>
                 `;
                 confessionsList.appendChild(div);
+                loadCommentsCountAndList(item.id);
             });
         });
 
-        // Opravená bezpečnostní funkce proti XSS útokům
+        function toggleComments(postId) {
+            const section = document.getElementById(`comments-section-${postId}`);
+            section.style.display = section.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function addComment(postId) {
+            const input = document.getElementById(`comment-input-${postId}`);
+            const text = input.value.trim();
+
+            if (!text) {
+                alert("Napiš text komentáře!");
+                return;
+            }
+
+            if (text.length > 250) {
+                alert("Komentář je moc dlouhý (max 250 znaků).");
+                return;
+            }
+
+            const timeStr = new Date().toLocaleDateString('cs-CZ') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            db.ref(`confessionComments/${postId}`).push({
+                text: text,
+                time: timeStr,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }, (error) => {
+                if (!error) {
+                    input.value = '';
+                } else {
+                    alert("Chyba při odesílání komentáře.");
+                }
+            });
+        }
+
+        function loadCommentsCountAndList(postId) {
+            db.ref(`confessionComments/${postId}`).on('value', (snapshot) => {
+                const comData = snapshot.val();
+                const listEl = document.getElementById(`comments-list-${postId}`);
+                const toggleBtn = document.getElementById(`btn-toggle-${postId}`);
+                if (!listEl || !toggleBtn) return;
+
+                if (!comData) {
+                    listEl.innerHTML = '<div class="comment-item italic" style="color:#777;">Zatím žádné komentáře. Buď první!</div>';
+                    toggleBtn.innerText = `💬 Komentáře (0)`;
+                    return;
+                }
+
+                const commentsArray = Object.values(comData);
+                toggleBtn.innerText = `💬 Komentáře (${commentsArray.length})`;
+
+                listEl.innerHTML = '';
+                commentsArray.forEach((com) => {
+                    const cDiv = document.createElement('div');
+                    cDiv.className = 'comment-item';
+                    cDiv.innerHTML = `<strong>Anonym:</strong> ${escapeHtml(com.text)} <span style="font-size:9px; color:#886; float:right;">${com.time}</span>`;
+                    listEl.appendChild(cDiv);
+                });
+            });
+        }
+
         function escapeHtml(text) {
             return text
                 .replace(/&/g, "&amp;")
