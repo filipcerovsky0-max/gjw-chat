@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skladiště písemek & testů - GJW</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            margin: 15px;
+            padding: 10px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .stred { text-align: center; }
+        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
+        #nadpis { font-size: 18px; font-weight: bold; margin: 15px 0 8px 0; color: #000000; }
+        .tady { font-size: 12px; color: #333; margin: 4px 0 12px 0; line-height: 1.5; }
+        .retro-box { background: #ffffff; border: 1px solid #b0b0a8; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+        .retro-button {
+            background: #e2e8f0; border: 1px solid #94a3b8; padding: 6px 14px;
+            font-family: Arial, sans-serif; font-size: 12px; cursor: pointer; color: #000; border-radius: 3px; font-weight: bold;
+        }
+        .retro-button:hover { background: #cbd5e1; }
+        .retro-input, select {
+            background: #ffffff; border: 1px solid #94a3b8; padding: 7px;
+            font-family: Arial, sans-serif; font-size: 12px; color: #000; border-radius: 3px; width: 100%; box-sizing: border-box; margin-bottom: 8px;
+        }
+        .tabs { display: flex; gap: 10px; margin-bottom: 12px; }
+        .tab-btn { flex: 1; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; background: #ddd; border: 1px solid #bbb; border-radius: 3px; }
+        .tab-btn.active { background: #1d4372; color: white; border-color: #1d4372; }
+
+        .exam-card {
+            background: #fff; border: 1px solid #ccc; padding: 12px; margin-bottom: 12px; border-radius: 4px;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
+        }
+        .exam-header {
+            display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 13px; color: #1d4372; margin-bottom: 6px;
+            border-bottom: 1px solid #eee; padding-bottom: 4px;
+        }
+        .exam-card img {
+            max-width: 100%; height: auto; display: block; margin-top: 8px; border: 1px solid #eee; cursor: pointer;
+        }
+        .exam-footer {
+            font-size: 11px; color: #666; margin-top: 8px; display: flex; justify-content: space-between; align-items: center;
+            border-top: 1px solid #eee; padding-top: 6px;
+        }
+        .action-row {
+            display: flex; gap: 15px; align-items: center; margin-top: 8px; font-size: 12px;
+        }
+        .action-btn { background: none; border: none; color: #0000EE; cursor: pointer; font-size: 12px; padding: 0; text-decoration: underline; }
+        
+        /* Sekce komentářů */
+        .comments-section {
+            margin-top: 10px; background: #f9f9f9; border: 1px solid #ddd; padding: 8px; border-radius: 3px; display: none;
+        }
+        .comment-item { font-size: 11px; border-bottom: 1px solid #eee; padding: 4px 0; color: #333; }
+        .comment-input-row { display: flex; gap: 5px; margin-top: 6px; }
+
+        /* Modální okno pro zvětšení obrázku */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
+            display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; box-sizing: border-box;
+        }
+        .modal img { max-width: 100%; max-height: 90vh; border: 2px solid white; }
+        .modal-close { position: absolute; top: 15px; right: 25px; color: white; font-size: 28px; font-weight: bold; cursor: pointer; }
+
+        a { color: #0000EE; text-decoration: underline; }
+        .loading-status { text-align: center; font-size: 11px; color: #777; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <p><a href="../">&laquo; Zpět na hlavní stránku</a></p>
+    <hr class="oddeleni">
+
+    <h1 id="nadpis">📄 Skladiště písemek & testů GJW</h1>
+    <p class="tady">Sdílej písemky, testy nebo jen užitečné zprávy a rady pro spolužáky!</p>
+    
+    <div class="retro-box">
+        <div class="tabs">
+            <button class="tab-btn active" id="tabPostImg" onclick="switchTab('img')">📷 Nahrát písemku / fotku</button>
+            <button class="tab-btn" id="tabPostMsg" onclick="switchTab('msg')">💬 Napsat zprávu</button>
+        </div>
+
+        <input type="text" id="examCaption" placeholder="Popisek / téma / komentář" class="retro-input">
+        <input type="text" id="examTeacher" placeholder="Jméno učitele (např. Matoušek)" class="retro-input">
+        
+        <select id="examClass" class="retro-input">
+            <option value="">Vyber svou třídu</option>
+            <option value="O1.A">O1.A</option><option value="O1.B">O1.B</option>
+            <option value="O2.A">O2.A</option><option value="O2.B">O2.B</option>
+            <option value="O3.A">O3.A</option><option value="O3.B">O3.B</option>
+            <option value="O4.A">O4.A</option><option value="O4.B">O4.B</option>
+            <option value="O5.A">O5.A</option><option value="O5.B">O5.B</option>
+            <option value="O6.A">O6.A</option><option value="O6.B">O6.B</option>
+            <option value="O7.A">O7.A</option><option value="O7.B">O7.B</option>
+            <option value="O8.A">O8.A</option><option value="O8.B">O8.B</option>
+            <option value="1.A">1.A</option><option value="1.B">1.B</option>
+            <option value="2.A">2.A</option><option value="2.B">2.B</option>
+            <option value="3.A">3.A</option><option value="3.B">3.B</option>
+            <option value="4.A">4.A</option><option value="4.B">4.B</option>
+        </select>
+
+        <select id="examSubject" class="retro-input">
+            <option value="">Vyber předmět / kategorii</option>
+            <optgroup label="Jazyky a komunikace">
+                <option value="Angličtina">Angličtina</option>
+                <option value="Čeština">Čeština</option>
+                <option value="Francouzština">Francouzština</option>
+                <option value="Latina">Latina</option>
+                <option value="Němčina">Němčina</option>
+                <option value="Ruština">Ruština</option>
+                <option value="Španělština">Španělština</option>
+            </optgroup>
+            <optgroup label="Přírodní vědy a matematika">
+                <option value="Biologie">Biologie</option>
+                <option value="Fyzika">Fyzika</option>
+                <option value="Chemie">Chemie</option>
+                <option value="Matematika">Matematika</option>
+            </optgroup>
+            <optgroup label="Společenské vědy">
+                <option value="American history and culture">American history and culture</option>
+                <option value="Dějepis">Dějepis</option>
+                <option value="Základy společenských věd">Základy společenských věd</option>
+                <option value="Zeměpis">Zeměpis</option>
+            </optgroup>
+            <optgroup label="Estetika, informatika a tělovýchova">
+                <option value="Estetická výchova hudební">Estetická výchova hudební</option>
+                <option value="Estetická výchova výtvarná">Estetická výchova výtvarná</option>
+                <option value="Informatika">Informatika</option>
+                <option value="Sportovní příprava">Sportovní příprava</option>
+                <option value="Teorie sportovního tréninku">Teorie sportovního tréninku</option>
+                <option value="Tělesná výchova">Tělesná výchova</option>
+            </optgroup>
+            <optgroup label="Ostatní / Obecné">
+                <option value="Ostatní">Ostatní / Obecná zpráva</option>
+            </optgroup>
+        </select>
+
+        <div id="fileUploadContainer">
+            <input type="file" id="examFile" accept="image/*" class="retro-input">
+        </div>
+
+        <button onclick="submitPost()" class="retro-button" id="submitBtn">Zveřejnit příspěvek</button>
+    </div>
+
+    <!-- Filtr podle předmětů -->
+    <div style="margin-bottom: 15px;">
+        <label style="font-size: 12px; font-weight: bold;">Filtrovat předmět:</label>
+        <select id="filterSubject" onchange="renderExams()" class="retro-input" style="margin-top: 4px;">
+            <option value="all">Všechny předměty</option>
+            <option value="Angličtina">Angličtina</option>
+            <option value="Čeština">Čeština</option>
+            <option value="Francouzština">Francouzština</option>
+            <option value="Latina">Latina</option>
+            <option value="Němčina">Němčina</option>
+            <option value="Ruština">Ruština</option>
+            <option value="Španělština">Španělština</option>
+            <option value="Biologie">Biologie</option>
+            <option value="Fyzika">Fyzika</option>
+            <option value="Chemie">Chemie</option>
+            <option value="Matematika">Matematika</option>
+            <option value="American history and culture">American history and culture</option>
+            <option value="Dějepis">Dějepis</option>
+            <option value="Základy společenských věd">Základy společenských věd</option>
+            <option value="Zeměpis">Zeměpis</option>
+            <option value="Estetická výchova hudební">Estetická výchova hudební</option>
+            <option value="Estetická výchova výtvarná">Estetická výchova výtvarná</option>
+            <option value="Informatika">Informatika</option>
+            <option value="Sportovní příprava">Sportovní příprava</option>
+            <option value="Teorie sportovního tréninku">Teorie sportovního tréninku</option>
+            <option value="Tělesná výchova">Tělesná výchova</option>
+            <option value="Ostatní">Ostatní</option>
+        </select>
+    </div>
+
+    <h2 style="font-size: 15px; font-weight: bold; margin: 20px 0 10px 0;">Příspěvky a písemky:</h2>
+    <div id="examsList">
+        <p class="tady italic">Načítám příspěvky...</p>
+    </div>
+
+    <!-- Modální okno pro detail obrázku -->
+    <div id="imageModal" class="modal" onclick="closeImageModal()">
+        <span class="modal-close">&times;</span>
+        <img id="modalImg" src="" alt="Zvětšený obrázek">
+    </div>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let postType = 'img'; // 'img' nebo 'msg'
+        let allExamsData = {};
+
+        function switchTab(type) {
+            postType = type;
+            document.getElementById('tabPostImg').className = type === 'img' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('tabPostMsg').className = type === 'msg' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('fileUploadContainer').style.display = type === 'img' ? 'block' : 'none';
+        }
+
+        function submitPost() {
+            const captionInput = document.getElementById('examCaption');
+            const teacherInput = document.getElementById('examTeacher');
+            const classSelect = document.getElementById('examClass');
+            const subjectSelect = document.getElementById('examSubject');
+            const fileInput = document.getElementById('examFile');
+            const btn = document.getElementById('submitBtn');
+
+            const caption = captionInput.value.trim();
+            const teacher = teacherInput.value.trim() || "Neuvedeno";
+            const schoolClass = classSelect.value || "Neznámá třída";
+            const subject = subjectSelect.value;
+
+            if (!subject) {
+                alert("Vyber prosím předmět / kategorii!");
+                return;
+            }
+
+            if (!caption && postType === 'msg') {
+                alert("Napiš text zprávy!");
+                return;
+            }
+
+            if (postType === 'img' && fileInput.files.length === 0) {
+                alert("Vyber prosím fotku písemky!");
+                return;
+            }
+
+            btn.innerText = "Zpracovávám a odesílám...";
+            btn.disabled = true;
+
+            const timeStr = new Date().toLocaleDateString('cs-CZ') + ' v ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            if (postType === 'msg') {
+                saveToFirebase({
+                    type: 'msg',
+                    subject: subject,
+                    caption: caption || "Bez popisku",
+                    teacher: teacher,
+                    schoolClass: schoolClass,
+                    time: timeStr,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            } else {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 900;
+                        const MAX_HEIGHT = 900;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                        } else {
+                            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+
+                        saveToFirebase({
+                            type: 'img',
+                            subject: subject,
+                            caption: caption || "Bez popisku",
+                            teacher: teacher,
+                            schoolClass: schoolClass,
+                            image: compressedBase64,
+                            time: timeStr,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+                        });
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveToFirebase(postData) {
+            db.ref('exams').push(postData, (error) => {
+                document.getElementById('submitBtn').innerText = "Zveřejnit příspěvek";
+                document.getElementById('submitBtn').disabled = false;
+                if (error) {
+                    alert("Chyba při odesílání.");
+                } else {
+                    document.getElementById('examCaption').value = '';
+                    document.getElementById('examTeacher').value = '';
+                    document.getElementById('examFile').value = '';
+                    alert("Příspěvek úspěšně zveřejněn!");
+                }
+            });
+        }
+
+        const examsList = document.getElementById('examsList');
+
+        db.ref('exams').orderByChild('timestamp').on('value', (snapshot) => {
+            allExamsData = snapshot.val() || {};
+            renderExams();
+        });
+
+        function renderExams() {
+            const filter = document.getElementById('filterSubject').value;
+            examsList.innerHTML = '';
+
+            const keys = Object.keys(allExamsData).reverse();
+
+            if (keys.length === 0) {
+                examsList.innerHTML = '<p class="tady italic">Zatím tu nejsou žádné příspěvky.</p>';
+                return;
+            }
+
+            let count = 0;
+            keys.forEach((key) => {
+                const item = allExamsData[key];
+                if (filter !== 'all' && item.subject !== filter) return;
+                count++;
+
+                const div = document.createElement('div');
+                div.className = "exam-card";
+
+                let contentHtml = '';
+                if (item.type === 'img') {
+                    contentHtml = `
+                        <div style="font-size: 13px; color: #222; margin-bottom: 6px;">${escapeHtml(item.caption)}</div>
+                        <img src="${item.image}" alt="Písemka" onclick="openImageModal('${item.image}')" title="Kliknutím zvětšíš">
+                        <div style="margin-top: 6px; font-size: 11px;">
+                            <a href="${item.image}" download="pismeka_${item.subject}.jpg" target="_blank">📥 Stáhni si to</a>
+                        </div>
+                    `;
+                } else {
+                    contentHtml = `
+                        <div style="font-size: 14px; color: #111; margin-bottom: 6px; font-weight: bold; background: #fafafa; padding: 8px; border-left: 3px solid #1d4372;">${escapeHtml(item.caption)}</div>
+                    `;
+                }
+
+                div.innerHTML = `
+                    <div class="exam-header">
+                        <span>📚 ${escapeHtml(item.subject)} | Třída: ${escapeHtml(item.schoolClass)}</span>
+                        <span style="font-weight: normal; font-size: 11px; color: #555;">Učitel: ${escapeHtml(item.teacher)}</span>
+                    </div>
+                    ${contentHtml}
+                    <div class="exam-footer">
+                        <span>Nahráno: ${item.time}</span>
+                        <button class="action-btn" onclick="toggleComments('${key}')">💬 Komentáře / Zprávy</button>
+                    </div>
+                    <div id="comments-${key}" class="comments-section">
+                        <div id="comments-list-${key}">Načítám komentáře...</div>
+                        <div class="comment-input-row">
+                            <input type="text" id="comment-input-${key}" placeholder="Napsat komentář..." class="retro-input" style="margin:0; font-size:11px;">
+                            <button onclick="addComment('${key}')" class="retro-button" style="font-size:10px; padding:4px 8px;">Odeslat</button>
+                        </div>
+                    </div>
+                `;
+                examsList.appendChild(div);
+                loadComments(key);
+            });
+
+            if (count === 0) {
+                examsList.innerHTML = '<p class="tady italic">V této kategorii nejsou žádné příspěvky.</p>';
+            }
+        }
+
+        function toggleComments(postId) {
+            const section = document.getElementById(`comments-${postId}`);
+            section.style.display = section.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function addComment(postId) {
+            const input = document.getElementById(`comment-input-${postId}`);
+            const text = input.value.trim();
+            if (!text) return;
+
+            const timeStr = new Date().toLocaleDateString('cs-CZ') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            db.ref(`examComments/${postId}`).push({
+                text: text,
+                time: timeStr
+            }, (error) => {
+                if (!error) {
+                    input.value = '';
+                }
+            });
+        }
+
+        function loadComments(postId) {
+            db.ref(`examComments/${postId}`).on('value', (snapshot) => {
+                const comData = snapshot.val();
+                const listEl = document.getElementById(`comments-list-${postId}`);
+                if (!listEl) return;
+
+                if (!comData) {
+                    listEl.innerHTML = '<div class="comment-item italic" style="color:#777;">Žádné komentáře. Buď první!</div>';
+                    return;
+                }
+
+                listEl.innerHTML = '';
+                Object.values(comData).forEach((com) => {
+                    const cDiv = document.createElement('div');
+                    cDiv.className = 'comment-item';
+                    cDiv.innerHTML = `<strong>Anonym:</strong> ${escapeHtml(com.text)} <span style="font-size:9px; color:#886; float:right;">${com.time}</span>`;
+                    listEl.appendChild(cDiv);
+                });
+            });
+        }
+
+        function openImageModal(imgSrc) {
+            document.getElementById('modalImg').src = imgSrc;
+            document.getElementById('imageModal').style.display = 'flex';
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>

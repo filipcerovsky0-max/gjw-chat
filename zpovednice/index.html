@@ -94,14 +94,16 @@
 
             const timeStr = new Date().toLocaleDateString('cs-CZ') + ' v ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+            // Uložíme zpověď včetně serverového timestampu pro spolehlivé řazení
             db.ref('confessions').push({
                 text: text,
-                time: timeStr
+                time: timeStr,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
             }, (error) => {
                 btn.innerText = "Odeslat zpověď";
                 btn.disabled = false;
                 if (error) {
-                    alert("Chyba při odesílání zpovědi.");
+                    alert("Chyba při odesílání zpovědi: " + error.message);
                 } else {
                     input.value = '';
                     alert("Zpověď byla úspěšně zveřejněna!");
@@ -111,8 +113,8 @@
 
         const confessionsList = document.getElementById('confessionsList');
 
-        // Načítání zpovědí v reálném čase od nejnovějších
-        db.ref('confessions').on('value', (snapshot) => {
+        // Načítání zpovědí seřazených přes Firebase query (od nejnovějších)
+        db.ref('confessions').orderByChild('timestamp').on('value', (snapshot) => {
             const data = snapshot.val();
             confessionsList.innerHTML = '';
 
@@ -121,29 +123,33 @@
                 return;
             }
 
-            const keys = Object.keys(data).reverse(); // Od nejnovějších
+            // Převedeme data na pole a otočíme je, aby nejnovější byly nahoře
+            const confessionsArray = [];
+            for (let key in data) {
+                confessionsArray.push(data[key]);
+            }
+            confessionsArray.reverse();
 
-            keys.forEach((key) => {
-                const item = data[key];
+            confessionsArray.forEach((item) => {
                 const div = document.createElement('div');
                 div.className = "confession-card";
                 div.innerHTML = `
-                    <div class="confession-text">${escapeHtml(item.text)}</div>
+                    <div class="confession-text">${escapeHtml(item.text || '')}</div>
                     <div class="confession-footer">
                         <span>#gjwzpovedi</span>
-                        <span>${item.time}</span>
+                        <span>${item.time || 'Neznámý čas'}</span>
                     </div>
                 `;
                 confessionsList.appendChild(div);
             });
         });
 
-        // Bezpečnostní funkce proti XSS útokům (aby uživatelé nemohli psát HTML/JS kódy do inputu)
+        // Opravená bezpečnostní funkce proti XSS útokům
         function escapeHtml(text) {
             return text
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
-                .replace(>g, "&gt;")
+                .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
