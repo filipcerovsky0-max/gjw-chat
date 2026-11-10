@@ -3,7 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GJW Chat - Diskuzní Portál</title>
+    <title>GJW Chat - Diskuzní Portál Gymnázia Jiřího Wolkera Prostějov</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Oficiální neformální diskuzní portál a živý chat pro studenty Gymnázium Jiřího Wolkera v Prostějově (GJW). Diskutuj v reálném čase se spolužáky ze všech tříd.">
+    <meta name="keywords" content="GJW, GJW chat, Gymnázium Jiřího Wolkera, Prostějov, diskuzní portál, studenti GJW, studenstvo gjw, školní chat, gjwprostejov">
+    <meta name="author" content="Studenstvo GJW">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://gjwprostejov.com/chat/">
+
+    <!-- Open Graph / Facebook / Discord / Messenger -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://gjwprostejov.com/chat/">
+    <meta property="og:title" content="GJW Chat - Diskuzní Portál Gymnázia Jiřího Wolkera">
+    <meta property="og:description" content="Připoj se do živého školního chatu GJW. Reálný čas, diskuze podle tříd a rychlé zprávy pro všechny studenty v Prostějově.">
+    <meta property="og:image" content="https://i.imgur.com/QvqvK3M.png">
+    <meta property="og:site_name" content="Studenstvo GJW">
+    <meta property="og:locale" content="cs_CZ">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://gjwprostejov.com/chat/">
+    <meta name="twitter:title" content="GJW Chat - Diskuzní Portál Gymnázia Jiřího Wolkera">
+    <meta name="twitter:description" content="Připoj se do živého školního chatu GJW. Reálný čas, diskuze podle tříd a rychlé zprávy pro všechny studenty.">
+    <meta name="twitter:image" content="https://i.imgur.com/QvqvK3M.png">
+
+    <!-- Schema.org Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "DiscussionForumPosting",
+      "headline": "GJW Chat - Diskuzní Portál Gymnázia Jiřího Wolkera",
+      "description": "Živý chat a neformální diskuzní portál pro studenty Gymnázium Jiřího Wolkera v Prostějově.",
+      "url": "https://gjwprostejov.com/chat/",
+      "inLanguage": "cs-CZ",
+      "publisher": {
+        "@type": "EducationalOrganization",
+        "name": "Gymnázium Jiřího Wolkera",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Prostějov",
+          "addressCountry": "CZ"
+        }
+      }
+    }
+    </script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -82,8 +126,8 @@
             touch-action: pan-y;
         }
         .message-card-inner {
-            transition: transform 0.15s ease-out;
-            will-change: transform;
+            transition: transform 0.15s ease-out, background-color 0.5s ease;
+            will-change: transform, background-color;
         }
         .swipe-reply-icon {
             position: absolute;
@@ -100,9 +144,9 @@
 <body class="h-full flex flex-col m-0 p-0 overflow-hidden">
 
     <!-- Ban obrazovka s reálným odpočtem -->
-    <div id="bannedScreen" class="fixed inset-0 bg-black/90 z-[99999] hidden flex-col items-center justify-center p-4 text-center text-white">
+    <div id="bannedScreen" class="fixed inset-0 bg-black/90 z-[99999] hidden flex-col items-center justify-center p-4 text-center text-white" role="dialog" aria-modal="true" aria-labelledby="bannedScreenTitle">
         <div class="retro-box bg-white text-black p-6 max-w-sm w-full space-y-3">
-            <h1 class="text-sm font-bold text-red-600">MÁŠ AKTIVNÍ BAN</h1>
+            <h1 id="bannedScreenTitle" class="text-sm font-bold text-red-600">MÁŠ AKTIVNÍ BAN</h1>
             <div class="text-left space-y-1 text-xs">
                 <p>Důvod: <span id="bannedReasonText" class="font-bold">-</span></p>
                 <p>Trvání: <span id="bannedDurationText" class="font-bold">-</span></p>
@@ -113,11 +157,11 @@
     </div>
 
     <!-- Uživatelský profil modal pro admina -->
-    <div id="userProfileModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
+    <div id="userProfileModal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4" role="dialog" aria-modal="true">
         <div class="retro-box bg-[#f0f0f0] p-4 w-full max-w-sm space-y-3 border-2 border-[#1d4372]">
             <div class="flex justify-between items-center bg-[#1d4372] text-white px-2 py-1 -mx-2 -mt-2 mb-2 font-bold">
                 <span id="profileUsernameTitle">Uživatel</span>
-                <button onclick="closeUserProfileModal()" class="cursor-pointer px-1">X</button>
+                <button onclick="closeUserProfileModal()" aria-label="Zavřít profil" class="cursor-pointer px-1">X</button>
             </div>
             <p class="text-[11px]" id="profileUserIdSub">ID: -</p>
             
@@ -138,15 +182,15 @@
     <div id="loginScreen" class="fixed inset-0 bg-[#f0f0f0] z-[9999] flex flex-col items-center justify-center p-4">
         <div class="retro-box p-6 w-full max-w-sm space-y-3 shadow-md bg-white">
             <div class="text-center">
-                <img src="https://i.imgur.com/QvqvK3M.png" alt="Logo" class="max-h-20 mx-auto mb-2">
-                <h2 class="font-bold text-base text-black">GJW Diskuzní Portál</h2>
+                <img src="https://i.imgur.com/QvqvK3M.png" alt="GJW Chat Logo - Gymnázium Jiřího Wolkera Prostějov" class="max-h-20 mx-auto mb-2">
+                <h1 class="font-bold text-base text-black">GJW Diskuzní Portál</h1>
                 <p class="text-[11px] text-gray-600">Pro vstup do chatu zadej své údaje</p>
             </div>
             <div class="space-y-2 pt-2">
-                <label class="block text-[11px] font-bold text-black">Přezdívka:</label>
+                <label for="loginNickname" class="block text-[11px] font-bold text-black">Přezdívka:</label>
                 <input type="text" id="loginNickname" placeholder="zadej nickname..." class="retro-input w-full" maxlength="20" autocomplete="off">
                 
-                <label class="block text-[11px] font-bold text-black">Třída:</label>
+                <label for="loginClass" class="block text-[11px] font-bold text-black">Třída:</label>
                 <select id="loginClass" class="retro-select w-full">
                     <option value="">(bez třídy / učitel)</option>
                     <option value="1.A">1.A</option><option value="1.B">1.B</option>
@@ -185,7 +229,7 @@
     </header>
 
     <!-- Tělo chatu -->
-    <div class="flex-1 flex flex-col overflow-hidden relative bg-white w-full max-w-3xl mx-auto border-x border-gray-300">
+    <main class="flex-1 flex flex-col overflow-hidden relative bg-white w-full max-w-3xl mx-auto border-x border-gray-300">
         <div id="mutedNoticeBox" class="hidden bg-red-100 border-b border-red-300 p-2 text-center text-red-700 text-xs font-bold">
             Jsi ztlumen správcem! <span id="mutedCountdownContainer" class="font-normal">Zbývá: <span id="mutedCountdownTimer">-</span></span>
         </div>
@@ -197,14 +241,14 @@
         </div>
 
         <!-- Plovoucí tlačítko dolů (vpravo) -->
-        <button id="scrollToBottomBtn" onclick="scrollToBottomSmooth()">⬇️</button>
+        <button id="scrollToBottomBtn" onclick="scrollToBottomSmooth()" aria-label="Sjet na nejnovější zprávy dolů">⬇️</button>
 
         <!-- Indikátor nových zpráv (vlevo) -->
-        <div id="newMessagesBadge" onclick="scrollToBottomSmooth()">
+        <div id="newMessagesBadge" onclick="scrollToBottomSmooth()" role="button" aria-label="Zobrazit nové zprávy">
             <span id="newMessagesCount">0</span> nových zpráv 🔽
         </div>
 
-        <!-- Vstupní lišta s podpora odpovědi -->
+        <!-- Vstupní lišta s podporou odpovědi -->
         <footer id="activeInputControls" class="border-t border-gray-300 bg-[#f0f0f0] p-2 absolute bottom-0 left-0 right-0 z-30">
             <!-- Rámeček pro náhled odpovědi -->
             <div id="replyPreviewBar" class="hidden flex justify-between items-center bg-blue-50 border border-blue-200 p-1.5 mb-2 rounded text-xs text-blue-900 max-w-3xl mx-auto px-2">
@@ -212,15 +256,15 @@
                     <span class="font-bold text-blue-700">↩️ Odpovídáš uživateli <span id="replyPreviewUser"></span>:</span>
                     <span id="replyPreviewText" class="italic text-gray-600 ml-1"></span>
                 </div>
-                <button onclick="cancelReply()" class="text-red-600 font-bold text-sm hover:bg-red-100 px-1.5 rounded cursor-pointer">✕</button>
+                <button onclick="cancelReply()" aria-label="Zrušit odpověď" class="text-red-600 font-bold text-sm hover:bg-red-100 px-1.5 rounded cursor-pointer">✕</button>
             </div>
 
             <div class="flex items-center space-x-2 max-w-3xl mx-auto px-2">
-                <textarea id="messageInput" placeholder="Napiš zprávu... (Enter pro odeslání)" rows="1" class="retro-textarea flex-1 resize-none" onkeydown="handleKeydown(event)"></textarea>
+                <textarea id="messageInput" placeholder="Napiš zprávu... (Enter pro odeslání)" rows="1" class="retro-textarea flex-1 resize-none" onkeydown="handleKeydown(event)" aria-label="Vstupní pole pro zprávu"></textarea>
                 <button onclick="sendMessage()" class="retro-button font-bold px-4 py-1.5">Odeslat</button>
             </div>
         </footer>
-    </div>
+    </main>
 
     <script>
         const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
@@ -509,8 +553,8 @@
 
         // --- SWIPE RIGHT TO REPLY LOGIKA ---
 
-        function triggerReply(username, text) {
-            activeReplyData = { user: username, text: text };
+        function triggerReply(key, username, text) {
+            activeReplyData = { key: key, user: username, text: text };
             document.getElementById('replyPreviewUser').innerText = username;
             document.getElementById('replyPreviewText').innerText = text.length > 50 ? text.substring(0, 50) + '...' : text;
             document.getElementById('replyPreviewBar').classList.remove('hidden');
@@ -522,7 +566,7 @@
             document.getElementById('replyPreviewBar').classList.add('hidden');
         }
 
-        function setupSwipeToReply(wrapperEl, msgUser, msgText) {
+        function setupSwipeToReply(wrapperEl, msgKey, msgUser, msgText) {
             let startX = 0;
             let startY = 0;
             let currentX = 0;
@@ -532,7 +576,7 @@
             const replyIcon = wrapperEl.querySelector('.swipe-reply-icon');
 
             function handleStart(e) {
-                if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.rainbow-admin')) return;
+                if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.rainbow-admin') || e.target.closest('.reply-quote-box')) return;
                 const pageX = e.touches ? e.touches[0].pageX : e.pageX;
                 const pageY = e.touches ? e.touches[0].pageY : e.pageY;
                 startX = pageX;
@@ -572,7 +616,7 @@
                 cardInner.style.transition = 'transform 0.2s ease-out';
                 
                 if (currentX >= 55) {
-                    triggerReply(msgUser, msgText);
+                    triggerReply(msgKey, msgUser, msgText);
                     if (navigator.vibrate) navigator.vibrate(25);
                 }
 
@@ -593,6 +637,34 @@
             wrapperEl.addEventListener('mousemove', handleMove);
             wrapperEl.addEventListener('mouseup', handleEnd);
             wrapperEl.addEventListener('mouseleave', handleEnd);
+        }
+
+        // --- SKOK NA CITOVANOU ZPRÁVU A ZVÝRAZNĚNÍ ---
+
+        function scrollToAndHighlightMsg(targetKey, targetUser, targetText) {
+            let el = targetKey ? document.getElementById('msg-' + targetKey) : null;
+            
+            // Záložní vyhledávání podle jména a textu pro starší zprávy
+            if (!el && targetUser && targetText) {
+                const allWrappers = document.querySelectorAll('.message-wrapper');
+                for (let wrap of allWrappers) {
+                    if (wrap.dataset.user === targetUser && wrap.dataset.text === targetText) {
+                        el = wrap;
+                        break;
+                    }
+                }
+            }
+
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const inner = el.querySelector('.message-card-inner');
+                if (inner) {
+                    inner.style.backgroundColor = '#fef08a'; // Žluté zvýraznění (Instagram-style)
+                    setTimeout(() => {
+                        inner.style.backgroundColor = '#ffffff'; // Návrat do původní bílé
+                    }, 1500);
+                }
+            }
         }
 
         // --- INSTAGRAM-LIKE SCROLL LOGIKA ---
@@ -670,6 +742,9 @@
 
                 entries.forEach(([key, msg]) => {
                     const wrapper = document.createElement('div');
+                    wrapper.id = 'msg-' + key;
+                    wrapper.dataset.user = msg.user || '';
+                    wrapper.dataset.text = msg.text || '';
 
                     if (msg.isSystem) {
                         wrapper.className = "text-center text-gray-500 text-[11px] italic my-1 flex items-center justify-center gap-2";
@@ -690,9 +765,13 @@
                         
                         let replyQuoteHtml = '';
                         if (msg.replyTo) {
+                            const targetKey = msg.replyTo.key || '';
+                            const targetUser = escapeHtml(msg.replyTo.user || '');
+                            const targetText = escapeHtml(msg.replyTo.text || '');
+
                             replyQuoteHtml = `
-                                <div class="border-l-2 border-blue-500 bg-gray-100 p-1.5 text-[11px] mb-1.5 rounded text-gray-700 italic">
-                                    <span class="font-bold text-blue-800">↩️ ${escapeHtml(msg.replyTo.user)}:</span> ${escapeHtml(msg.replyTo.text)}
+                                <div onclick="scrollToAndHighlightMsg('${targetKey}', '${targetUser}', '${targetText}')" class="reply-quote-box cursor-pointer border-l-2 border-blue-500 bg-gray-100 p-1.5 text-[11px] mb-1.5 rounded text-gray-700 italic hover:bg-gray-200 transition-colors">
+                                    <span class="font-bold text-blue-800">↩️ ${targetUser}:</span> ${targetText}
                                 </div>
                             `;
                         }
@@ -715,7 +794,7 @@
                             </div>
                         `;
 
-                        setupSwipeToReply(wrapper, msg.user, msg.text);
+                        setupSwipeToReply(wrapper, key, msg.user, msg.text);
                     }
                     messagesList.appendChild(wrapper);
                 });
