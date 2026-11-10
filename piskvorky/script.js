@@ -97,7 +97,6 @@ function sendInvite(targetId, targetName) {
         fromId: myId,
         fromName: myNickname
     });
-    alert(`Výzva byla odeslána hráči ${targetName}. Čeká se na odpověď...`);
 }
 
 function listenInvites() {
@@ -181,11 +180,18 @@ function startVotingSession(matchId, oppId, oppName) {
         }
     }, 1000);
 
+    // Sledování změn stavu zápasu v DB
     db.ref(`piskvorky/matches/${matchId}`).on('value', (snapshot) => {
         const m = snapshot.val();
-        if (m && (m.status === 'coinflip' || m.status === 'ready') && m.chosenMode) {
+        if (!m) return;
+
+        if (m.status === 'coinflip' && m.chosenMode) {
             db.ref(`piskvorky/matches/${matchId}`).off();
             startCoinflipAnimation(matchId, m.chosenMode);
+        } else if (m.status === 'lottery' && document.getElementById('lotteryModal').style.display !== 'flex') {
+            document.getElementById('voteModal').style.display = 'none';
+            document.getElementById('lotteryModal').style.display = 'flex';
+            runLotteryVisuals(matchId);
         }
     });
 }
@@ -202,6 +208,7 @@ function submitVote() {
 
             const votes = match.votes || {};
             const voteValues = Object.values(votes);
+            // Jakmile oba zahlasovali (nebo vypršel čas)
             if (voteValues.length === 2 && !voteValues.includes(null)) {
                 if (match.player1 === myId) {
                     evaluateAndResolveVotes(match, activeGameId);
@@ -212,35 +219,23 @@ function submitVote() {
 }
 
 function evaluateAndResolveVotes(match, matchId) {
-    const vals = Object.values(match.votes);
-    let chosenMode = 'easy';
+    const votesObj = match.votes || {};
+    const vals = Object.values(votesObj);
 
-    if (vals[0] === vals[1]) {
-        chosenMode = vals[0];
+    // Pojistka kdyby někdo nestihl zahlasit
+    const v1 = vals[0] || 'easy';
+    const v2 = vals[1] || 'easy';
+
+    if (v1 === v2) {
+        // Shoda: Oba chtějí to samé -> rovnou coinflip s touto obtížností
         db.ref(`piskvorky/matches/${matchId}`).update({
             status: 'coinflip',
-            chosenMode: chosenMode
+            chosenMode: v1
         });
     } else {
+        // Neshoda: Každý chtěl něco jiného -> spuštění loterie
         db.ref(`piskvorky/matches/${matchId}`).update({ status: 'lottery' });
-        triggerLotteryAnimation(matchId);
     }
-}
-
-db.ref('piskvorky/matches').on('child_changed', (snapshot) => {
-    const match = snapshot.val();
-    const matchId = snapshot.key;
-    if (activeGameId === matchId && match.status === 'lottery' && document.getElementById('lotteryModal').style.display !== 'flex') {
-        document.getElementById('voteModal').style.display = 'none';
-        document.getElementById('lotteryModal').style.display = 'flex';
-        runLotteryVisuals(matchId);
-    }
-});
-
-function triggerLotteryAnimation(matchId) {
-    document.getElementById('voteModal').style.display = 'none';
-    document.getElementById('lotteryModal').style.display = 'flex';
-    runLotteryVisuals(matchId);
 }
 
 function runLotteryVisuals(matchId) {
@@ -254,14 +249,21 @@ function runLotteryVisuals(matchId) {
         if (counter >= 12) {
             clearInterval(interval);
             
+            // Určení skutečného výsledku loterie
             const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
             const modeName = finalMode === 'easy' ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
             if (el) el.innerHTML = `Vylosováno: <br><strong>${modeName}</strong>`;
 
             setTimeout(() => {
-                db.ref(`piskvorky/matches/${matchId}`).update({
-                    status: 'coinflip',
-                    chosenMode: finalMode
+                // Pouze player1 zapíše finální výsledek do DB, aby nedošlo ke konfliktu
+                db.ref(`piskvorky/matches/${matchId}`).once('value', (snap) => {
+                    const m = snap.val();
+                    if (m && m.status === 'lottery') {
+                        db.ref(`piskvorky/matches/${matchId}`).update({
+                            status: 'coinflip',
+                            chosenMode: finalMode
+                        });
+                    }
                 });
             }, 2000);
         }
@@ -387,7 +389,6 @@ function setupGameUI() {
     startAfkChecker();
 }
 
-// Sledování neaktivity (AFK timeout 2 minuty)
 function startAfkChecker() {
     clearInterval(afkInterval);
     afkInterval = setInterval(() => {
@@ -401,9 +402,7 @@ function startAfkChecker() {
             const lastMove = game.lastMoveTime || now;
             const diffSeconds = (now - lastMove) / 1000;
 
-            // Pokud uplynulo víc než 120 sekund (2 minuty) od posledního tahu
             if (diffSeconds > 120) {
-                // Hráč na tahu prohrál kvůli neaktivitě
                 const afkPlayer = game.turn;
                 const winnerId = afkPlayer === game.player1.id ? game.player2.id : game.player1.id;
 
@@ -419,7 +418,7 @@ function startAfkChecker() {
                 }
             }
         });
-    }, 10000); // Kontrola každých 10 sekund
+    }, 10000);
 }
 
 function buildBoardUI() {
@@ -454,8 +453,16 @@ function listenGame() {
 
         const cells = document.querySelectorAll('.cell');
         game.board.forEach((val, idx) => {
-            if(cells[idx]) cells[idx].innerText = val;
+            if(cells[idx]) {
+                cells[idx].innerText = val;
+            }
         });
+
+        // --- ZVÝRAZNĚNÍ POSLEDNÍHO TAHU (Chess.com styl) ---
+        cells.forEach(c => c.classList.remove('highlight-last'));
+        if (game.lastMoveIndex !== undefined && game.lastMoveIndex !== null && cells[game.lastMoveIndex]) {
+            cells[game.lastMoveIndex].classList.add('highlight-last');
+        }
 
         if (game.status === 'won') {
             const winnerText = game.winner === myId ? '🎉 VYHRÁL JSI!' : `😢 Prohrál jsi. Vyhrál ${opponentName}.`;
@@ -482,7 +489,8 @@ function makeMove(index) {
         if (game.turn !== myId) return;
 
         game.board[index] = mySymbol;
-        game.lastMoveTime = firebase.database.ServerValue.TIMESTAMP; // Reset časovače neaktivity
+        game.lastMoveIndex = index;
+        game.lastMoveTime = firebase.database.ServerValue.TIMESTAMP;
 
         if (checkWin(game.board, mySymbol, boardSize, winLength)) {
             game.status = 'won';
@@ -550,7 +558,7 @@ function listenLeaderboard() {
             lbEl.appendChild(div);
         });
         if (list.length === 0) {
-            lbEl.innerHTML = '<p style="color:#666; text-align:center;">Zatím žádné záznamy.</p>';
+            lbEl.innerHTML = '<p style="color:#666; text-align:center;">Žádné záznamy.</p>';
         }
     });
 }
@@ -609,6 +617,7 @@ function triggerRematchCoinflip() {
                         status: 'playing',
                         winner: null,
                         turn: starterId,
+                        lastMoveIndex: null,
                         lastMoveTime: firebase.database.ServerValue.TIMESTAMP,
                         'player1/symbol': p1Symbol,
                         'player2/symbol': p2Symbol,
@@ -679,5 +688,6 @@ function exitGame() {
     document.getElementById('voteModal').style.display = 'none';
     document.getElementById('lotteryModal').style.display = 'none';
     document.getElementById('coinflipModal').style.display = 'none';
+    document.getElementById('inviteModal').style.display = 'none';
     document.getElementById('lobbySection').style.display = 'block';
 }

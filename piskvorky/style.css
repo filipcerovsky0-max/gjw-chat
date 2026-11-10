@@ -153,6 +153,12 @@ input, select {
     font-size: 12px;
 }
 .cell:hover { background: #f0f0f0; }
+
+/* Zvýraznění posledního tahu (Chess.com světle žlutá) */
+.highlight-last {
+    background-color: #fff59d !important;
+}
+
 .chat-wrapper {
     flex: 1;
     min-width: 260px;
