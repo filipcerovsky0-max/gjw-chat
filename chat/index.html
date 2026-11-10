@@ -38,27 +38,29 @@
         #scrollToBottomBtn {
             display: none;
             position: absolute;
-            bottom: 70px;
-            right: 20px;
+            bottom: 75px;
+            right: 15px;
             background: #ffffff;
             border: 1px solid #94a3b8;
             border-radius: 50%;
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             cursor: pointer;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
             font-size: 16px;
-            z-index: 50;
+            z-index: 40;
             align-items: center;
             justify-content: center;
+            transition: transform 0.15s ease;
         }
+        #scrollToBottomBtn:active { transform: scale(0.9); }
         #scrollToBottomBtn:hover { background: #e2e8f0; }
 
         #newMessagesBadge {
             display: none;
             position: absolute;
-            bottom: 70px;
-            left: 20px;
+            bottom: 75px;
+            left: 15px;
             background: #0095f6;
             color: white;
             padding: 6px 14px;
@@ -66,8 +68,32 @@
             font-size: 12px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-            z-index: 50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+            z-index: 40;
+            transition: transform 0.15s ease;
+        }
+        #newMessagesBadge:active { transform: scale(0.95); }
+
+        /* Posuvná animace zpráv (Swipe Right) */
+        .message-wrapper {
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+            touch-action: pan-y;
+        }
+        .message-card-inner {
+            transition: transform 0.15s ease-out;
+            will-change: transform;
+        }
+        .swipe-reply-icon {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%) scale(0.7);
+            opacity: 0;
+            transition: opacity 0.1s ease, transform 0.1s ease;
+            font-size: 18px;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -146,7 +172,7 @@
     </div>
 
     <!-- Hlavička chatu -->
-    <header class="border-b border-gray-300 bg-[#e2e8f0] px-3 py-2 flex justify-between items-center shrink-0">
+    <header class="border-b border-gray-300 bg-[#e2e8f0] px-3 py-2 flex justify-between items-center shrink-0 z-10">
         <div class="flex items-center space-x-2">
             <a href="../" class="text-blue-700 font-bold">&larr; Hlavní web</a>
             <span class="font-bold">| GJW Chat</span>
@@ -164,21 +190,31 @@
             Jsi ztlumen správcem! <span id="mutedCountdownContainer" class="font-normal">Zbývá: <span id="mutedCountdownTimer">-</span></span>
         </div>
 
-        <!-- Chat kontejner s onscroll událostí -->
-        <div id="chatContainer" class="flex-1 overflow-y-auto p-3 space-y-2 pb-20 relative" onscroll="handleChatScroll()">
+        <!-- Chat kontejner se sledováním scrollu -->
+        <div id="chatContainer" class="flex-1 overflow-y-auto p-3 space-y-2 pb-24 relative" onscroll="handleChatScroll()">
             <div id="emptyState" class="hidden h-full flex items-center justify-center text-gray-400 italic">Zatím žádné zprávy v této místnosti</div>
             <div id="messagesList" class="space-y-2 w-full"></div>
-
-            <!-- Plovoucí šipka dolů (Instagram styl) -->
-            <button id="scrollToBottomBtn" onclick="scrollToBottomSmooth()">⬇️</button>
-
-            <!-- Indikátor nových zpráv (vlevo) -->
-            <div id="newMessagesBadge" onclick="scrollToBottomSmooth()">
-                <span id="newMessagesCount">0</span> nových zpráv 🔽
-            </div>
         </div>
 
-        <footer id="activeInputControls" class="border-t border-gray-300 bg-[#f0f0f0] p-2 absolute bottom-0 left-0 right-0">
+        <!-- Plovoucí tlačítko dolů (vpravo) -->
+        <button id="scrollToBottomBtn" onclick="scrollToBottomSmooth()">⬇️</button>
+
+        <!-- Indikátor nových zpráv (vlevo) -->
+        <div id="newMessagesBadge" onclick="scrollToBottomSmooth()">
+            <span id="newMessagesCount">0</span> nových zpráv 🔽
+        </div>
+
+        <!-- Vstupní lišta s podpora odpovědi -->
+        <footer id="activeInputControls" class="border-t border-gray-300 bg-[#f0f0f0] p-2 absolute bottom-0 left-0 right-0 z-30">
+            <!-- Rámeček pro náhled odpovědi -->
+            <div id="replyPreviewBar" class="hidden flex justify-between items-center bg-blue-50 border border-blue-200 p-1.5 mb-2 rounded text-xs text-blue-900 max-w-3xl mx-auto px-2">
+                <div class="truncate mr-2">
+                    <span class="font-bold text-blue-700">↩️ Odpovídáš uživateli <span id="replyPreviewUser"></span>:</span>
+                    <span id="replyPreviewText" class="italic text-gray-600 ml-1"></span>
+                </div>
+                <button onclick="cancelReply()" class="text-red-600 font-bold text-sm hover:bg-red-100 px-1.5 rounded cursor-pointer">✕</button>
+            </div>
+
             <div class="flex items-center space-x-2 max-w-3xl mx-auto px-2">
                 <textarea id="messageInput" placeholder="Napiš zprávu... (Enter pro odeslání)" rows="1" class="retro-textarea flex-1 resize-none" onkeydown="handleKeydown(event)"></textarea>
                 <button onclick="sendMessage()" class="retro-button font-bold px-4 py-1.5">Odeslat</button>
@@ -193,6 +229,8 @@
 
         let isUserScrolledUp = false;
         let unreadMessagesCount = 0;
+        let isFirstLoad = true;
+        let activeReplyData = null;
 
         function getDeviceFingerprint() {
             let fp = localStorage.getItem('gjw_device_fingerprint');
@@ -346,20 +384,26 @@
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             if (!text) return;
-            input.value = '';
 
             const isGhost = isAdmin && adminMode === 'hidden';
 
-            db.ref('messages').push({
+            const payload = {
                 userId: currentUserId,
                 fingerprint: deviceFingerprint,
                 user: currentUser,
                 isAdmin: isAdmin && !isGhost,
                 text: text,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            });
+            };
 
-            // Po odeslání vlastní zprávy sjedeme rovnou dolů
+            if (activeReplyData) {
+                payload.replyTo = activeReplyData;
+            }
+
+            db.ref('messages').push(payload);
+
+            input.value = '';
+            cancelReply();
             scrollToBottomSmooth();
         }
 
@@ -458,6 +502,99 @@
             return num * 60000;
         }
 
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // --- SWIPE RIGHT TO REPLY LOGIKA ---
+
+        function triggerReply(username, text) {
+            activeReplyData = { user: username, text: text };
+            document.getElementById('replyPreviewUser').innerText = username;
+            document.getElementById('replyPreviewText').innerText = text.length > 50 ? text.substring(0, 50) + '...' : text;
+            document.getElementById('replyPreviewBar').classList.remove('hidden');
+            document.getElementById('messageInput').focus();
+        }
+
+        function cancelReply() {
+            activeReplyData = null;
+            document.getElementById('replyPreviewBar').classList.add('hidden');
+        }
+
+        function setupSwipeToReply(wrapperEl, msgUser, msgText) {
+            let startX = 0;
+            let startY = 0;
+            let currentX = 0;
+            let isSwiping = false;
+
+            const cardInner = wrapperEl.querySelector('.message-card-inner');
+            const replyIcon = wrapperEl.querySelector('.swipe-reply-icon');
+
+            function handleStart(e) {
+                if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.rainbow-admin')) return;
+                const pageX = e.touches ? e.touches[0].pageX : e.pageX;
+                const pageY = e.touches ? e.touches[0].pageY : e.pageY;
+                startX = pageX;
+                startY = pageY;
+                currentX = 0;
+                isSwiping = false;
+                cardInner.style.transition = 'none';
+            }
+
+            function handleMove(e) {
+                if (!startX) return;
+                const pageX = e.touches ? e.touches[0].pageX : e.pageX;
+                const pageY = e.touches ? e.touches[0].pageY : e.pageY;
+                const diffX = pageX - startX;
+                const diffY = pageY - startY;
+
+                if (!isSwiping && Math.abs(diffY) > Math.abs(diffX)) {
+                    startX = 0;
+                    return;
+                }
+
+                if (diffX > 0) {
+                    isSwiping = true;
+                    currentX = Math.min(diffX, 90);
+                    cardInner.style.transform = `translateX(${currentX}px)`;
+                    
+                    if (replyIcon) {
+                        const progress = Math.min(currentX / 50, 1);
+                        replyIcon.style.opacity = progress;
+                        replyIcon.style.transform = `translateY(-50%) scale(${0.7 + progress * 0.4})`;
+                    }
+                }
+            }
+
+            function handleEnd() {
+                if (!startX) return;
+                cardInner.style.transition = 'transform 0.2s ease-out';
+                
+                if (currentX >= 55) {
+                    triggerReply(msgUser, msgText);
+                    if (navigator.vibrate) navigator.vibrate(25);
+                }
+
+                cardInner.style.transform = 'translateX(0px)';
+                if (replyIcon) {
+                    replyIcon.style.opacity = '0';
+                }
+
+                startX = 0;
+                currentX = 0;
+                isSwiping = false;
+            }
+
+            wrapperEl.addEventListener('touchstart', handleStart, { passive: true });
+            wrapperEl.addEventListener('touchmove', handleMove, { passive: true });
+            wrapperEl.addEventListener('touchend', handleEnd);
+            wrapperEl.addEventListener('mousedown', handleStart);
+            wrapperEl.addEventListener('mousemove', handleMove);
+            wrapperEl.addEventListener('mouseup', handleEnd);
+            wrapperEl.addEventListener('mouseleave', handleEnd);
+        }
+
         // --- INSTAGRAM-LIKE SCROLL LOGIKA ---
 
         function scrollToBottomInstant() {
@@ -490,12 +627,10 @@
             const distanceToBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
             const scrollBtn = document.getElementById('scrollToBottomBtn');
 
-            if (distanceToBottom > 120) {
-                // Uživatel odscroloval nahoru
+            if (distanceToBottom > 100) {
                 isUserScrolledUp = true;
                 if (scrollBtn) scrollBtn.style.display = 'flex';
             } else {
-                // Uživatel je dole
                 isUserScrolledUp = false;
                 if (scrollBtn) scrollBtn.style.display = 'none';
                 if (unreadMessagesCount > 0) {
@@ -519,45 +654,70 @@
             }
         }
 
-        let isFirstLoad = true;
-
         function renderMessages() {
             db.ref('messages').on('value', (snapshot) => {
                 const data = snapshot.val();
                 const messagesList = document.getElementById('messagesList');
                 messagesList.innerHTML = '';
-                if (!data) { document.getElementById('emptyState').classList.remove('hidden'); return; }
+                
+                if (!data) { 
+                    document.getElementById('emptyState').classList.remove('hidden'); 
+                    return; 
+                }
                 document.getElementById('emptyState').classList.add('hidden');
 
-                Object.entries(data).forEach(([key, msg]) => {
-                    const div = document.createElement('div');
+                const entries = Object.entries(data);
+
+                entries.forEach(([key, msg]) => {
+                    const wrapper = document.createElement('div');
+
                     if (msg.isSystem) {
-                        div.className = "text-center text-gray-500 text-[11px] italic my-1 flex items-center justify-center gap-2";
-                        div.innerHTML = `<span>-- ${msg.text} --</span>`;
+                        wrapper.className = "text-center text-gray-500 text-[11px] italic my-1 flex items-center justify-center gap-2";
+                        wrapper.innerHTML = `<span>-- ${escapeHtml(msg.text)} --</span>`;
                         if (isAdmin) {
                             const delBtn = document.createElement('button');
                             delBtn.innerText = "[smazat]";
                             delBtn.className = "text-red-600 cursor-pointer hover:underline text-[10px]";
                             delBtn.onclick = () => deleteMessage(key);
-                            div.appendChild(delBtn);
+                            wrapper.appendChild(delBtn);
                         }
                     } else {
-                        div.className = "bg-white border border-gray-300 p-2 rounded shadow-sm text-xs relative group";
+                        wrapper.className = "message-wrapper relative overflow-hidden my-1";
+
                         const nameHtml = msg.isAdmin 
-                            ? `<span class="rainbow-admin cursor-pointer" onclick="openUserProfileModal('${msg.userId}', '${msg.user}')">${msg.user}</span>`
-                            : `<span class="font-bold text-blue-900 cursor-pointer underline" onclick="openUserProfileModal('${msg.userId}', '${msg.user}')">${msg.user}</span>`;
+                            ? `<span class="rainbow-admin cursor-pointer" onclick="openUserProfileModal('${msg.userId}', '${escapeHtml(msg.user)}')">${escapeHtml(msg.user)}</span>`
+                            : `<span class="font-bold text-blue-900 cursor-pointer underline" onclick="openUserProfileModal('${msg.userId}', '${escapeHtml(msg.user)}')">${escapeHtml(msg.user)}</span>`;
                         
-                        div.innerHTML = `<div class="flex justify-between text-[11px] mb-0.5"><span>${nameHtml}</span><span class="text-gray-400 font-normal">${msg.time}</span></div><div>${msg.text}</div>`;
-                        
-                        if (isAdmin) {
-                            const delBtn = document.createElement('button');
-                            delBtn.innerText = "Smazat";
-                            delBtn.className = "absolute top-1 right-2 text-[10px] text-red-600 hidden group-hover:inline-block cursor-pointer bg-red-50 px-1 border border-red-200 rounded";
-                            delBtn.onclick = () => deleteMessage(key);
-                            div.appendChild(delBtn);
+                        let replyQuoteHtml = '';
+                        if (msg.replyTo) {
+                            replyQuoteHtml = `
+                                <div class="border-l-2 border-blue-500 bg-gray-100 p-1.5 text-[11px] mb-1.5 rounded text-gray-700 italic">
+                                    <span class="font-bold text-blue-800">↩️ ${escapeHtml(msg.replyTo.user)}:</span> ${escapeHtml(msg.replyTo.text)}
+                                </div>
+                            `;
                         }
+
+                        let deleteBtnHtml = '';
+                        if (isAdmin) {
+                            deleteBtnHtml = `<button onclick="deleteMessage('${key}')" class="absolute top-1 right-2 text-[10px] text-red-600 hidden group-hover:inline-block cursor-pointer bg-red-50 px-1 border border-red-200 rounded z-20">Smazat</button>`;
+                        }
+
+                        wrapper.innerHTML = `
+                            <div class="swipe-reply-icon">↩️</div>
+                            <div class="message-card-inner bg-white border border-gray-300 p-2 rounded shadow-sm text-xs relative group">
+                                ${replyQuoteHtml}
+                                <div class="flex justify-between text-[11px] mb-0.5">
+                                    <span>${nameHtml}</span>
+                                    <span class="text-gray-400 font-normal ml-2">${escapeHtml(msg.time)}</span>
+                                </div>
+                                <div class="break-words select-text">${escapeHtml(msg.text)}</div>
+                                ${deleteBtnHtml}
+                            </div>
+                        `;
+
+                        setupSwipeToReply(wrapper, msg.user, msg.text);
                     }
-                    messagesList.appendChild(div);
+                    messagesList.appendChild(wrapper);
                 });
 
                 const chatContainer = document.getElementById('chatContainer');
@@ -566,14 +726,16 @@
                 const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 120;
 
                 if (isFirstLoad) {
+                    // První načtení - vyžaduje dvojitý posuv pro spolehlivost
                     scrollToBottomInstant();
+                    requestAnimationFrame(() => {
+                        setTimeout(scrollToBottomInstant, 50);
+                        setTimeout(scrollToBottomInstant, 200);
+                    });
                     isFirstLoad = false;
                 } else if (!isUserScrolledUp || isAtBottom) {
                     scrollToBottomInstant();
-                    unreadMessagesCount = 0;
-                    updateNewMessagesUI();
                 } else {
-                    // Pokud uživatel čte zprávy nahoře, přičteme do badge
                     unreadMessagesCount++;
                     updateNewMessagesUI();
                 }
