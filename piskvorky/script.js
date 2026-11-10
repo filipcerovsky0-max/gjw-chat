@@ -62,6 +62,13 @@ function listenLobby() {
         for (let id in users) {
             if (id === myId) continue;
             const u = users[id];
+
+            // OPRAVA: Pokud uživatel nemá jméno nebo je 'undefined', rovnou ho z DB smažeme, aby nevisel v lobby
+            if (!u || !u.name || u.name === 'undefined') {
+                db.ref(`piskvorky/lobby/${id}`).remove();
+                continue;
+            }
+
             count++;
 
             const div = document.createElement('div');
