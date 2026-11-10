@@ -45,6 +45,7 @@
         <nav class="bg-white border-b flex px-4 shrink-0 overflow-x-auto">
             <button onclick="switchTab('tab-chat')" class="tab-btn active px-4 py-3 hover:bg-gray-50 focus:outline-none">Moderace Zpráv</button>
             <button onclick="switchTab('tab-tresty')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Aktivní Tresty</button>
+            <button onclick="switchTab('tab-piskvorky')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Piškvorky & Online Hráči</button>
             <button onclick="switchTab('tab-fotky')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Správa Fotek</button>
             <button onclick="switchTab('tab-hudba')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Správa Hudby</button>
             <button onclick="switchTab('tab-rozsir')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Správa Rozšiř To</button>
@@ -74,7 +75,53 @@
                 </div>
             </div>
 
-            <!-- TAB: Správa obsahu (Společná šablona pro Fotky, Hudbu, Promo, Memes) -->
+            <!-- TAB: Piškvorky & Online Hráči -->
+            <div id="tab-piskvorky" class="tab-content hidden space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold mb-3 flex items-center gap-2">
+                        <span>🎮 Právě probíhající Hry Piškvorek</span>
+                        <span id="activeGamesBadge" class="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                    </h2>
+                    <div class="bg-white rounded shadow overflow-hidden">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Hráč 1 (Symbol)</th>
+                                    <th>VS</th>
+                                    <th>Hráč 2 (Symbol)</th>
+                                    <th>Obtížnost</th>
+                                    <th>Na tahu</th>
+                                    <th>Stav</th>
+                                    <th>Akce</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminPiskvorkyGamesList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="text-xl font-bold mb-3 flex items-center gap-2">
+                        <span>🟢 Online Uživatelé v Piškvorkách</span>
+                        <span id="onlineLobbyBadge" class="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                    </h2>
+                    <div class="bg-white rounded shadow overflow-hidden">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Přezdívka</th>
+                                    <th>Třída</th>
+                                    <th>Status</th>
+                                    <th>ID Hráče</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminPiskvorkyLobbyList"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Správa obsahu -->
             <div id="tab-fotky" class="tab-content hidden">
                 <h2 class="text-xl font-bold mb-4">Galerie Fotek</h2>
                 <div id="manager-fotky"></div>
@@ -94,6 +141,39 @@
         </main>
     </div>
 
+    <!-- MODAL: Sledování Zápasu Piškvorek (Spectator Mode) -->
+    <div id="spectatorModal" class="fixed inset-0 bg-black/70 z-[9999] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full space-y-4 shadow-2xl relative max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b pb-3 shrink-0">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <span class="inline-block w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
+                    Živé sledování zápasu piškvorek
+                </h3>
+                <button onclick="closeSpectator()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded text-sm font-bold">✕ Zavřít</button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto space-y-4">
+                <div id="spectatorMatchInfo" class="bg-blue-50 p-3 rounded border border-blue-200 text-sm font-semibold text-blue-900 flex justify-between items-center">
+                    Načítám info o zápasu...
+                </div>
+                
+                <div class="flex flex-col md:flex-row gap-6 items-center justify-center">
+                    <!-- Deska -->
+                    <div class="flex flex-col items-center">
+                        <div id="spectatorBoard" class="border p-2 bg-gray-200 rounded shadow-inner"></div>
+                        <p class="text-xs text-gray-500 mt-2 italic">⚠️ Režim pouze pro čtení – jako admin nemůžete zasahovat do hry.</p>
+                    </div>
+                    
+                    <!-- Chat zápasu -->
+                    <div class="w-full md:w-64 bg-gray-50 border rounded p-3 flex flex-col h-64 shrink-0">
+                        <h4 class="font-bold text-xs text-gray-700 mb-2 pb-1 border-b">In-game Chat zápasu</h4>
+                        <div id="spectatorChatList" class="flex-1 overflow-y-auto text-xs space-y-1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Inicializace Firebase
         const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
@@ -101,6 +181,7 @@
         const db = firebase.database();
 
         let adminKey = null;
+        let currentSpectateGameId = null;
 
         // 1. OVEŘENÍ LOGINU Z FIREBASE
         function verifyLogin() {
@@ -149,8 +230,9 @@
         function initDashboard() {
             loadMessages();
             loadRestrictions();
+            loadPiskvorkyAdmin();
             buildContentManager('fotky', 'Fotek', true);
-            buildContentManager('hudba', 'Hudby', false); // Hudba nejde rozumně do Base64, lepší zadávat URL
+            buildContentManager('hudba', 'Hudby', false);
             buildContentManager('promoDesigns', 'Materiálů', true);
             buildContentManager('memes', 'Memes', true);
         }
@@ -223,14 +305,180 @@
         function removePenalty(uid, type) {
             if(confirm(`Opravdu zrušit ${type} pro uživatele?`)) {
                 db.ref(`restrictions/${uid}/${type}`).remove();
-                // Pokus smazat celý záznam, pokud je prázdný
                 db.ref(`restrictions/${uid}`).once('value').then(s => {
                     if(!s.val().ban && !s.val().mute && !s.val().kicked) db.ref(`restrictions/${uid}`).remove();
                 });
             }
         }
 
-        // --- SEKCE: UNIVERZÁLNÍ SPRÁVCE OBSAHU (S podporou nahrávání z PC) ---
+        // --- SEKCE: PIŠKVORKY ADMIN (ONLINE HRÁČI A PROBÍHAJÍCÍ HRY) ---
+        function loadPiskvorkyAdmin() {
+            let lobbyMap = {};
+
+            // 1. Sledování lobby (online hráčů)
+            db.ref('piskvorky/lobby').on('value', snap => {
+                const tbody = document.getElementById('adminPiskvorkyLobbyList');
+                const badge = document.getElementById('onlineLobbyBadge');
+                tbody.innerHTML = '';
+                const users = snap.val() || {};
+                lobbyMap = users;
+
+                const entries = Object.entries(users);
+                badge.innerText = entries.length;
+
+                if (entries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-gray-400 italic text-center py-3">Žádní hráči v lobby.</td></tr>';
+                    return;
+                }
+
+                entries.forEach(([uid, u]) => {
+                    const tr = document.createElement('tr');
+                    const statusClass = u.status === 'playing' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800';
+                    const statusText = u.status === 'playing' ? 'Ve hře' : 'V lobby';
+
+                    tr.innerHTML = `
+                        <td class="font-bold">${u.name || uid}</td>
+                        <td>${u.class || '-'}</td>
+                        <td><span class="${statusClass} px-2 py-0.5 rounded text-xs font-bold">${statusText}</span></td>
+                        <td class="text-xs text-gray-500">${uid}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+
+            // 2. Sledování probíhajících her
+            db.ref('piskvorky/games').on('value', snap => {
+                const tbody = document.getElementById('adminPiskvorkyGamesList');
+                const badge = document.getElementById('activeGamesBadge');
+                tbody.innerHTML = '';
+                const games = snap.val() || {};
+
+                const entries = Object.entries(games);
+                badge.innerText = entries.length;
+
+                if (entries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-gray-400 italic text-center py-3">Aktuálně neprobíhá žádná hra.</td></tr>';
+                    return;
+                }
+
+                entries.forEach(([gameId, g]) => {
+                    const tr = document.createElement('tr');
+                    const p1Name = (lobbyMap[g.player1?.id]?.name || g.player1?.id || 'Hráč 1') + ` (${g.player1?.symbol || '?'})`;
+                    const p2Name = (lobbyMap[g.player2?.id]?.name || g.player2?.id || 'Hráč 2') + ` (${g.player2?.symbol || '?'})`;
+
+                    const turnName = g.turn === g.player1?.id ? (lobbyMap[g.player1?.id]?.name || 'Hráč 1') : (lobbyMap[g.player2?.id]?.name || 'Hráč 2');
+                    const modeText = g.boardSize === 3 ? '3x3 (Jednodušší)' : '15x15 (Těžší)';
+
+                    let statusBadge = '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">Hraje se</span>';
+                    if (g.status === 'won') statusBadge = '<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">Ukončeno (Výhra)</span>';
+                    else if (g.status === 'draw') statusBadge = '<span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded text-xs font-bold">Remíza</span>';
+
+                    tr.innerHTML = `
+                        <td class="font-bold text-blue-900">${p1Name}</td>
+                        <td class="text-xs font-bold text-gray-400">vs</td>
+                        <td class="font-bold text-red-900">${p2Name}</td>
+                        <td class="text-xs">${modeText}</td>
+                        <td class="text-xs font-semibold">${g.status === 'playing' ? turnName : '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button onclick="spectateGame('${gameId}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded text-xs transition">
+                                👁️ Sledovat
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        // Funkce pro otevření živého sledování
+        function spectateGame(gameId) {
+            currentSpectateGameId = gameId;
+            document.getElementById('spectatorModal').classList.remove('hidden');
+            document.getElementById('spectatorModal').classList.add('flex');
+
+            db.ref('piskvorky/games/' + gameId).off();
+            db.ref('piskvorky/chats/' + gameId).off();
+
+            db.ref('piskvorky/games/' + gameId).on('value', snap => {
+                const g = snap.val();
+                if (!g) {
+                    document.getElementById('spectatorMatchInfo').innerHTML = '<span class="text-red-600">Hra byla ukončena nebo smazána.</span>';
+                    return;
+                }
+
+                db.ref('piskvorky/lobby').once('value').then(lobbySnap => {
+                    const lobby = lobbySnap.val() || {};
+                    const p1Name = lobby[g.player1?.id]?.name || g.player1?.id || 'Hráč 1';
+                    const p2Name = lobby[g.player2?.id]?.name || g.player2?.id || 'Hráč 2';
+                    const turnName = g.turn === g.player1?.id ? p1Name : p2Name;
+
+                    let statusTxt = `Na tahu: <strong>${turnName}</strong>`;
+                    if (g.status === 'won') {
+                        const winnerName = g.winner === g.player1?.id ? p1Name : p2Name;
+                        statusTxt = `<span class="text-green-700 font-bold">Vítěz: ${winnerName}</span>`;
+                    } else if (g.status === 'draw') {
+                        statusTxt = `<span class="text-gray-700 font-bold">Konec: Remíza</span>`;
+                    }
+
+                    document.getElementById('spectatorMatchInfo').innerHTML = `
+                        <div>
+                            <strong>${p1Name} (${g.player1?.symbol})</strong> vs <strong>${p2Name} (${g.player2?.symbol})</strong>
+                            <div class="text-xs text-gray-500">Mód: ${g.boardSize}x${g.boardSize}</div>
+                        </div>
+                        <div>${statusTxt}</div>
+                    `;
+                });
+
+                renderSpectatorBoard(g.board || [], g.boardSize || 3, g.lastMoveIndex);
+            });
+
+            const chatList = document.getElementById('spectatorChatList');
+            chatList.innerHTML = '';
+            db.ref('piskvorky/chats/' + gameId).on('child_added', snap => {
+                const msg = snap.val();
+                if (!msg) return;
+                const div = document.createElement('div');
+                div.className = 'border-b border-gray-100 pb-0.5';
+                div.innerHTML = `<span class="font-bold text-gray-800">${msg.sender}:</span> ${msg.text}`;
+                chatList.appendChild(div);
+                chatList.scrollTop = chatList.scrollHeight;
+            });
+        }
+
+        function renderSpectatorBoard(board, size, lastMoveIndex) {
+            const boardEl = document.getElementById('spectatorBoard');
+            boardEl.innerHTML = '';
+            const cellSize = size === 3 ? '65px' : '22px';
+            const fontSize = size === 3 ? '28px' : '12px';
+
+            boardEl.style.display = 'grid';
+            boardEl.style.gridTemplateColumns = `repeat(${size}, ${cellSize})`;
+            boardEl.style.gridTemplateRows = `repeat(${size}, ${cellSize})`;
+            boardEl.style.gap = '2px';
+
+            board.forEach((val, idx) => {
+                const cell = document.createElement('div');
+                cell.className = `flex items-center justify-center font-bold rounded select-none cursor-not-allowed ${idx === lastMoveIndex ? 'bg-yellow-200 border-2 border-yellow-500' : 'bg-white border border-gray-300'}`;
+                cell.style.width = cellSize;
+                cell.style.height = cellSize;
+                cell.style.fontSize = fontSize;
+                cell.innerText = val || '';
+                boardEl.appendChild(cell);
+            });
+        }
+
+        function closeSpectator() {
+            if (currentSpectateGameId) {
+                db.ref('piskvorky/games/' + currentSpectateGameId).off();
+                db.ref('piskvorky/chats/' + currentSpectateGameId).off();
+                currentSpectateGameId = null;
+            }
+            document.getElementById('spectatorModal').classList.remove('flex');
+            document.getElementById('spectatorModal').classList.add('hidden');
+        }
+
+        // --- SEKCE: UNIVERZÁLNÍ SPRÁVCE OBSAHU ---
         function buildContentManager(dbNode, label, supportsUpload) {
             const container = document.getElementById('manager-' + dbNode);
             
@@ -260,13 +508,11 @@
                 </div>
             `;
 
-            // Live sync
             db.ref(dbNode).on('value', snap => {
                 const tbody = document.getElementById('list-' + dbNode);
                 tbody.innerHTML = '';
                 const items = snap.val() || {};
                 Object.entries(items).forEach(([key, item]) => {
-                    // Adaptace na struktury: promoDesigns používá .title a .image, ostatní podle toho jak se uloží
                     const title = item.nazev || item.title || item.name || '[Bez názvu]';
                     const src = item.soubor || item.image || item.url || item.name || '';
                     const isImg = src.includes('data:image') || src.match(/\.(jpeg|jpg|gif|png)$/) != null;
@@ -296,7 +542,6 @@
 
             if (!title) return alert("Zadejte název!");
 
-            // Ošetření struktury dat (různé DB nodule mají v původních souborech různou strukturu)
             const getPayload = (finalUrl) => {
                 if (dbNode === 'promoDesigns') return { title: title, image: finalUrl };
                 if (dbNode === 'fotky') return { nazev: title, soubor: finalUrl };
@@ -305,7 +550,6 @@
                 return { title: title, url: finalUrl };
             };
 
-            // Pokud uživatel vybral lokální soubor pro konverzi
             if (fileInput && fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
                 const reader = new FileReader();
