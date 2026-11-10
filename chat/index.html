@@ -30,6 +30,45 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold;
         }
         a { color: #0000EE; text-decoration: underline; }
+
+        /* Instagram-like scroll chování */
+        #chatContainer {
+            scroll-behavior: smooth;
+        }
+        #scrollToBottomBtn {
+            display: none;
+            position: absolute;
+            bottom: 70px;
+            right: 20px;
+            background: #ffffff;
+            border: 1px solid #94a3b8;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            font-size: 16px;
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+        #scrollToBottomBtn:hover { background: #e2e8f0; }
+
+        #newMessagesBadge {
+            display: none;
+            position: absolute;
+            bottom: 70px;
+            left: 20px;
+            background: #0095f6;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            z-index: 50;
+        }
     </style>
 </head>
 <body class="h-full flex flex-col m-0 p-0 overflow-hidden">
@@ -125,9 +164,18 @@
             Jsi ztlumen správcem! <span id="mutedCountdownContainer" class="font-normal">Zbývá: <span id="mutedCountdownTimer">-</span></span>
         </div>
 
-        <div id="chatContainer" class="flex-1 overflow-y-auto p-3 space-y-2 pb-20">
+        <!-- Chat kontejner s onscroll událostí -->
+        <div id="chatContainer" class="flex-1 overflow-y-auto p-3 space-y-2 pb-20 relative" onscroll="handleChatScroll()">
             <div id="emptyState" class="hidden h-full flex items-center justify-center text-gray-400 italic">Zatím žádné zprávy v této místnosti</div>
             <div id="messagesList" class="space-y-2 w-full"></div>
+
+            <!-- Plovoucí šipka dolů (Instagram styl) -->
+            <button id="scrollToBottomBtn" onclick="scrollToBottomSmooth()">⬇️</button>
+
+            <!-- Indikátor nových zpráv (vlevo) -->
+            <div id="newMessagesBadge" onclick="scrollToBottomSmooth()">
+                <span id="newMessagesCount">0</span> nových zpráv 🔽
+            </div>
         </div>
 
         <footer id="activeInputControls" class="border-t border-gray-300 bg-[#f0f0f0] p-2 absolute bottom-0 left-0 right-0">
@@ -142,6 +190,9 @@
         const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+
+        let isUserScrolledUp = false;
+        let unreadMessagesCount = 0;
 
         function getDeviceFingerprint() {
             let fp = localStorage.getItem('gjw_device_fingerprint');
@@ -307,6 +358,9 @@
                 text: text,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             });
+
+            // Po odeslání vlastní zprávy sjedeme rovnou dolů
+            scrollToBottomSmooth();
         }
 
         function deleteMessage(firebaseKey) {
@@ -404,6 +458,69 @@
             return num * 60000;
         }
 
+        // --- INSTAGRAM-LIKE SCROLL LOGIKA ---
+
+        function scrollToBottomInstant() {
+            const chatContainer = document.getElementById('chatContainer');
+            if (chatContainer) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            isUserScrolledUp = false;
+            unreadMessagesCount = 0;
+            updateNewMessagesUI();
+        }
+
+        function scrollToBottomSmooth() {
+            const chatContainer = document.getElementById('chatContainer');
+            if (chatContainer) {
+                chatContainer.scrollTo({
+                    top: chatContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+            isUserScrolledUp = false;
+            unreadMessagesCount = 0;
+            updateNewMessagesUI();
+        }
+
+        function handleChatScroll() {
+            const chatContainer = document.getElementById('chatContainer');
+            if (!chatContainer) return;
+
+            const distanceToBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
+            const scrollBtn = document.getElementById('scrollToBottomBtn');
+
+            if (distanceToBottom > 120) {
+                // Uživatel odscroloval nahoru
+                isUserScrolledUp = true;
+                if (scrollBtn) scrollBtn.style.display = 'flex';
+            } else {
+                // Uživatel je dole
+                isUserScrolledUp = false;
+                if (scrollBtn) scrollBtn.style.display = 'none';
+                if (unreadMessagesCount > 0) {
+                    unreadMessagesCount = 0;
+                    updateNewMessagesUI();
+                }
+            }
+        }
+
+        function updateNewMessagesUI() {
+            const badge = document.getElementById('newMessagesBadge');
+            const countSpan = document.getElementById('newMessagesCount');
+            
+            if (!badge || !countSpan) return;
+
+            if (isUserScrolledUp && unreadMessagesCount > 0) {
+                countSpan.innerText = unreadMessagesCount;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        let isFirstLoad = true;
+
         function renderMessages() {
             db.ref('messages').on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -442,7 +559,24 @@
                     }
                     messagesList.appendChild(div);
                 });
-                window.scrollTo(0, document.body.scrollHeight);
+
+                const chatContainer = document.getElementById('chatContainer');
+                if (!chatContainer) return;
+
+                const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 120;
+
+                if (isFirstLoad) {
+                    scrollToBottomInstant();
+                    isFirstLoad = false;
+                } else if (!isUserScrolledUp || isAtBottom) {
+                    scrollToBottomInstant();
+                    unreadMessagesCount = 0;
+                    updateNewMessagesUI();
+                } else {
+                    // Pokud uživatel čte zprávy nahoře, přičteme do badge
+                    unreadMessagesCount++;
+                    updateNewMessagesUI();
+                }
             });
         }
     </script>
