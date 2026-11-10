@@ -143,7 +143,7 @@
 
     <!-- MODAL: Sledování Zápasu Piškvorek (Spectator Mode) -->
     <div id="spectatorModal" class="fixed inset-0 bg-black/70 z-[9999] hidden items-center justify-center p-4">
-        <div class="bg-white rounded-lg p-6 max-w-2xl w-full space-y-4 shadow-2xl relative max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-lg p-6 max-w-3xl w-full space-y-4 shadow-2xl relative max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center border-b pb-3 shrink-0">
                 <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <span class="inline-block w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
@@ -153,15 +153,20 @@
             </div>
             
             <div class="flex-1 overflow-y-auto space-y-4">
-                <div id="spectatorMatchInfo" class="bg-blue-50 p-3 rounded border border-blue-200 text-sm font-semibold text-blue-900 flex justify-between items-center">
+                <div id="spectatorMatchInfo" class="bg-blue-50 p-3 rounded border border-blue-200 text-sm font-semibold text-blue-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     Načítám info o zápasu...
+                </div>
+
+                <!-- Tlačítka pro rozhodnutí admina -->
+                <div id="adminControlsBox" class="bg-amber-50 border border-amber-300 p-3 rounded flex flex-col sm:flex-row items-center justify-between gap-2">
+                    <span class="text-xs font-bold text-amber-900">⚡ ROZHODNUTÍ ADMINA Z NEBES:</span>
+                    <div id="adminWinnerButtons" class="flex gap-2"></div>
                 </div>
                 
                 <div class="flex flex-col md:flex-row gap-6 items-center justify-center">
                     <!-- Deska -->
                     <div class="flex flex-col items-center">
                         <div id="spectatorBoard" class="border p-2 bg-gray-200 rounded shadow-inner"></div>
-                        <p class="text-xs text-gray-500 mt-2 italic">⚠️ Režim pouze pro čtení – jako admin nemůžete zasahovat do hry.</p>
                     </div>
                     
                     <!-- Chat zápasu -->
@@ -311,11 +316,10 @@
             }
         }
 
-        // --- SEKCE: PIŠKVORKY ADMIN (ONLINE HRÁČI A PROBÍHAJÍCÍ HRY) ---
+        // --- SEKCE: PIŠKVORKY ADMIN ---
         function loadPiskvorkyAdmin() {
             let lobbyMap = {};
 
-            // 1. Sledování lobby (online hráčů)
             db.ref('piskvorky/lobby').on('value', snap => {
                 const tbody = document.getElementById('adminPiskvorkyLobbyList');
                 const badge = document.getElementById('onlineLobbyBadge');
@@ -346,7 +350,6 @@
                 });
             });
 
-            // 2. Sledování probíhajících her
             db.ref('piskvorky/games').on('value', snap => {
                 const tbody = document.getElementById('adminPiskvorkyGamesList');
                 const badge = document.getElementById('activeGamesBadge');
@@ -404,6 +407,7 @@
                 const g = snap.val();
                 if (!g) {
                     document.getElementById('spectatorMatchInfo').innerHTML = '<span class="text-red-600">Hra byla ukončena nebo smazána.</span>';
+                    document.getElementById('adminWinnerButtons').innerHTML = '';
                     return;
                 }
 
@@ -417,6 +421,9 @@
                     if (g.status === 'won') {
                         const winnerName = g.winner === g.player1?.id ? p1Name : p2Name;
                         statusTxt = `<span class="text-green-700 font-bold">Vítěz: ${winnerName}</span>`;
+                        if (g.adminMessage) {
+                            statusTxt += ` <br><span class="text-xs text-amber-800">(${g.adminMessage})</span>`;
+                        }
                     } else if (g.status === 'draw') {
                         statusTxt = `<span class="text-gray-700 font-bold">Konec: Remíza</span>`;
                     }
@@ -428,6 +435,21 @@
                         </div>
                         <div>${statusTxt}</div>
                     `;
+
+                    // Tlačítka pro rozhodnutí výhry adminem
+                    const btnBox = document.getElementById('adminWinnerButtons');
+                    if (g.status === 'playing') {
+                        btnBox.innerHTML = `
+                            <button onclick="forceAdminWin('${gameId}', '${g.player1?.id}', '${p1Name}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded text-xs shadow transition">
+                                👑 Vyhrává ${p1Name}
+                            </button>
+                            <button onclick="forceAdminWin('${gameId}', '${g.player2?.id}', '${p2Name}')" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1 rounded text-xs shadow transition">
+                                👑 Vyhrává ${p2Name}
+                            </button>
+                        `;
+                    } else {
+                        btnBox.innerHTML = `<span class="text-xs italic text-gray-500">Hra je již ukončena</span>`;
+                    }
                 });
 
                 renderSpectatorBoard(g.board || [], g.boardSize || 3, g.lastMoveIndex);
@@ -443,6 +465,33 @@
                 div.innerHTML = `<span class="font-bold text-gray-800">${msg.sender}:</span> ${msg.text}`;
                 chatList.appendChild(div);
                 chatList.scrollTop = chatList.scrollHeight;
+            });
+        }
+
+        // Funkce zásahem admina z nebes
+        function forceAdminWin(gameId, winnerId, winnerName) {
+            if (!confirm(`Opravdu chceš jako Admin z nebes rozhodnout, že vyhrál uživatel "${winnerName}"?`)) return;
+
+            const adminMsgText = `admin na nebesich rozhodl ze vyhral ${winnerName}`;
+
+            // 1. Zapsat stav zápasu
+            db.ref('piskvorky/games/' + gameId).update({
+                status: 'won',
+                winner: winnerId,
+                adminMessage: adminMsgText
+            });
+
+            // 2. Odeslat zprávu do in-game chatu hráčů
+            db.ref(`piskvorky/chats/${gameId}`).push({
+                sender: '🌩️ ADMIN',
+                text: `(${adminMsgText})`,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            // 3. Přičíst výhru do Win Streaků
+            db.ref(`piskvorky/streaks/${winnerId}`).transaction((current) => {
+                if (!current) return { name: winnerName, count: 1 };
+                return { name: winnerName, count: (current.count || 0) + 1 };
             });
         }
 

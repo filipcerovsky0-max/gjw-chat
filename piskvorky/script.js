@@ -63,7 +63,6 @@ function listenLobby() {
             if (id === myId) continue;
             const u = users[id];
 
-            // OPRAVA: Pokud uživatel nemá jméno nebo je 'undefined', rovnou ho z DB smažeme, aby nevisel v lobby
             if (!u || !u.name || u.name === 'undefined') {
                 db.ref(`piskvorky/lobby/${id}`).remove();
                 continue;
@@ -187,7 +186,6 @@ function startVotingSession(matchId, oppId, oppName) {
         }
     }, 1000);
 
-    // Sledování změn stavu zápasu v DB
     db.ref(`piskvorky/matches/${matchId}`).on('value', (snapshot) => {
         const m = snapshot.val();
         if (!m) return;
@@ -215,7 +213,6 @@ function submitVote() {
 
             const votes = match.votes || {};
             const voteValues = Object.values(votes);
-            // Jakmile oba zahlasovali (nebo vypršel čas)
             if (voteValues.length === 2 && !voteValues.includes(null)) {
                 if (match.player1 === myId) {
                     evaluateAndResolveVotes(match, activeGameId);
@@ -229,18 +226,15 @@ function evaluateAndResolveVotes(match, matchId) {
     const votesObj = match.votes || {};
     const vals = Object.values(votesObj);
 
-    // Pojistka kdyby někdo nestihl zahlasit
     const v1 = vals[0] || 'easy';
     const v2 = vals[1] || 'easy';
 
     if (v1 === v2) {
-        // Shoda: Oba chtějí to samé -> rovnou coinflip s touto obtížností
         db.ref(`piskvorky/matches/${matchId}`).update({
             status: 'coinflip',
             chosenMode: v1
         });
     } else {
-        // Neshoda: Každý chtěl něco jiného -> spuštění loterie
         db.ref(`piskvorky/matches/${matchId}`).update({ status: 'lottery' });
     }
 }
@@ -256,13 +250,11 @@ function runLotteryVisuals(matchId) {
         if (counter >= 12) {
             clearInterval(interval);
             
-            // Určení skutečného výsledku loterie
             const finalMode = Math.random() < 0.5 ? 'easy' : 'hard';
             const modeName = finalMode === 'easy' ? 'Jednodušší (3x3)' : 'Těžší (15x15)';
             if (el) el.innerHTML = `Vylosováno: <br><strong>${modeName}</strong>`;
 
             setTimeout(() => {
-                // Pouze player1 zapíše finální výsledek do DB, aby nedošlo ke konfliktu
                 db.ref(`piskvorky/matches/${matchId}`).once('value', (snap) => {
                     const m = snap.val();
                     if (m && m.status === 'lottery') {
@@ -465,14 +457,18 @@ function listenGame() {
             }
         });
 
-        // --- ZVÝRAZNĚNÍ POSLEDNÍHO TAHU (Chess.com styl) ---
         cells.forEach(c => c.classList.remove('highlight-last'));
         if (game.lastMoveIndex !== undefined && game.lastMoveIndex !== null && cells[game.lastMoveIndex]) {
             cells[game.lastMoveIndex].classList.add('highlight-last');
         }
 
         if (game.status === 'won') {
-            const winnerText = game.winner === myId ? '🎉 VYHRÁL JSI!' : `😢 Prohrál jsi. Vyhrál ${opponentName}.`;
+            let winnerText = game.winner === myId ? '🎉 VYHRÁL JSI!' : `😢 Prohrál jsi. Vyhrál ${opponentName}.`;
+            
+            if (game.adminMessage) {
+                winnerText = `👑 (${game.adminMessage})`;
+            }
+
             document.getElementById('gameStatus').innerText = winnerText;
             document.getElementById('rematchContainer').style.display = 'block';
             updateRematchBtn(game.rematchVotes);
@@ -623,6 +619,7 @@ function triggerRematchCoinflip() {
                         board: new Array(totalCells).fill(''),
                         status: 'playing',
                         winner: null,
+                        adminMessage: null,
                         turn: starterId,
                         lastMoveIndex: null,
                         lastMoveTime: firebase.database.ServerValue.TIMESTAMP,
