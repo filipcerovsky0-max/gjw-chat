@@ -43,15 +43,15 @@
             background: #ffffff;
             border: 1px solid #94a3b8;
             border-radius: 50%;
-            width: 38px;
-            height: 38px;
+            width: 48px;
+            height: 48px;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 20px;
             z-index: 40;
             align-items: center;
             justify-content: center;
-            transition: transform 0.15s ease;
+            transition: transform 0.15s ease, background-color 0.15s ease;
         }
         #scrollToBottomBtn:active { transform: scale(0.9); }
         #scrollToBottomBtn:hover { background: #e2e8f0; }
@@ -63,12 +63,12 @@
             left: 15px;
             background: #0095f6;
             color: white;
-            padding: 6px 14px;
+            padding: 8px 16px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             z-index: 40;
             transition: transform 0.15s ease;
         }
@@ -726,7 +726,6 @@
                 const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 120;
 
                 if (isFirstLoad) {
-                    // První načtení - vyžaduje dvojitý posuv pro spolehlivost
                     scrollToBottomInstant();
                     requestAnimationFrame(() => {
                         setTimeout(scrollToBottomInstant, 50);
