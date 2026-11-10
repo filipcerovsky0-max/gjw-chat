@@ -130,7 +130,9 @@ function acceptInvite() {
     matchId_safe = matchId;
     db.ref(`piskvorky/matches/${matchId}`).set({
         player1: invite.fromId,
+        player1Name: invite.fromName,
         player2: myId,
+        player2Name: myNickname,
         votes: {
             [invite.fromId]: null,
             [myId]: null
@@ -335,14 +337,17 @@ function createGameInDB(matchId, mode, mData, p1Symbol, p2Symbol) {
 
     const starterId = p1Symbol === 'X' ? mData.player1 : mData.player2;
 
+    const p1Name = mData.player1Name || (mData.player1 === myId ? myNickname : opponentName) || 'Hráč 1';
+    const p2Name = mData.player2Name || (mData.player2 === myId ? myNickname : opponentName) || 'Hráč 2';
+
     db.ref(`piskvorky/games/${matchId}`).set({
         boardSize: boardSize,
         winLength: winLength,
         board: new Array(boardSize * boardSize).fill(''),
         turn: starterId,
         lastMoveTime: firebase.database.ServerValue.TIMESTAMP,
-        player1: { id: mData.player1, symbol: p1Symbol },
-        player2: { id: mData.player2, symbol: p2Symbol },
+        player1: { id: mData.player1, name: p1Name, symbol: p1Symbol },
+        player2: { id: mData.player2, name: p2Name, symbol: p2Symbol },
         status: 'playing',
         rematchVotes: { [mData.player1]: false, [mData.player2]: false }
     });
@@ -364,7 +369,7 @@ db.ref('piskvorky/games').on('child_added', (snapshot) => {
         
         db.ref(`piskvorky/lobby/${opp.id}/name`).once('value', (snap) => {
             opponentId = opp.id;
-            opponentName = snap.val() || 'Soupeř';
+            opponentName = snap.val() || opp.name || 'Soupeř';
             setupGameUI();
         });
     }
