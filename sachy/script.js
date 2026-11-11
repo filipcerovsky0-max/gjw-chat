@@ -18,7 +18,7 @@ const auth = firebase.auth();
 
 const GOOGLE_CLIENT_ID = "26054026514-qvfltgpdsq4ivhmlf00sple6c86lmjqj.apps.googleusercontent.com";
 
-// Šedá ikonka pro anonymy & Modrá robotí ikonka pro Bota (použity jednoduché uvozovky uvnitř SVG)
+// Šedá ikonka pro anonymy & Modrá robotí ikonka pro Bota (VŠECHNY UVOZOVKU UVNITŘ SVG JSOU JEDNODUCHÉ)
 const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23cccccc'/><circle cx='50' cy='36' r='18' fill='%23e6e6e6'/><path d='M 20 82 C 20 62, 35 55, 50 55 C 65 55, 80 62, 80 82 Z' fill='%23e6e6e6'/></svg>`;
 const BOT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%232563eb'/><rect x='28' y='32' width='44' height='32' rx='6' fill='%23ffffff'/><circle cx='40' cy='45' r='5' fill='%231e3a8a'/><circle cx='60' cy='45' r='5' fill='%231e3a8a'/><rect x='42' y='54' width='16' height='4' rx='2' fill='%231e3a8a'/><rect x='46' y='16' width='8' height='16' fill='%23ffffff'/><circle cx='50' cy='14' r='6' fill='%23ef4444'/></svg>`;
 
@@ -33,7 +33,7 @@ let myClass = '';
 let userPhotoURL = null;
 let isGoogleUser = false;
 
-// Stav pro hru s Botem
+// Stav hry s Botem
 let isBotGame = false;
 let selectedBotColorChoice = 'w';
 let selectedBotTimeLimit = 10;
@@ -206,14 +206,81 @@ function updateHeaderUI() {
     const classDisplay = myClass ? `(${myClass})` : '';
     const userDisplay = `${myNickname} ${classDisplay}`;
     
-    document.getElementById('userInfoHeader').innerHTML = `
-        ${getAvatarHTML(userPhotoURL, 'w-6 h-6')}
-        <span>${userDisplay}</span>
-    `;
-
-    if (isGoogleUser) {
-        document.getElementById('btnCommunity').classList.remove('hidden');
+    const headerEl = document.getElementById('userInfoHeader');
+    if (headerEl) {
+        headerEl.innerHTML = `
+            ${getAvatarHTML(userPhotoURL, 'w-6 h-6')}
+            <span class="font-bold text-xs md:text-sm text-white">${userDisplay}</span>
+        `;
     }
+}
+
+// ----------------------------------------------------
+// SPRÁVA ÚČTU & PROFILU
+// ----------------------------------------------------
+window.openProfileModal = function() {
+    document.getElementById('editNicknameInput').value = myNickname || '';
+    document.getElementById('editClassInput').value = myClass || '';
+    const modal = document.getElementById('profileModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+};
+
+window.closeProfileModal = function() {
+    const modal = document.getElementById('profileModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+};
+
+window.saveProfileChanges = function() {
+    const newName = document.getElementById('editNicknameInput').value.trim();
+    if (!newName) {
+        alert('Přezdívka nemůže být prázdná!');
+        return;
+    }
+    myNickname = newName;
+    myClass = document.getElementById('editClassInput').value;
+
+    const fileInput = document.getElementById('editAvatarInput');
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            userPhotoURL = e.target.result;
+            commitProfileToFirebase();
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    } else {
+        commitProfileToFirebase();
+    }
+};
+
+function commitProfileToFirebase() {
+    closeProfileModal();
+    updateHeaderUI();
+
+    saveUserProfileToDB();
+
+    db.ref(`sachy/lobby/${myId}`).update({
+        name: myNickname,
+        class: myClass,
+        photoURL: userPhotoURL || null
+    });
+
+    db.ref(`sachy/streaks/${myId}`).once('value', (snap) => {
+        if (snap.exists()) {
+            db.ref(`sachy/streaks/${myId}`).update({
+                name: myNickname,
+                class: myClass,
+                photoURL: userPhotoURL || null
+            });
+        }
+    });
+
+    alert('Profil byl úspěšně uplatněn!');
 }
 
 // ----------------------------------------------------
@@ -424,73 +491,8 @@ function getValidatedLegalMovesForColor(r, c, color) {
 }
 
 // ----------------------------------------------------
-// PROFIL & UTILS
+// LOBBY A SÍŤOVÁ LOGIKA
 // ----------------------------------------------------
-window.openProfileModal = function() {
-    if (!isGoogleUser) {
-        alert('Anonymní uživatelé si nemohou upravovat profil. Přihlas se přes Google!');
-        return;
-    }
-    document.getElementById('editNicknameInput').value = myNickname;
-    document.getElementById('editClassInput').value = myClass;
-    const modal = document.getElementById('profileModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-};
-
-window.closeProfileModal = function() {
-    const modal = document.getElementById('profileModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-};
-
-window.saveProfileChanges = function() {
-    const newName = document.getElementById('editNicknameInput').value.trim();
-    if (!newName) {
-        alert('Přezdívka nemůže být prázdná!');
-        return;
-    }
-    myNickname = newName;
-    myClass = document.getElementById('editClassInput').value;
-
-    const fileInput = document.getElementById('editAvatarInput');
-    if (fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            userPhotoURL = e.target.result;
-            commitProfileToFirebase();
-        };
-        reader.readAsDataURL(fileInput.files[0]);
-    } else {
-        commitProfileToFirebase();
-    }
-};
-
-function commitProfileToFirebase() {
-    closeProfileModal();
-    updateHeaderUI();
-
-    saveUserProfileToDB();
-
-    db.ref(`sachy/lobby/${myId}`).update({
-        name: myNickname,
-        class: myClass,
-        photoURL: userPhotoURL || null
-    });
-
-    db.ref(`sachy/streaks/${myId}`).once('value', (snap) => {
-        if (snap.exists()) {
-            db.ref(`sachy/streaks/${myId}`).update({
-                name: myNickname,
-                class: myClass,
-                photoURL: userPhotoURL || null
-            });
-        }
-    });
-
-    alert('Profil byl úspěšně uložen!');
-}
-
 function enterLobby() {
     updateHeaderUI();
 
@@ -512,10 +514,8 @@ function enterLobby() {
     listenLobby();
     listenInvites();
     listenLeaderboard();
-    if (isGoogleUser) {
-        loadUserHistory();
-        listenFriendRequests();
-    }
+    listenFriendRequests();
+    loadUserHistory();
 
     const urlParams = new URLSearchParams(window.location.search);
     const joinCode = urlParams.get('join');
@@ -556,7 +556,7 @@ function listenLobby() {
 
             const infoSpan = document.createElement('div');
             infoSpan.className = 'flex items-center gap-2';
-            infoSpan.innerHTML = `${avatarHTML} <span class="font-bold text-xs md:text-sm">${displayName} ${u.class ? '(' + u.class + ')' : ''}</span>`;
+            infoSpan.innerHTML = `${avatarHTML} <span class="font-bold text-xs md:text-sm text-white">${displayName} ${u.class ? '(' + u.class + ')' : ''}</span>`;
             
             const btnGroup = document.createElement('div');
             btnGroup.className = 'flex items-center gap-1.5';
@@ -575,14 +575,12 @@ function listenLobby() {
                 btnGroup.appendChild(inviteBtn);
             }
 
-            if (isGoogleUser && u.isGoogle) {
-                const addFriendBtn = document.createElement('button');
-                addFriendBtn.className = 'btn-outline text-xs p-1.5 rounded text-blue-400 hover:border-blue-500';
-                addFriendBtn.title = 'Poslat žádost o přátelství';
-                addFriendBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>`;
-                addFriendBtn.onclick = () => sendFriendRequest(id, displayName);
-                btnGroup.appendChild(addFriendBtn);
-            }
+            const addFriendBtn = document.createElement('button');
+            addFriendBtn.className = 'btn-outline text-xs p-1.5 rounded text-blue-400 hover:border-blue-500';
+            addFriendBtn.title = 'Poslat žádost o přátelství';
+            addFriendBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>`;
+            addFriendBtn.onclick = () => sendFriendRequest(id, displayName);
+            btnGroup.appendChild(addFriendBtn);
 
             div.appendChild(infoSpan);
             div.appendChild(btnGroup);
@@ -595,8 +593,8 @@ function listenLobby() {
 }
 
 function sendFriendRequest(targetId, targetName) {
-    if (!isGoogleUser) {
-        alert('Pro přidávání přátel se musíte přihlásit přes Google!');
+    if (targetId === myId) {
+        alert('Nemůžeš poslat žádost sám sobě!');
         return;
     }
     db.ref(`sachy/friendRequests/${targetId}/${myId}`).set({
@@ -644,13 +642,19 @@ function listenFriendsList() {
 }
 
 window.openCommunityModal = function() {
-    document.getElementById('communityModal').classList.remove('hidden');
-    document.getElementById('communityModal').classList.add('flex');
+    const modal = document.getElementById('communityModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 };
 
 window.closeCommunityModal = function() {
-    document.getElementById('communityModal').classList.add('hidden');
-    document.getElementById('communityModal').classList.remove('flex');
+    const modal = document.getElementById('communityModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 };
 
 window.switchCommunityTab = function(tab) {
@@ -693,7 +697,7 @@ function renderFriendsTab(friends) {
         div.innerHTML = `
             <div class="flex items-center gap-2">
                 ${avatarHTML}
-                <span class="font-bold text-xs">${f.name}</span>
+                <span class="font-bold text-xs text-white">${f.name}</span>
             </div>
             <div class="flex items-center gap-1.5">
                 <button type="button" onclick="sendInvite('${fId}')" class="btn-chess text-[11px] px-2.5 py-1 rounded">Vyzvat</button>
@@ -724,7 +728,7 @@ function renderRequestsTab(reqs) {
         div.innerHTML = `
             <div class="flex items-center gap-2">
                 ${avatarHTML}
-                <span class="font-bold text-xs">${r.fromName}</span>
+                <span class="font-bold text-xs text-white">${r.fromName}</span>
             </div>
             <div class="flex items-center gap-1.5">
                 <button type="button" onclick="acceptFriendRequest('${r.fromId}', '${r.fromName}', '${r.fromPhoto || ''}')" class="btn-chess text-[11px] px-2 py-1 rounded">Přijmout</button>
@@ -805,6 +809,12 @@ function joinGameByCodeString(gameId) {
     db.ref(`sachy/games/${gameId}`).once('value', (snap) => {
         const game = snap.val();
         if (game && (game.status === 'waiting_qr' || game.status === 'voting')) {
+            // Kontrola Zamezující spojení sám se sebou
+            if (game.player1 && game.player1.id === myId) {
+                alert('Nemůžeš se připojit do své vlastní hry!');
+                return;
+            }
+
             db.ref(`sachy/games/${gameId}/player2`).set({
                 id: myId,
                 name: myNickname,
@@ -823,6 +833,10 @@ function joinGameByCodeString(gameId) {
 }
 
 function sendInvite(targetId) {
+    if (targetId === myId) {
+        alert('Nemůžeš vyzvat sám sebe!');
+        return;
+    }
     db.ref(`sachy/invites/${targetId}`).set({
         fromId: myId,
         fromName: myNickname,
@@ -835,7 +849,7 @@ function listenInvites() {
         const invite = snapshot.val();
         const modal = document.getElementById('inviteModal');
         if (!modal) return;
-        if (!invite) {
+        if (!invite || invite.fromId === myId) {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             return;
@@ -853,7 +867,7 @@ function listenInvites() {
 
 window.acceptInvite = function() {
     const invite = window.currentInvite;
-    if (!invite) return;
+    if (!invite || invite.fromId === myId) return;
 
     db.ref(`sachy/invites/${myId}`).remove();
     document.getElementById('inviteModal').classList.add('hidden');
@@ -1056,12 +1070,12 @@ function finalizeTimeVote(game) {
         let spinStep = 0;
         const spinInterval = setInterval(() => {
             spinStep++;
-            reel.style.top = `-${(spinStep % 3) * 90}px`;
+            reel.style.top = `-${(spinStep % 3) * 40}px`;
         }, 100);
 
         setTimeout(() => {
             clearInterval(spinInterval);
-            const targetOffset = chosenTime === 3 ? 0 : (chosenTime === 5 ? 90 : 180);
+            const targetOffset = chosenTime === 3 ? 0 : (chosenTime === 5 ? 40 : 80);
             reel.style.top = `-${targetOffset}px`;
             document.getElementById('slotMachineText').innerText = `Vylosovaný čas: ${chosenTime} minut!`;
 
@@ -1775,7 +1789,7 @@ function listenLeaderboard() {
                 <div class="flex items-center gap-2">
                     <span class="font-extrabold ${idx===0?'text-yellow-400':idx===1?'text-gray-300':'text-amber-600'} text-sm">${idx + 1}.</span>
                     ${avatarHTML}
-                    <span class="font-bold text-xs md:text-sm">${displayName}${classText}</span>
+                    <span class="font-bold text-xs md:text-sm text-white">${displayName}${classText}</span>
                 </div>
                 <strong class="text-[#81b64c] text-xs md:text-sm">${item.count} výher</strong>
             `;
