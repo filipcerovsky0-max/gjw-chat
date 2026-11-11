@@ -56,6 +56,11 @@
                 <button class="btn small" onclick="leaveLobby()">Odhlásit</button>
             </div>
             
+            <!-- TLAČÍTKO PRO HRU S BOTEM -->
+            <button class="btn primary" onclick="openBotModal()" style="background: linear-gradient(135deg, #2563eb, #4f46e5); margin: 12px 0; width: 100%; font-size: 15px; font-weight: bold; border: none; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);">
+                🤖 Trénink s Botem (Střední obtížnost)
+            </button>
+            
             <div class="lobby-grid">
                 <div class="players-box">
                     <h3>Aktivní hráči v lobby</h3>
@@ -64,6 +69,36 @@
                 <div class="leaderboard-box">
                     <h3>🏆 Top 3 Win Streaky</h3>
                     <div id="leaderboardList">Načítám žebříček...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL PRO TRÉNINK S BOTEM -->
+        <div id="botModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 380px;">
+                <h3>🤖 Hra proti Botovi</h3>
+                <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Vyber si herní mód a svůj symbol.</p>
+
+                <div style="text-align: left; margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: bold; color: #333;">Herní mód / Velikost:</label>
+                    <select id="botModeSelect" style="width: 100%; padding: 8px; margin-top: 4px; border-radius: 4px; border: 1px solid #ccc;">
+                        <option value="easy">Jednodušší (3x3, spoj 3)</option>
+                        <option value="hard">Těžší (15x15, spoj 5)</option>
+                    </select>
+                </div>
+
+                <div style="text-align: left; margin-bottom: 15px;">
+                    <label style="font-size: 12px; font-weight: bold; color: #333;">Tvůj symbol:</label>
+                    <select id="botSymbolSelect" style="width: 100%; padding: 8px; margin-top: 4px; border-radius: 4px; border: 1px solid #ccc;">
+                        <option value="X">❌ Začínáš (Symbol X)</option>
+                        <option value="O">⭕ Jsi druhý (Symbol O)</option>
+                        <option value="random">🎲 Náhodný výběr</option>
+                    </select>
+                </div>
+
+                <div class="modal-buttons" style="display: flex; gap: 8px;">
+                    <button class="btn success" onclick="startBotGame()" style="flex: 1;">Spustit hru</button>
+                    <button class="btn danger" onclick="closeBotModal()" style="flex: 1;">Zrušit</button>
                 </div>
             </div>
         </div>

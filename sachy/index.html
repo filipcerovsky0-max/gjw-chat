@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <title>chess.gjw | Online Šachy Studenstvo GJW Prostějov</title>
-    <meta name="description" content="Zahraj si multiplayer online šachy v reálném čase na Studenstvo GJW!">
+    <meta name="description" content="Zahraj si multiplayer online šachy nebo trénuj proti botovi na Studenstvo GJW!">
     <meta name="theme-color" content="#302e2b">
     <link rel="canonical" href="https://gjwprostejov.com/sachy/">
 
@@ -136,7 +136,7 @@
 
         <!-- 2. Lobby & Žebříček -->
         <section id="lobbySection" class="hidden max-w-5xl w-full grid md:grid-cols-3 gap-4 md:gap-6">
-            <div class="md:col-span-2 bg-[#262421] p-4 rounded-lg border border-[#3d3b38] shadow-lg flex flex-col h-[520px]">
+            <div class="md:col-span-2 bg-[#262421] p-4 rounded-lg border border-[#3d3b38] shadow-lg flex flex-col h-[540px]">
                 
                 <div class="flex flex-col gap-3 mb-4 border-b border-[#3d3b38] pb-3 shrink-0">
                     <div class="flex justify-between items-center">
@@ -149,6 +149,10 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button type="button" onclick="openBotModal()" class="btn-chess py-2.5 px-3 text-xs flex items-center justify-center gap-1.5 col-span-2 bg-gradient-to-r from-blue-600 to-indigo-600 border-b-blue-800 hover:from-blue-500 hover:to-indigo-500 shadow-md">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            <span>🤖 Trénink s Botem (~500 ELO) ps: nemam kamose</span>
+                        </button>
                         <button type="button" onclick="shareGameLink()" class="btn-chess py-2 px-3 text-xs flex items-center justify-center gap-1.5">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
                             <span>Pozvi homies ze třídy!</span>
@@ -224,6 +228,41 @@
         </section>
 
     </main>
+
+    <!-- Modal pro Trénink s Botem -->
+    <div id="botModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-[1000]">
+        <div class="bg-[#262421] border border-[#3d3b38] p-6 rounded-lg max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <h3 class="text-lg font-bold text-white border-b border-[#3d3b38] pb-2 flex items-center justify-center gap-2">
+                <span>🤖</span> Šachobot (500 ELO)
+            </h3>
+            <p class="text-xs text-gray-300">Procvič si taktiku a zahraj si zápas proti botovi s ELO ~500.(nemas kamose co)</p>
+            
+            <div class="space-y-3 text-left">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Tvoje barva</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="selectBotColor('w')" id="btnBotWhite" class="p-2 bg-[#81b64c] text-white border border-[#457524] rounded text-xs font-bold">Bílý ♔</button>
+                        <button type="button" onclick="selectBotColor('random')" id="btnBotRandom" class="p-2 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]">Náhodně 🎲</button>
+                        <button type="button" onclick="selectBotColor('b')" id="btnBotBlack" class="p-2 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]">Černý ♚</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Časový limit zápasu</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="selectBotTime(3)" id="btnBotTime3" class="p-2 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]">3 min</button>
+                        <button type="button" onclick="selectBotTime(5)" id="btnBotTime5" class="p-2 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]">5 min</button>
+                        <button type="button" onclick="selectBotTime(10)" id="btnBotTime10" class="p-2 bg-[#81b64c] text-white border border-[#457524] rounded text-xs font-bold">10 min</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="startBotGame()" class="flex-1 btn-chess py-2.5 rounded text-xs">Spustit zápas</button>
+                <button type="button" onclick="closeBotModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2.5 rounded text-xs">Zrušit</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal pro Komunitu & Přátele -->
     <div id="communityModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-[1000]">

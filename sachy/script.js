@@ -18,8 +18,9 @@ const auth = firebase.auth();
 
 const GOOGLE_CLIENT_ID = "26054026514-qvfltgpdsq4ivhmlf00sple6c86lmjqj.apps.googleusercontent.com";
 
-// Klasická šedá profilová ikona z nahraného obrázku (SVG Data URL)
+// Šedá ikonka pro anonymy & Modrá robotí ikonka pro Bota
 const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23cccccc"/><circle cx="50" cy="36" r="18" fill="%23e6e6e6"/><path d="M 20 82 C 20 62, 35 55, 50 55 C 65 55, 80 62, 80 82 Z" fill="%23e6e6e6"/></svg>`;
+const BOT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%232563eb"/><rect x="28" y="32" width="44" height="32" rx="6" fill="%23ffffff"/><circle cx="40" cy="45" r="5" fill="%231e3a8a"/><circle cx="60" cy="45" r="5" fill="%231e3a8a"/><rect x="42" y="54" width="16" height="4" rx="2" fill="%231e3a8a"/><rect x="46" y="16" width="8" height="16" fill="%23ffffff"/><circle cx="50" cy="14" r="6" fill="%23ef4444"/></svg>`;
 
 function getAvatarHTML(photoURL, sizeClass = "w-7 h-7") {
     const url = photoURL || DEFAULT_AVATAR;
@@ -31,6 +32,12 @@ let myNickname = '';
 let myClass = '';
 let userPhotoURL = null;
 let isGoogleUser = false;
+
+// Stav pro hru s Botem
+let isBotGame = false;
+let selectedBotColorChoice = 'w';
+let selectedBotTimeLimit = 10;
+let botTimerTimeout = null;
 
 let activeGameId = null;
 let myColor = 'w';
@@ -99,7 +106,6 @@ const initialBoard = [
     ['wR','wN','wB','wQ','wK','wB','wN','wR']
 ];
 
-// Obnova relace z DB
 auth.onAuthStateChanged((user) => {
     if (user) {
         myId = user.uid;
@@ -191,7 +197,7 @@ window.joinLobbyAnonymous = function() {
     }
     myNickname = nameInput;
     myClass = document.getElementById('playerClass').value;
-    userPhotoURL = null; // Anonym používá výchozí šedou ikonku
+    userPhotoURL = null;
     isGoogleUser = false;
     enterLobby();
 };
@@ -211,7 +217,220 @@ function updateHeaderUI() {
 }
 
 // ----------------------------------------------------
-// OPRAVENÁ ÚPRAVA PROFILU S GARANTOVANÝM UKLÁDÁNÍM FOTKY
+// BOT (~500 ELO) REŽIM LOGIKA
+// ----------------------------------------------------
+window.openBotModal = function() {
+    const modal = document.getElementById('botModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+window.closeBotModal = function() {
+    const modal = document.getElementById('botModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+};
+
+window.selectBotColor = function(color) {
+    selectedBotColorChoice = color;
+    ['w', 'random', 'b'].forEach(c => {
+        const btn = document.getElementById(c === 'w' ? 'btnBotWhite' : c === 'random' ? 'btnBotRandom' : 'btnBotBlack');
+        if (c === color) {
+            btn.className = 'p-2 bg-[#81b64c] text-white border border-[#457524] rounded text-xs font-bold';
+        } else {
+            btn.className = 'p-2 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]';
+        }
+    });
+};
+
+window.selectBotTime = function(minutes) {
+    selectedBotTimeLimit = minutes;
+    [3, 5, 10].forEach(m => {
+        const btn = document.getElementById(`btnBotTime${m}`);
+        if (m === minutes) {
+            btn.className = 'p-2 bg-[#81b64c] text-white border border-[#457524] rounded text-xs font-bold';
+        } else {
+            btn.className = 'p-2 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]';
+        }
+    });
+};
+
+window.startBotGame = function() {
+    closeBotModal();
+    isBotGame = true;
+    activeGameId = 'bot_match_' + Date.now();
+
+    if (selectedBotColorChoice === 'random') {
+        myColor = Math.random() < 0.5 ? 'w' : 'b';
+    } else {
+        myColor = selectedBotColorChoice;
+    }
+
+    opponentName = 'Šachobot (500 ELO)';
+    opponentId = 'bot_500';
+
+    gameBoard = initialBoard.map(row => [...row]);
+    castlingRights = { wK: true, wQ: true, bK: true, bQ: true };
+    enPassantTarget = null;
+    moveHistory = [];
+    fullBoardSnapshots = [initialBoard.map(row => [...row])];
+    currentViewIndex = 0;
+    gameStatus = 'playing';
+    myTurn = (myColor === 'w');
+
+    whiteTimeSeconds = selectedBotTimeLimit * 60;
+    blackTimeSeconds = selectedBotTimeLimit * 60;
+
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('lobbySection').classList.add('hidden');
+    document.getElementById('gameSection').classList.remove('hidden');
+
+    document.getElementById('bottomPlayerName').innerText = `${myNickname} (${myColor === 'w' ? 'Bílý ♔' : 'Černý ♚'})`;
+    document.getElementById('topPlayerName').innerText = `${opponentName} (${myColor === 'w' ? 'Černý ♚' : 'Bílý ♔'})`;
+
+    document.getElementById('bottomAvatar').innerHTML = getAvatarHTML(userPhotoURL, 'w-8 h-8');
+    document.getElementById('topAvatar').innerHTML = getAvatarHTML(BOT_AVATAR, 'w-8 h-8');
+
+    document.getElementById('btnSurrender').disabled = false;
+    document.getElementById('btnDraw').disabled = false;
+    document.getElementById('btnAddFriendInGame').classList.add('hidden');
+
+    updateTimersDisplay();
+    startClocks();
+    renderBoard(null);
+    playSound('gameStart');
+
+    if (!myTurn) {
+        triggerBotMove();
+    }
+};
+
+function triggerBotMove() {
+    if (!isBotGame || gameStatus !== 'playing' || myTurn) return;
+
+    const botColor = myColor === 'w' ? 'b' : 'w';
+    let allLegalMoves = [];
+
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (gameBoard[r][c] && gameBoard[r][c][0] === botColor) {
+                const moves = getValidatedLegalMovesForColor(r, c, botColor);
+                moves.forEach(m => {
+                    allLegalMoves.push({ from: { r, c }, to: { r: m.r, c: m.c } });
+                });
+            }
+        }
+    }
+
+    if (allLegalMoves.length === 0) return;
+
+    // Evaluace pozice bota pro ELO 500
+    const scoredMoves = allLegalMoves.map(m => {
+        let score = 0;
+        const piece = gameBoard[m.from.r][m.from.c];
+        const target = gameBoard[m.to.r][m.to.c];
+        const pieceValues = { 'P': 100, 'N': 320, 'B': 330, 'R': 500, 'Q': 900, 'K': 20000 };
+        const oppColor = botColor === 'w' ? 'b' : 'w';
+
+        // 1. Zisk figurky
+        if (target && target[0] === oppColor) {
+            const victimVal = pieceValues[target[1]] || 0;
+            const attackerVal = pieceValues[piece[1]] || 0;
+            score += (victimVal * 10) - attackerVal;
+        }
+
+        // 2. Kontrola středu (d4, d5, e4, e5)
+        if ((m.to.r === 3 || m.to.r === 4) && (m.to.c === 3 || m.to.c === 4)) {
+            score += 25;
+        }
+
+        // 3. Šachování
+        const testBoard = gameBoard.map(row => [...row]);
+        testBoard[m.from.r][m.from.c] = '';
+        testBoard[m.to.r][m.to.c] = piece;
+        if (isInCheck(oppColor, testBoard)) {
+            score += 50;
+        }
+
+        // 4. Vyvarování se ohroženým polím
+        if (isSquareAttacked(m.to.r, m.to.c, oppColor, testBoard)) {
+            score -= (pieceValues[piece[1]] || 100) * 0.7;
+        }
+
+        return { move: m, score };
+    });
+
+    scoredMoves.sort((a, b) => b.score - a.score);
+
+    let chosenMove;
+    // 500 ELO pravděpodobnost: 65 % dobrý tah, 35 % náhodný tah (chyba/nepřesnost)
+    if (Math.random() < 0.65 && scoredMoves.length > 0) {
+        const topPoolSize = Math.min(3, scoredMoves.length);
+        const randIdx = Math.floor(Math.random() * topPoolSize);
+        chosenMove = scoredMoves[randIdx].move;
+    } else {
+        const randIdx = Math.floor(Math.random() * scoredMoves.length);
+        chosenMove = scoredMoves[randIdx].move;
+    }
+
+    const delay = Math.floor(Math.random() * 700) + 400; // 400 - 1100 ms
+    botTimerTimeout = setTimeout(() => {
+        if (!isBotGame || gameStatus !== 'playing') return;
+        executeLocalBotMove(chosenMove.from, chosenMove.to);
+    }, delay);
+}
+
+function executeLocalBotMove(from, to) {
+    const botColor = myColor === 'w' ? 'b' : 'w';
+    executeMoveInternal(from, to, botColor);
+}
+
+function getValidatedLegalMovesForColor(r, c, color) {
+    const rawMoves = getRawPieceMoves(r, c, gameBoard, color, enPassantTarget);
+    const validMoves = [];
+
+    rawMoves.forEach(m => {
+        const testBoard = gameBoard.map(row => [...row]);
+        const piece = testBoard[r][c];
+        testBoard[r][c] = '';
+        testBoard[m.r][m.c] = piece;
+
+        if (piece[1] === 'P' && enPassantTarget && m.r === enPassantTarget.r && m.c === enPassantTarget.c) {
+            testBoard[r][m.c] = '';
+        }
+
+        if (!isInCheck(color, testBoard)) {
+            validMoves.push(m);
+        }
+    });
+
+    const piece = gameBoard[r][c];
+    if (piece === color + 'K' && !isInCheck(color, gameBoard)) {
+        const row = color === 'w' ? 7 : 0;
+        if (r === row && c === 4) {
+            const oppColor = color === 'w' ? 'b' : 'w';
+            
+            const canCastleShort = color === 'w' ? castlingRights.wK : castlingRights.bK;
+            if (canCastleShort && gameBoard[row][5] === '' && gameBoard[row][6] === '' && gameBoard[row][7] === color + 'R') {
+                if (!isSquareAttacked(row, 5, oppColor, gameBoard) && !isSquareAttacked(row, 6, oppColor, gameBoard)) {
+                    validMoves.push({ r: row, c: 6, isCastleShort: true });
+                }
+            }
+
+            const canCastleLong = color === 'w' ? castlingRights.wQ : castlingRights.bQ;
+            if (canCastleLong && gameBoard[row][1] === '' && gameBoard[row][2] === '' && gameBoard[row][3] === '' && gameBoard[row][0] === color + 'R') {
+                if (!isSquareAttacked(row, 2, oppColor, gameBoard) && !isSquareAttacked(row, 3, oppColor, gameBoard)) {
+                    validMoves.push({ r: row, c: 2, isCastleLong: true });
+                }
+            }
+        }
+    }
+
+    return validMoves;
+}
+
+// ----------------------------------------------------
+// PROFIL & UTILS
 // ----------------------------------------------------
 window.openProfileModal = function() {
     if (!isGoogleUser) {
@@ -244,7 +463,7 @@ window.saveProfileChanges = function() {
     if (fileInput.files && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            userPhotoURL = e.target.result; // Nahraný Base64 obrázek
+            userPhotoURL = e.target.result;
             commitProfileToFirebase();
         };
         reader.readAsDataURL(fileInput.files[0]);
@@ -257,17 +476,14 @@ function commitProfileToFirebase() {
     closeProfileModal();
     updateHeaderUI();
 
-    // 1. Trvalé uložení v DB
     saveUserProfileToDB();
 
-    // 2. Aktualizace stavu v Lobby
     db.ref(`sachy/lobby/${myId}`).update({
         name: myNickname,
         class: myClass,
         photoURL: userPhotoURL || null
     });
 
-    // 3. Aktualizace jména a fotky v Žebříčku výher
     db.ref(`sachy/streaks/${myId}`).once('value', (snap) => {
         if (snap.exists()) {
             db.ref(`sachy/streaks/${myId}`).update({
@@ -377,9 +593,6 @@ function listenLobby() {
     });
 }
 
-// ----------------------------------------------------
-// SYSTÉM PŘÁTEL (KOMUNITA)
-// ----------------------------------------------------
 function sendFriendRequest(targetId, targetName) {
     if (!isGoogleUser) {
         alert('Pro přidávání přátel se musíte přihlásit přes Google!');
@@ -396,7 +609,7 @@ function sendFriendRequest(targetId, targetName) {
 
 function sendFriendRequestInGame() {
     window.toggleGameMenu();
-    if (opponentId) sendFriendRequest(opponentId, opponentName);
+    if (opponentId && !isBotGame) sendFriendRequest(opponentId, opponentName);
 }
 
 function listenFriendRequests() {
@@ -531,9 +744,6 @@ window.rejectFriendRequest = function(friendId) {
     db.ref(`sachy/friendRequests/${myId}/${friendId}`).remove();
 };
 
-// ----------------------------------------------------
-// SDÍLENÍ ODKAZU & QR KÓDY
-// ----------------------------------------------------
 window.shareGameLink = function() {
     const shareData = {
         title: 'chess.gjw - Online Šachy Studenstvo GJW',
@@ -632,7 +842,6 @@ function listenInvites() {
 
         window.currentInvite = invite;
         
-        // Zobrazení fotky a jména v modalu výzvy
         document.getElementById('inviteAvatar').innerHTML = getAvatarHTML(invite.fromPhoto, 'w-16 h-16');
         document.getElementById('inviteText').innerText = `${invite.fromName} tě vyzývá na šachový zápas!`;
         
@@ -681,10 +890,11 @@ window.rejectInvite = function() {
 db.ref('sachy/games').on('child_added', (snapshot) => {
     const game = snapshot.val();
     const gameId = snapshot.key;
-    if (activeGameId === gameId) return;
+    if (activeGameId === gameId || isBotGame) return;
 
     if (game && (game.player1.id === myId || (game.player2 && game.player2.id === myId))) {
         activeGameId = gameId;
+        isBotGame = false;
         setupGameUI(game);
     }
 });
@@ -708,6 +918,8 @@ function setupGameUI(game) {
     document.getElementById('bottomAvatar').innerHTML = getAvatarHTML(myPhoto, 'w-8 h-8');
     document.getElementById('topAvatar').innerHTML = getAvatarHTML(oppPhoto, 'w-8 h-8');
 
+    document.getElementById('btnAddFriendInGame').classList.remove('hidden');
+
     listenGame();
     if (!chatListenerRegistered) {
         listenChat();
@@ -716,6 +928,7 @@ function setupGameUI(game) {
 }
 
 function listenGame() {
+    if (isBotGame) return;
     db.ref(`sachy/games/${activeGameId}`).on('value', (snapshot) => {
         const game = snapshot.val();
         if (!game) {
@@ -818,7 +1031,7 @@ function handleVotingPhase(game) {
 }
 
 window.voteTime = function(minutes) {
-    if (!activeGameId) return;
+    if (!activeGameId || isBotGame) return;
     db.ref(`sachy/games/${activeGameId}/votes/${myId}`).set(minutes);
 };
 
@@ -860,7 +1073,7 @@ function finalizeTimeVote(game) {
 }
 
 function startGameWithTime(timeMin) {
-    if (activeGameId) {
+    if (activeGameId && !isBotGame) {
         db.ref(`sachy/games/${activeGameId}`).update({
             status: 'playing',
             timeLimit: timeMin,
@@ -875,6 +1088,19 @@ function startClocks() {
     stopClocks();
     timerInterval = setInterval(() => {
         if (gameStatus !== 'playing') return;
+
+        if (isBotGame) {
+            const currentTurnColor = myTurn ? myColor : (myColor === 'w' ? 'b' : 'w');
+            if (currentTurnColor === 'w') {
+                whiteTimeSeconds = Math.max(0, whiteTimeSeconds - 1);
+                if (whiteTimeSeconds === 0) handleTimeout('w');
+            } else {
+                blackTimeSeconds = Math.max(0, blackTimeSeconds - 1);
+                if (blackTimeSeconds === 0) handleTimeout('b');
+            }
+            updateTimersDisplay();
+            return;
+        }
 
         db.ref(`sachy/games/${activeGameId}`).once('value', (snap) => {
             const g = snap.val();
@@ -906,6 +1132,14 @@ function stopClocks() {
 function handleTimeout(losingColor) {
     stopClocks();
     const winningColor = losingColor === 'w' ? 'b' : 'w';
+
+    if (isBotGame) {
+        gameStatus = 'won';
+        const winnerId = (myColor === winningColor) ? myId : 'bot_500';
+        showGameOverModal({ status: 'won', winner: winnerId, reason: 'timeout' });
+        return;
+    }
+
     db.ref(`sachy/games/${activeGameId}`).once('value', (snap) => {
         const g = snap.val();
         if (!g || g.status !== 'playing') return;
@@ -958,6 +1192,12 @@ function showGameOverModal(game) {
 
 window.voteRematch = function() {
     if (!activeGameId) return;
+
+    if (isBotGame) {
+        window.startBotGame();
+        return;
+    }
+
     db.ref(`sachy/games/${activeGameId}/rematchVotes/${myId}`).set(true);
 
     db.ref(`sachy/games/${activeGameId}/rematchVotes`).once('value', (snap) => {
@@ -1179,47 +1419,7 @@ function isInCheck(color, board) {
 }
 
 function getValidatedLegalMoves(r, c) {
-    const rawMoves = getRawPieceMoves(r, c, gameBoard, myColor, enPassantTarget);
-    const validMoves = [];
-
-    rawMoves.forEach(m => {
-        const testBoard = gameBoard.map(row => [...row]);
-        const piece = testBoard[r][c];
-        testBoard[r][c] = '';
-        testBoard[m.r][m.c] = piece;
-
-        if (piece[1] === 'P' && enPassantTarget && m.r === enPassantTarget.r && m.c === enPassantTarget.c) {
-            testBoard[r][m.c] = '';
-        }
-
-        if (!isInCheck(myColor, testBoard)) {
-            validMoves.push(m);
-        }
-    });
-
-    const piece = gameBoard[r][c];
-    if (piece === myColor + 'K' && !isInCheck(myColor, gameBoard)) {
-        const row = myColor === 'w' ? 7 : 0;
-        if (r === row && c === 4) {
-            const oppColor = myColor === 'w' ? 'b' : 'w';
-            
-            const canCastleShort = myColor === 'w' ? castlingRights.wK : castlingRights.bK;
-            if (canCastleShort && gameBoard[row][5] === '' && gameBoard[row][6] === '' && gameBoard[row][7] === myColor + 'R') {
-                if (!isSquareAttacked(row, 5, oppColor, gameBoard) && !isSquareAttacked(row, 6, oppColor, gameBoard)) {
-                    validMoves.push({ r: row, c: 6, isCastleShort: true });
-                }
-            }
-
-            const canCastleLong = myColor === 'w' ? castlingRights.wQ : castlingRights.bQ;
-            if (canCastleLong && gameBoard[row][1] === '' && gameBoard[row][2] === '' && gameBoard[row][3] === '' && gameBoard[row][0] === myColor + 'R') {
-                if (!isSquareAttacked(row, 2, oppColor, gameBoard) && !isSquareAttacked(row, 3, oppColor, gameBoard)) {
-                    validMoves.push({ r: row, c: 2, isCastleLong: true });
-                }
-            }
-        }
-    }
-
-    return validMoves;
+    return getValidatedLegalMovesForColor(r, c, myColor);
 }
 
 function getRawPieceMoves(r, c, board, color, epTarget) {
@@ -1283,6 +1483,10 @@ function getRawPieceMoves(r, c, board, color, epTarget) {
 }
 
 function executeMove(from, to) {
+    executeMoveInternal(from, to, myColor);
+}
+
+function executeMoveInternal(from, to, movingColor) {
     if (gameStatus !== 'playing') return;
 
     const movingPiece = gameBoard[from.r][from.c];
@@ -1292,7 +1496,7 @@ function executeMove(from, to) {
     let isCastle = false;
 
     if (movingPiece[1] === 'P' && (to.r === 0 || to.r === 7)) {
-        finalPiece = myColor + 'Q';
+        finalPiece = movingColor + 'Q';
     }
 
     const newBoard = gameBoard.map(row => [...row]);
@@ -1304,10 +1508,10 @@ function executeMove(from, to) {
         const row = from.r;
         if (to.c === 6) {
             newBoard[row][7] = '';
-            newBoard[row][5] = myColor + 'R';
+            newBoard[row][5] = movingColor + 'R';
         } else if (to.c === 2) {
             newBoard[row][0] = '';
-            newBoard[row][3] = myColor + 'R';
+            newBoard[row][3] = movingColor + 'R';
         }
     }
 
@@ -1333,7 +1537,7 @@ function executeMove(from, to) {
     if (isCastle) playSound('castle');
     else playSound(isCapture ? 'capture' : 'move');
 
-    const oppColor = myColor === 'w' ? 'b' : 'w';
+    const oppColor = movingColor === 'w' ? 'b' : 'w';
     const isOppInCheck = isInCheck(oppColor, newBoard);
     if (isOppInCheck) playSound('check');
 
@@ -1362,7 +1566,7 @@ function executeMove(from, to) {
     if (!oppHasLegalMoves) {
         if (isOppInCheck) {
             nextStatus = 'won';
-            winnerId = myId;
+            winnerId = movingColor === myColor ? myId : 'bot_500';
             playSound('gameEnd');
         } else {
             nextStatus = 'draw';
@@ -1371,6 +1575,27 @@ function executeMove(from, to) {
     }
 
     const moveNotation = `${movingPiece[1]}${String.fromCharCode(97 + to.c)}${8 - to.r}${isOppInCheck ? '+' : ''}`;
+
+    if (isBotGame) {
+        gameBoard = newBoard;
+        myTurn = (oppColor === myColor);
+        castlingRights = newCastling;
+        enPassantTarget = newEnPassant;
+        gameStatus = nextStatus;
+        moveHistory.push(`${movingColor === myColor ? myNickname : opponentName}: ${moveNotation}`);
+        fullBoardSnapshots.push(newBoard.map(row => [...row]));
+        currentViewIndex = fullBoardSnapshots.length - 1;
+
+        renderBoard({ from, to });
+
+        if (nextStatus === 'won' || nextStatus === 'draw') {
+            stopClocks();
+            showGameOverModal({ status: nextStatus, winner: winnerId, reason: 'checkmate' });
+        } else if (!myTurn) {
+            triggerBotMove();
+        }
+        return;
+    }
 
     db.ref(`sachy/games/${activeGameId}`).transaction((game) => {
         if (!game || game.status !== 'playing') return;
@@ -1418,6 +1643,19 @@ window.navMove = function(direction) {
 window.requestDraw = function() {
     window.toggleGameMenu();
     if (gameStatus !== 'playing') return;
+
+    if (isBotGame) {
+        if (Math.random() < 0.5) {
+            alert('Šachobot přijímá nabídku remízy!');
+            gameStatus = 'draw';
+            stopClocks();
+            showGameOverModal({ status: 'draw' });
+        } else {
+            alert('Šachobot odmítl nabídku remízy a bojuje dál!');
+        }
+        return;
+    }
+
     if (activeGameId) {
         db.ref(`sachy/games/${activeGameId}/drawOffer`).set(myId);
         alert('Žádost o remízu byla odeslána.');
@@ -1446,6 +1684,13 @@ window.surrenderGame = function() {
     }
 
     if (confirm('Opravdu chceš zápas vzdát?')) {
+        if (isBotGame) {
+            gameStatus = 'won';
+            stopClocks();
+            showGameOverModal({ status: 'won', winner: 'bot_500', reason: 'surrender' });
+            return;
+        }
+
         if (activeGameId) {
             db.ref(`sachy/games/${activeGameId}`).update({
                 status: 'won',
@@ -1542,6 +1787,27 @@ window.sendChatMessage = function() {
     const msg = input.value.trim();
     if (!msg || !activeGameId) return;
 
+    if (isBotGame) {
+        const chatEl = document.getElementById('chatMessages');
+        const div1 = document.createElement('div');
+        div1.className = 'border-b border-[#2d2b28] pb-1';
+        div1.innerHTML = `<strong class="text-[#81b64c]">${myNickname}:</strong> ${msg}`;
+        chatEl.appendChild(div1);
+
+        setTimeout(() => {
+            const botReplies = ["Hodně štěstí!", "Pěknej tah!", "Tuhle hru vyhraju já 🤖", "Dobrá hra!", "Soustřeď se na figurky ;)"];
+            const reply = botReplies[Math.floor(Math.random() * botReplies.length)];
+            const div2 = document.createElement('div');
+            div2.className = 'border-b border-[#2d2b28] pb-1';
+            div2.innerHTML = `<strong class="text-[#81b64c]">Šachobot:</strong> ${reply}`;
+            chatEl.appendChild(div2);
+            chatEl.scrollTop = chatEl.scrollHeight;
+        }, 800);
+
+        input.value = '';
+        return;
+    }
+
     db.ref(`sachy/chats/${activeGameId}`).push({
         sender: myNickname,
         text: msg,
@@ -1556,7 +1822,7 @@ window.handleChatKeyPress = function(e) {
 
 function listenChat() {
     const chatEl = document.getElementById('chatMessages');
-    if (!chatEl) return;
+    if (!chatEl || isBotGame) return;
     chatEl.innerHTML = '';
     db.ref(`sachy/chats/${activeGameId}`).on('child_added', (snapshot) => {
         const msg = snapshot.val();
@@ -1574,13 +1840,18 @@ function listenChat() {
 
 window.exitGame = function() {
     stopClocks();
-    if (activeGameId) {
+    if (botTimerTimeout) clearTimeout(botTimerTimeout);
+
+    if (activeGameId && !isBotGame) {
         db.ref(`sachy/games/${activeGameId}`).remove();
         db.ref(`sachy/lobby/${myId}/status`).set('idle');
-        activeGameId = null;
-        chatListenerRegistered = false;
-        gameStatus = 'idle';
     }
+
+    activeGameId = null;
+    isBotGame = false;
+    chatListenerRegistered = false;
+    gameStatus = 'idle';
+
     document.getElementById('loginSection').classList.add('hidden');
     document.getElementById('gameSection').classList.add('hidden');
     document.getElementById('gameOverModal').classList.add('hidden');

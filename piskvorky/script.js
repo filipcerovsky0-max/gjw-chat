@@ -16,6 +16,13 @@ let chatListenerRegistered = false;
 let matchId_safe = null;
 let afkInterval = null;
 
+// Proměnné pro stav hry s Botem
+let isBotGame = false;
+let botSymbol = '';
+let botTimerTimeout = null;
+let botBoard = [];
+let botGameStatus = 'playing';
+
 function joinLobby() {
     const nameInput = document.getElementById('playerName').value.trim();
     const classInput = document.getElementById('playerClass').value;
@@ -98,6 +105,199 @@ function listenLobby() {
     });
 }
 
+// ----------------------------------------------------
+// LOGIKA HRY PROTI BOTOVI (STŘEDNÍ OBTÍŽNOST)
+// ----------------------------------------------------
+function openBotModal() {
+    document.getElementById('botModal').style.display = 'flex';
+}
+
+function closeBotModal() {
+    document.getElementById('botModal').style.display = 'none';
+}
+
+function startBotGame() {
+    closeBotModal();
+    isBotGame = true;
+    activeGameId = 'bot_match_' + Date.now();
+
+    const modeChoice = document.getElementById('botModeSelect').value;
+    const symbolChoice = document.getElementById('botSymbolSelect').value;
+
+    boardSize = modeChoice === 'easy' ? 3 : 15;
+    winLength = modeChoice === 'easy' ? 3 : 5;
+
+    if (symbolChoice === 'random') {
+        mySymbol = Math.random() < 0.5 ? 'X' : 'O';
+    } else {
+        mySymbol = symbolChoice;
+    }
+
+    botSymbol = mySymbol === 'X' ? 'O' : 'X';
+    opponentName = 'Piškvorbot (Střední)';
+    opponentId = 'bot_medium';
+    myTurn = (mySymbol === 'X');
+
+    botBoard = new Array(boardSize * boardSize).fill('');
+    botGameStatus = 'playing';
+
+    document.getElementById('lobbySection').style.display = 'none';
+    document.getElementById('gameSection').style.display = 'block';
+    document.getElementById('opponentInfo').innerText = `Soupeř: ${opponentName}`;
+    document.getElementById('mySymbol').innerText = `Symbol: ${mySymbol} (${mySymbol === 'X' ? 'Začínáš!' : 'Jsi druhý'})`;
+    document.getElementById('turnIndicator').innerText = myTurn ? 'Na tahu: TY' : `Na tahu: ${opponentName}`;
+    document.getElementById('gameStatus').innerText = myTurn ? 'Jsi na tahu!' : 'Čeká se na tah bota...';
+    document.getElementById('rematchContainer').style.display = 'none';
+    document.getElementById('chatMessages').innerHTML = '';
+
+    buildBoardUI();
+
+    if (!myTurn) {
+        triggerBotMove();
+    }
+}
+
+function triggerBotMove() {
+    if (!isBotGame || botGameStatus !== 'playing' || myTurn) return;
+
+    const availableIndices = [];
+    botBoard.forEach((val, idx) => {
+        if (val === '') availableIndices.push(idx);
+    });
+
+    if (availableIndices.length === 0) return;
+
+    // 1. Zjisti, zda může bot okamžitě vyhrát
+    let chosenIndex = findWinningMove(botBoard, botSymbol, boardSize, winLength);
+
+    // 2. Zjisti, zda musí bot zablokovat výhru hráče
+    if (chosenIndex === null) {
+        chosenIndex = findWinningMove(botBoard, mySymbol, boardSize, winLength);
+    }
+
+    // 3. Pokročilé obodování políček pro střední obtížnost
+    if (chosenIndex === null) {
+        const scoredMoves = [];
+
+        availableIndices.forEach(idx => {
+            let score = 0;
+            const r = Math.floor(idx / boardSize);
+            const c = idx % boardSize;
+
+            // Preferuj střed hrací plochy
+            const centerR = Math.floor(boardSize / 2);
+            const centerC = Math.floor(boardSize / 2);
+            const distToCenter = Math.abs(r - centerR) + Math.abs(c - centerC);
+            score += Math.max(0, 10 - distToCenter);
+
+            // Spočti vytvořené řady pro bota i blokování hráče
+            score += evaluateCellPotential(botBoard, idx, botSymbol, boardSize) * 3;
+            score += evaluateCellPotential(botBoard, idx, mySymbol, boardSize) * 2;
+
+            scoredMoves.push({ index: idx, score: score });
+        });
+
+        scoredMoves.sort((a, b) => b.score - a.score);
+
+        // Střední obtížnost – 75 % času zvolí nejlepší/2. nejlepší tah, 25 % udělá náhodné přehlédnutí (chybu)
+        if (Math.random() < 0.75 && scoredMoves.length > 0) {
+            const topPoolSize = Math.min(3, scoredMoves.length);
+            const randIdx = Math.floor(Math.random() * topPoolSize);
+            chosenIndex = scoredMoves[randIdx].index;
+        } else {
+            const randIdx = Math.floor(Math.random() * availableIndices.length);
+            chosenIndex = availableIndices[randIdx];
+        }
+    }
+
+    // Náhodná prodleva reakce bota (400ms - 900ms)
+    const delay = Math.floor(Math.random() * 500) + 400;
+    botTimerTimeout = setTimeout(() => {
+        if (!isBotGame || botGameStatus !== 'playing') return;
+        executeBotMove(chosenIndex);
+    }, delay);
+}
+
+function findWinningMove(board, symbol, size, wLen) {
+    for (let i = 0; i < board.length; i++) {
+        if (board[i] === '') {
+            board[i] = symbol;
+            const isWin = checkWin(board, symbol, size, wLen);
+            board[i] = '';
+            if (isWin) return i;
+        }
+    }
+    return null;
+}
+
+function evaluateCellPotential(board, index, symbol, size) {
+    let maxChain = 0;
+    const r = Math.floor(index / size);
+    const c = index % size;
+    const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+
+    directions.forEach(([dr, dc]) => {
+        let chain = 0;
+        for (let i = 1; i < 4; i++) {
+            let nr = r + dr * i;
+            let nc = c + dc * i;
+            if (nr >= 0 && nr < size && nc >= 0 && nc < size && board[nr * size + nc] === symbol) {
+                chain++;
+            } else {
+                break;
+            }
+        }
+        for (let i = 1; i < 4; i++) {
+            let nr = r - dr * i;
+            let nc = c - dc * i;
+            if (nr >= 0 && nr < size && nc >= 0 && nc < size && board[nr * size + nc] === symbol) {
+                chain++;
+            } else {
+                break;
+            }
+        }
+        if (chain > maxChain) maxChain = chain;
+    });
+
+    return maxChain;
+}
+
+function executeBotMove(index) {
+    botBoard[index] = botSymbol;
+
+    const cells = document.querySelectorAll('.cell');
+    if (cells[index]) cells[index].innerText = botSymbol;
+
+    cells.forEach(c => c.classList.remove('highlight-last'));
+    if (cells[index]) cells[index].classList.add('highlight-last');
+
+    if (checkWin(botBoard, botSymbol, boardSize, winLength)) {
+        botGameStatus = 'won';
+        document.getElementById('gameStatus').innerText = `😢 Prohrál jsi. Vyhrál ${opponentName}.`;
+        document.getElementById('turnIndicator').innerText = 'Konec hry';
+        document.getElementById('rematchContainer').style.display = 'block';
+        updateRematchBtnBot();
+    } else if (botBoard.every(cell => cell !== '')) {
+        botGameStatus = 'draw';
+        document.getElementById('gameStatus').innerText = '🤝 Remíza!';
+        document.getElementById('turnIndicator').innerText = 'Konec hry';
+        document.getElementById('rematchContainer').style.display = 'block';
+        updateRematchBtnBot();
+    } else {
+        myTurn = true;
+        document.getElementById('turnIndicator').innerText = 'Na tahu: TY';
+        document.getElementById('gameStatus').innerText = 'Jsi na tahu!';
+    }
+}
+
+function updateRematchBtnBot() {
+    const btn = document.getElementById('rematchBtn');
+    btn.innerText = 'Spustit odvetu';
+}
+
+// ----------------------------------------------------
+// MULTIPLAYER LOGIKA
+// ----------------------------------------------------
 function sendInvite(targetId, targetName) {
     db.ref(`piskvorky/invites/${targetId}`).set({
         fromId: myId,
@@ -152,7 +352,7 @@ db.ref('piskvorky/matches').on('child_added', (snapshot) => {
     const match = snapshot.val();
     const matchId = snapshot.key;
     matchId_safe = matchId;
-    if (activeGameId) return;
+    if (activeGameId || isBotGame) return;
 
     if ((match.player1 === myId || match.player2 === myId) && match.status === 'voting') {
         const oppId = match.player1 === myId ? match.player2 : match.player1;
@@ -167,6 +367,7 @@ db.ref('piskvorky/matches').on('child_added', (snapshot) => {
 
 let votingTimer = null;
 function startVotingSession(matchId, oppId, oppName) {
+    isBotGame = false;
     opponentId = oppId;
     opponentName = oppName;
     activeGameId = matchId;
@@ -359,10 +560,11 @@ function createGameInDB(matchId, mode, mData, p1Symbol, p2Symbol) {
 db.ref('piskvorky/games').on('child_added', (snapshot) => {
     const game = snapshot.val();
     const gameId = snapshot.key;
-    if (activeGameId === gameId && document.getElementById('gameSection').style.display === 'block') return;
+    if ((activeGameId === gameId || isBotGame) && document.getElementById('gameSection').style.display === 'block') return;
 
     if (game && (game.player1.id === myId || game.player2.id === myId)) {
         activeGameId = gameId;
+        isBotGame = false;
         boardSize = game.boardSize;
         winLength = game.winLength;
         const opp = game.player1.id === myId ? game.player2 : game.player1;
@@ -396,7 +598,7 @@ function setupGameUI() {
 function startAfkChecker() {
     clearInterval(afkInterval);
     afkInterval = setInterval(() => {
-        if (!activeGameId) return;
+        if (!activeGameId || isBotGame) return;
 
         db.ref(`piskvorky/games/${activeGameId}`).once('value', (snapshot) => {
             const game = snapshot.val();
@@ -441,6 +643,8 @@ function buildBoardUI() {
 }
 
 function listenGame() {
+    if (isBotGame) return;
+
     db.ref(`piskvorky/games/${activeGameId}`).on('value', (snapshot) => {
         const game = snapshot.val();
         if (!game) {
@@ -490,7 +694,38 @@ function listenGame() {
 
 function makeMove(index) {
     if (!myTurn) return;
-    
+
+    if (isBotGame) {
+        if (botGameStatus !== 'playing' || botBoard[index] !== '') return;
+
+        botBoard[index] = mySymbol;
+        const cells = document.querySelectorAll('.cell');
+        if (cells[index]) cells[index].innerText = mySymbol;
+
+        cells.forEach(c => c.classList.remove('highlight-last'));
+        if (cells[index]) cells[index].classList.add('highlight-last');
+
+        if (checkWin(botBoard, mySymbol, boardSize, winLength)) {
+            botGameStatus = 'won';
+            document.getElementById('gameStatus').innerText = '🎉 VYHRÁL JSI!';
+            document.getElementById('turnIndicator').innerText = 'Konec hry';
+            document.getElementById('rematchContainer').style.display = 'block';
+            updateRematchBtnBot();
+        } else if (botBoard.every(cell => cell !== '')) {
+            botGameStatus = 'draw';
+            document.getElementById('gameStatus').innerText = '🤝 Remíza!';
+            document.getElementById('turnIndicator').innerText = 'Konec hry';
+            document.getElementById('rematchContainer').style.display = 'block';
+            updateRematchBtnBot();
+        } else {
+            myTurn = false;
+            document.getElementById('turnIndicator').innerText = `Na tahu: ${opponentName}`;
+            document.getElementById('gameStatus').innerText = 'Čeká se na tah bota...';
+            triggerBotMove();
+        }
+        return;
+    }
+
     db.ref(`piskvorky/games/${activeGameId}`).transaction((game) => {
         if (!game || game.status !== 'playing') return;
         if (game.board[index] !== '') return;
@@ -572,6 +807,10 @@ function listenLeaderboard() {
 }
 
 function requestRematch() {
+    if (isBotGame) {
+        startBotGame();
+        return;
+    }
     db.ref(`piskvorky/games/${activeGameId}/rematchVotes/${myId}`).set(true);
 }
 
@@ -644,6 +883,25 @@ function sendChatMessage() {
     const msg = input.value.trim();
     if (!msg) return;
 
+    if (isBotGame) {
+        const chatEl = document.getElementById('chatMessages');
+        const div1 = document.createElement('div');
+        div1.innerHTML = `<strong>${myNickname}:</strong> ${msg}`;
+        chatEl.appendChild(div1);
+
+        setTimeout(() => {
+            const botReplies = ["Dobrá trefa!", "Tohle zablokuju!", "Tuhle hru vyhraju já 🤖", "Soustřeď se na hrací pole ;)", "Super tah!"];
+            const reply = botReplies[Math.floor(Math.random() * botReplies.length)];
+            const div2 = document.createElement('div');
+            div2.innerHTML = `<strong>${opponentName}:</strong> ${reply}`;
+            chatEl.appendChild(div2);
+            chatEl.scrollTop = chatEl.scrollHeight;
+        }, 700);
+
+        input.value = '';
+        return;
+    }
+
     db.ref(`piskvorky/chats/${activeGameId}`).push({
         sender: myNickname,
         text: msg,
@@ -653,6 +911,12 @@ function sendChatMessage() {
 }
 
 function sendEmoji(emoji) {
+    if (isBotGame) {
+        const input = document.getElementById('chatInput');
+        input.value = emoji;
+        sendChatMessage();
+        return;
+    }
     db.ref(`piskvorky/chats/${activeGameId}`).push({
         sender: myNickname,
         text: emoji,
@@ -667,6 +931,8 @@ function handleChatKeyPress(e) {
 function listenChat() {
     const chatEl = document.getElementById('chatMessages');
     chatEl.innerHTML = '';
+    if (isBotGame) return;
+
     db.ref(`piskvorky/chats/${activeGameId}`).on('child_added', (snapshot) => {
         const msg = snapshot.val();
         const div = document.createElement('div');
@@ -678,7 +944,7 @@ function listenChat() {
 
 function surrenderGame() {
     if (confirm('Opravdu chceš hru vzdát?')) {
-        if(activeGameId) {
+        if (!isBotGame && activeGameId) {
             db.ref(`piskvorky/games/${activeGameId}`).remove();
         }
         exitGame();
@@ -687,16 +953,22 @@ function surrenderGame() {
 
 function exitGame() {
     clearInterval(afkInterval);
-    if (activeGameId) {
+    if (botTimerTimeout) clearTimeout(botTimerTimeout);
+
+    if (activeGameId && !isBotGame) {
         db.ref(`piskvorky/games/${activeGameId}`).remove();
         db.ref(`piskvorky/lobby/${myId}/status`).set('idle');
-        activeGameId = null;
-        chatListenerRegistered = false;
     }
+
+    activeGameId = null;
+    isBotGame = false;
+    chatListenerRegistered = false;
+
     document.getElementById('gameSection').style.display = 'none';
     document.getElementById('voteModal').style.display = 'none';
     document.getElementById('lotteryModal').style.display = 'none';
     document.getElementById('coinflipModal').style.display = 'none';
     document.getElementById('inviteModal').style.display = 'none';
+    document.getElementById('botModal').style.display = 'none';
     document.getElementById('lobbySection').style.display = 'block';
 }
