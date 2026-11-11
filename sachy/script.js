@@ -18,9 +18,17 @@ let selectedSquare = null;
 let legalMoves = [];
 let gameBoard = [];
 let moveHistory = [];
+let fullBoardSnapshots = [];
+let currentViewIndex = -1;
 let chatListenerRegistered = false;
 
-// Audio efekty z CDN Chess.com
+// Proměnné pro Drag & Drop (Myš i Touch)
+let draggedFromSquare = null;
+let touchStartSquare = null;
+
+let castlingRights = { wK: true, wQ: true, bK: true, bQ: true };
+let enPassantTarget = null;
+
 const sounds = {
     move: new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_default/mp3/move-self.mp3'),
     capture: new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_default/mp3/capture.mp3'),
@@ -37,7 +45,6 @@ function playSound(name) {
     }
 }
 
-// Originální figurky z Chess.com CDN (Neo Theme)
 const pieceSVGs = {
     'wP': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wp.png',
     'wR': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wr.png',
@@ -64,9 +71,23 @@ const initialBoard = [
     ['wR','wN','wB','wQ','wK','wB','wN','wR']
 ];
 
-// Přihlášení přes Google Auth
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        myId = user.uid;
+        myNickname = user.displayName || 'Šachista';
+        userPhotoURL = user.photoURL;
+        isGoogleUser = true;
+
+        if (document.getElementById('loginSection').style.display !== 'none') {
+            enterLobby();
+        }
+    }
+});
+
 function loginWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+
     auth.signInWithPopup(provider).then((result) => {
         const user = result.user;
         myId = user.uid;
@@ -83,7 +104,6 @@ function loginWithGoogle() {
     });
 }
 
-// Anonymní vstup
 function joinLobbyAnonymous() {
     const nameInput = document.getElementById('playerName').value.trim();
     if (!nameInput) {
@@ -120,12 +140,16 @@ function enterLobby() {
     listenLobby();
     listenInvites();
     listenLeaderboard();
+
+    if (isGoogleUser) {
+        loadUserHistory();
+    }
 }
 
-function leaveLobby() {
+function logoutUser() {
     db.ref(`sachy/lobby/${myId}`).remove();
-    document.getElementById('lobbySection').style.display = 'none';
-    document.getElementById('loginSection').style.display = 'block';
+    if (isGoogleUser) auth.signOut();
+    location.reload();
 }
 
 function listenLobby() {
@@ -216,6 +240,9 @@ function acceptInvite() {
         status: 'playing',
         lastMove: null,
         history: [],
+        snapshots: [initialBoard],
+        castling: { wK: true, wQ: true, bK: true, bQ: true },
+        enPassant: null,
         lastMoveTime: firebase.database.ServerValue.TIMESTAMP
     });
 
@@ -277,6 +304,17 @@ function listenGame() {
         gameBoard = game.board;
         myTurn = game.turn === myColor;
         moveHistory = game.history || [];
+        fullBoardSnapshots = game.snapshots || [initialBoard];
+        castlingRights = game.castling || { wK: true, wQ: true, bK: true, bQ: true };
+        enPassantTarget = game.enPassant || null;
+
+        if (game.drawOffer && game.drawOffer !== myId) {
+            document.getElementById('drawModal').style.display = 'flex';
+        } else {
+            document.getElementById('drawModal').style.display = 'none';
+        }
+
+        currentViewIndex = fullBoardSnapshots.length - 1;
 
         renderBoard(game.lastMove);
         renderHistory();
@@ -285,14 +323,19 @@ function listenGame() {
         if (game.status === 'won') {
             const isWinner = game.winner === myId;
             statusHeader.innerText = isWinner ? '🎉 VYHRÁL JSI!' : `😢 Prohra. Vyhrál ${opponentName}`;
-            statusHeader.className = isWinner ? 'text-center p-2.5 bg-green-800 text-white rounded font-bold text-sm mb-3 border border-green-500' : 'text-center p-2.5 bg-red-900 text-white rounded font-bold text-sm mb-3 border border-red-500';
-            document.getElementById('rematchBtn').classList.remove('hidden');
+            statusHeader.className = isWinner ? 'flex-1 text-center p-2 bg-green-800 text-white rounded font-bold text-xs border border-green-500' : 'flex-1 text-center p-2 bg-red-900 text-white rounded font-bold text-xs border border-red-500';
         } else if (game.status === 'draw') {
             statusHeader.innerText = '🤝 Remíza!';
-            document.getElementById('rematchBtn').classList.remove('hidden');
+            statusHeader.className = 'flex-1 text-center p-2 bg-gray-700 text-white rounded font-bold text-xs border border-gray-500';
         } else {
-            statusHeader.innerText = myTurn ? 'Jsi na tahu!' : `Čeká se na tah (${opponentName})...`;
-            statusHeader.className = myTurn ? 'text-center p-2.5 bg-[#81b64c] text-white rounded font-bold text-sm mb-3' : 'text-center p-2.5 bg-[#1e1e1c] text-gray-300 rounded font-bold text-sm mb-3 border border-[#3d3b38]';
+            const inCheck = isInCheck(myColor, gameBoard);
+            if (inCheck && myTurn) {
+                statusHeader.innerText = '⚠️ TVŮJ KRÁL JE V ŠACHU!';
+                statusHeader.className = 'flex-1 text-center p-2 bg-red-600 text-white rounded font-bold text-xs animate-pulse';
+            } else {
+                statusHeader.innerText = myTurn ? 'Jsi na tahu!' : `Čeká se na tah (${opponentName})...`;
+                statusHeader.className = myTurn ? 'flex-1 text-center p-2 bg-[#81b64c] text-white rounded font-bold text-xs' : 'flex-1 text-center p-2 bg-[#1e1e1c] text-gray-300 rounded font-bold text-xs border border-[#3d3b38]';
+            }
         }
     });
 }
@@ -302,6 +345,11 @@ function renderBoard(lastMove) {
     boardEl.innerHTML = '';
 
     const isFlipped = myColor === 'b';
+    const displayBoard = (currentViewIndex >= 0 && currentViewIndex < fullBoardSnapshots.length) 
+        ? fullBoardSnapshots[currentViewIndex] 
+        : gameBoard;
+
+    const isViewingHistory = currentViewIndex !== fullBoardSnapshots.length - 1;
 
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
@@ -311,17 +359,17 @@ function renderBoard(lastMove) {
             const square = document.createElement('div');
             const isLight = (row + col) % 2 === 0;
             square.className = `square ${isLight ? 'light' : 'dark'}`;
+            square.dataset.row = row;
+            square.dataset.col = col;
 
-            // Chess.com Žluté Zvýraznění posledního tahu (#f7f769)
-            if (lastMove && ((lastMove.from.r === row && lastMove.from.c === col) || (lastMove.to.r === row && lastMove.to.c === col))) {
+            if (!isViewingHistory && lastMove && ((lastMove.from.r === row && lastMove.from.c === col) || (lastMove.to.r === row && lastMove.to.c === col))) {
                 square.classList.add('last-move');
             }
 
-            if (selectedSquare && selectedSquare.r === row && selectedSquare.c === col) {
+            if (!isViewingHistory && selectedSquare && selectedSquare.r === row && selectedSquare.c === col) {
                 square.classList.add('selected');
             }
 
-            // Souřadnice na okrajích
             if (col === (isFlipped ? 7 : 0)) {
                 const rankLabel = document.createElement('span');
                 rankLabel.className = 'coord-label coord-rank';
@@ -335,32 +383,108 @@ function renderBoard(lastMove) {
                 square.appendChild(fileLabel);
             }
 
-            const piece = gameBoard[row][col];
+            const piece = displayBoard[row][col];
             if (piece) {
                 const pieceDiv = document.createElement('div');
                 pieceDiv.className = 'piece';
                 pieceDiv.style.backgroundImage = `url('${pieceSVGs[piece]}')`;
+                
+                // Drag & Drop na myši i na dotykovém displeji
+                if (!isViewingHistory && piece[0] === myColor && myTurn) {
+                    pieceDiv.draggable = true;
+                    pieceDiv.ondragstart = (e) => handleDragStart(e, row, col);
+                    pieceDiv.ontouchstart = (e) => handleTouchStart(e, row, col);
+                    pieceDiv.ontouchend = (e) => handleTouchEnd(e);
+                }
+
                 square.appendChild(pieceDiv);
             }
 
-            // Tečky pro právoplatné tahy
-            const isLegal = legalMoves.some(m => m.r === row && m.c === col);
-            if (isLegal) {
-                if (piece) {
-                    const ring = document.createElement('div');
-                    ring.className = 'capture-ring';
-                    square.appendChild(ring);
-                } else {
-                    const dot = document.createElement('div');
-                    dot.className = 'move-dot';
-                    square.appendChild(dot);
+            // Tečky a kroužky pro tahy
+            if (!isViewingHistory) {
+                const isLegal = legalMoves.some(m => m.r === row && m.c === col);
+                if (isLegal) {
+                    if (piece || (enPassantTarget && enPassantTarget.r === row && enPassantTarget.c === col)) {
+                        const ring = document.createElement('div');
+                        ring.className = 'capture-ring';
+                        square.appendChild(ring);
+                    } else {
+                        const dot = document.createElement('div');
+                        dot.className = 'move-dot';
+                        square.appendChild(dot);
+                    }
                 }
             }
 
-            square.onclick = () => handleSquareClick(row, col);
+            // Drag Over & Drop handlers
+            square.ondragover = (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            };
+
+            square.ondrop = (e) => {
+                e.preventDefault();
+                if (!isViewingHistory && draggedFromSquare) {
+                    handleDrop(row, col);
+                }
+            };
+
+            square.onclick = () => {
+                if (!isViewingHistory) handleSquareClick(row, col);
+            };
+
             boardEl.appendChild(square);
         }
     }
+}
+
+// Drag & Drop Logika
+function handleDragStart(e, r, c) {
+    if (!myTurn) return;
+    draggedFromSquare = { r, c };
+    selectedSquare = { r, c };
+    legalMoves = getValidatedLegalMoves(r, c);
+    renderBoard();
+    e.dataTransfer.setData('text/plain', JSON.stringify({ r, c }));
+}
+
+function handleDrop(toR, toC) {
+    if (!draggedFromSquare || !myTurn) return;
+    const move = legalMoves.find(m => m.r === toR && m.c === toC);
+    if (move) {
+        executeMove(draggedFromSquare, { r: toR, c: toC });
+        selectedSquare = null;
+        legalMoves = [];
+    }
+    draggedFromSquare = null;
+}
+
+// Dotykové ovládání na mobilu
+function handleTouchStart(e, r, c) {
+    if (!myTurn) return;
+    touchStartSquare = { r, c };
+    selectedSquare = { r, c };
+    legalMoves = getValidatedLegalMoves(r, c);
+    renderBoard();
+}
+
+function handleTouchEnd(e) {
+    if (!touchStartSquare || !myTurn) return;
+    const touch = e.changedTouches[0];
+    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    const squareEl = targetEl ? targetEl.closest('.square') : null;
+
+    if (squareEl && squareEl.dataset.row !== undefined && squareEl.dataset.col !== undefined) {
+        const toR = parseInt(squareEl.dataset.row);
+        const toC = parseInt(squareEl.dataset.col);
+        const move = legalMoves.find(m => m.r === toR && m.c === toC);
+        if (move) {
+            executeMove(touchStartSquare, { r: toR, c: toC });
+            selectedSquare = null;
+            legalMoves = [];
+        }
+    }
+    touchStartSquare = null;
 }
 
 function handleSquareClick(r, c) {
@@ -380,7 +504,7 @@ function handleSquareClick(r, c) {
 
     if (clickedPiece && clickedPiece[0] === myColor) {
         selectedSquare = { r, c };
-        legalMoves = getLegalMoves(r, c, gameBoard, myColor);
+        legalMoves = getValidatedLegalMoves(r, c);
     } else {
         selectedSquare = null;
         legalMoves = [];
@@ -389,10 +513,83 @@ function handleSquareClick(r, c) {
     renderBoard();
 }
 
-function getLegalMoves(r, c, board, color) {
-    const piece = board[r][c];
-    if (!piece || piece[0] !== color) return [];
+function isSquareAttacked(targetR, targetC, attackerColor, board) {
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const p = board[r][c];
+            if (p && p[0] === attackerColor) {
+                const rawMoves = getRawPieceMoves(r, c, board, attackerColor, null);
+                if (rawMoves.some(m => m.r === targetR && m.c === targetC)) return true;
+            }
+        }
+    }
+    return false;
+}
 
+function findKing(color, board) {
+    const kP = color + 'K';
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (board[r][c] === kP) return { r, c };
+        }
+    }
+    return null;
+}
+
+function isInCheck(color, board) {
+    const kingPos = findKing(color, board);
+    if (!kingPos) return false;
+    const oppColor = color === 'w' ? 'b' : 'w';
+    return isSquareAttacked(kingPos.r, kingPos.c, oppColor, board);
+}
+
+function getValidatedLegalMoves(r, c) {
+    const rawMoves = getRawPieceMoves(r, c, gameBoard, myColor, enPassantTarget);
+    const validMoves = [];
+
+    rawMoves.forEach(m => {
+        const testBoard = gameBoard.map(row => [...row]);
+        const piece = testBoard[r][c];
+        testBoard[r][c] = '';
+        testBoard[m.r][m.c] = piece;
+
+        if (piece[1] === 'P' && enPassantTarget && m.r === enPassantTarget.r && m.c === enPassantTarget.c) {
+            testBoard[r][m.c] = '';
+        }
+
+        if (!isInCheck(myColor, testBoard)) {
+            validMoves.push(m);
+        }
+    });
+
+    const piece = gameBoard[r][c];
+    if (piece === myColor + 'K' && !isInCheck(myColor, gameBoard)) {
+        const row = myColor === 'w' ? 7 : 0;
+        if (r === row && c === 4) {
+            const oppColor = myColor === 'w' ? 'b' : 'w';
+            
+            const canCastleShort = myColor === 'w' ? castlingRights.wK : castlingRights.bK;
+            if (canCastleShort && gameBoard[row][5] === '' && gameBoard[row][6] === '' && gameBoard[row][7] === myColor + 'R') {
+                if (!isSquareAttacked(row, 5, oppColor, gameBoard) && !isSquareAttacked(row, 6, oppColor, gameBoard)) {
+                    validMoves.push({ r: row, c: 6, isCastleShort: true });
+                }
+            }
+
+            const canCastleLong = myColor === 'w' ? castlingRights.wQ : castlingRights.bQ;
+            if (canCastleLong && gameBoard[row][1] === '' && gameBoard[row][2] === '' && gameBoard[row][3] === '' && gameBoard[row][0] === myColor + 'R') {
+                if (!isSquareAttacked(row, 2, oppColor, gameBoard) && !isSquareAttacked(row, 3, oppColor, gameBoard)) {
+                    validMoves.push({ r: row, c: 2, isCastleLong: true });
+                }
+            }
+        }
+    }
+
+    return validMoves;
+}
+
+function getRawPieceMoves(r, c, board, color, epTarget) {
+    const piece = board[r][c];
+    if (!piece) return [];
     const type = piece[1];
     const moves = [];
 
@@ -425,6 +622,8 @@ function getLegalMoves(r, c, board, color) {
                 const target = board[r + dir][c + dc];
                 if (target && target[0] !== color) {
                     moves.push({ r: r + dir, c: c + dc });
+                } else if (epTarget && epTarget.r === r + dir && epTarget.c === c + dc) {
+                    moves.push({ r: r + dir, c: c + dc });
                 }
             }
         });
@@ -455,6 +654,8 @@ function executeMove(from, to) {
     const targetPiece = gameBoard[to.r][to.c];
     
     let finalPiece = movingPiece;
+    let isCastle = false;
+
     if (movingPiece[1] === 'P' && (to.r === 0 || to.r === 7)) {
         finalPiece = myColor + 'Q';
     }
@@ -463,30 +664,212 @@ function executeMove(from, to) {
     newBoard[from.r][from.c] = '';
     newBoard[to.r][to.c] = finalPiece;
 
-    const isCapture = targetPiece !== '';
-    playSound(isCapture ? 'capture' : 'move');
+    if (movingPiece[1] === 'K' && Math.abs(to.c - from.c) === 2) {
+        isCastle = true;
+        const row = from.r;
+        if (to.c === 6) {
+            newBoard[row][7] = '';
+            newBoard[row][5] = myColor + 'R';
+        } else if (to.c === 2) {
+            newBoard[row][0] = '';
+            newBoard[row][3] = myColor + 'R';
+        }
+    }
 
-    const moveNotation = `${movingPiece[1]}${String.fromCharCode(97 + to.c)}${8 - to.r}`;
+    if (movingPiece[1] === 'P' && enPassantTarget && to.r === enPassantTarget.r && to.c === enPassantTarget.c) {
+        newBoard[from.r][to.c] = '';
+    }
+
+    let newEnPassant = null;
+    if (movingPiece[1] === 'P' && Math.abs(to.r - from.r) === 2) {
+        newEnPassant = { r: (from.r + to.r) / 2, c: from.c };
+    }
+
+    const newCastling = { ...castlingRights };
+    if (movingPiece === 'wK') { newCastling.wK = false; newCastling.wQ = false; }
+    if (movingPiece === 'bK') { newCastling.bK = false; newCastling.bQ = false; }
+    if (from.r === 7 && from.c === 0) newCastling.wQ = false;
+    if (from.r === 7 && from.c === 7) newCastling.wK = false;
+    if (from.r === 0 && from.c === 0) newCastling.bQ = false;
+    if (from.r === 0 && from.c === 7) newCastling.bK = false;
+
+    const isCapture = targetPiece !== '' || (movingPiece[1] === 'P' && enPassantTarget && to.r === enPassantTarget.r && to.c === enPassantTarget.c);
+    
+    if (isCastle) playSound('castle');
+    else playSound(isCapture ? 'capture' : 'move');
+
+    const oppColor = myColor === 'w' ? 'b' : 'w';
+    const isOppInCheck = isInCheck(oppColor, newBoard);
+    if (isOppInCheck) playSound('check');
+
+    let oppHasLegalMoves = false;
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (newBoard[r][c] && newBoard[r][c][0] === oppColor) {
+                const rawMoves = getRawPieceMoves(r, c, newBoard, oppColor, newEnPassant);
+                for (let m of rawMoves) {
+                    const testBoard = newBoard.map(row => [...row]);
+                    testBoard[r][c] = '';
+                    testBoard[m.r][m.c] = newBoard[r][c];
+                    if (!isInCheck(oppColor, testBoard)) {
+                        oppHasLegalMoves = true;
+                        break;
+                    }
+                }
+            }
+            if (oppHasLegalMoves) break;
+        }
+    }
+
+    let gameStatus = 'playing';
+    let winnerId = null;
+
+    if (!oppHasLegalMoves) {
+        if (isOppInCheck) {
+            gameStatus = 'won';
+            winnerId = myId;
+            playSound('gameEnd');
+        } else {
+            gameStatus = 'draw';
+            playSound('gameEnd');
+        }
+    }
+
+    const moveNotation = `${movingPiece[1]}${String.fromCharCode(97 + to.c)}${8 - to.r}${isOppInCheck ? '+' : ''}`;
 
     db.ref(`sachy/games/${activeGameId}`).transaction((game) => {
         if (!game || game.status !== 'playing') return;
 
         game.board = newBoard;
-        game.turn = myColor === 'w' ? 'b' : 'w';
+        game.turn = oppColor;
         game.lastMove = { from, to };
+        game.castling = newCastling;
+        game.enPassant = newEnPassant;
+        game.status = gameStatus;
+        if (winnerId) game.winner = winnerId;
         if (!game.history) game.history = [];
+        if (!game.snapshots) game.snapshots = [initialBoard];
         game.history.push(`${myNickname}: ${moveNotation}`);
+        game.snapshots.push(newBoard);
 
         return game;
     });
+
+    if (gameStatus === 'won') {
+        recordMatchResult(myId, myNickname, opponentId, opponentName, '+');
+        recordMatchResult(opponentId, opponentName, myId, myNickname, '-');
+    } else if (gameStatus === 'draw') {
+        recordMatchResult(myId, myNickname, opponentId, opponentName, '=');
+        recordMatchResult(opponentId, opponentName, myId, myNickname, '=');
+    }
 }
 
-function recordWinStreak(winnerId, winnerName) {
-    if (!winnerId) return;
-    const streakRef = db.ref(`sachy/streaks/${winnerId}`);
-    streakRef.transaction((current) => {
-        if (!current) return { name: winnerName, count: 1 };
-        return { name: winnerName, count: (current.count || 0) + 1 };
+function navMove(direction) {
+    if (fullBoardSnapshots.length === 0) return;
+
+    if (direction === 'first') currentViewIndex = 0;
+    else if (direction === 'prev') currentViewIndex = Math.max(0, currentViewIndex - 1);
+    else if (direction === 'next') currentViewIndex = Math.min(fullBoardSnapshots.length - 1, currentViewIndex + 1);
+    else if (direction === 'last') currentViewIndex = fullBoardSnapshots.length - 1;
+
+    renderBoard(null);
+}
+
+function toggleGameMenu() {
+    const dropdown = document.getElementById('gameActionDropdown');
+    dropdown.classList.toggle('hidden');
+}
+
+function requestDraw() {
+    toggleGameMenu();
+    if (activeGameId) {
+        db.ref(`sachy/games/${activeGameId}/drawOffer`).set(myId);
+        alert('Žádost o remízu byla odeslána soupeřovi.');
+    }
+}
+
+function respondDraw(accepted) {
+    document.getElementById('drawModal').style.display = 'none';
+    if (!activeGameId) return;
+
+    if (accepted) {
+        db.ref(`sachy/games/${activeGameId}`).update({ status: 'draw', drawOffer: null });
+        recordMatchResult(myId, myNickname, opponentId, opponentName, '=');
+        recordMatchResult(opponentId, opponentName, myId, myNickname, '=');
+        playSound('gameEnd');
+    } else {
+        db.ref(`sachy/games/${activeGameId}/drawOffer`).remove();
+    }
+}
+
+function addFriend() {
+    toggleGameMenu();
+    if (!isGoogleUser) {
+        alert('Pro přidávání přátel se musíte přihlásit přes Google účet!');
+        return;
+    }
+    if (opponentId) {
+        db.ref(`sachy/friends/${myId}/${opponentId}`).set({
+            name: opponentName,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+        alert(`Uživatel ${opponentName} byl přidán do tvých přátel!`);
+    }
+}
+
+function recordMatchResult(pId, pName, oppId, oppName, resultSymbol) {
+    if (!pId) return;
+
+    if (resultSymbol === '+') {
+        db.ref(`sachy/streaks/${pId}`).transaction((current) => {
+            if (!current) return { name: pName, count: 1 };
+            return { name: pName, count: (current.count || 0) + 1 };
+        });
+    }
+
+    db.ref(`sachy/history/${pId}`).push({
+        result: resultSymbol,
+        opponent: oppName,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+}
+
+function loadUserHistory() {
+    db.ref(`sachy/history/${myId}`).limitToLast(10).on('value', (snapshot) => {
+        const historyData = snapshot.val() || {};
+        const historyEl = document.getElementById('userHistoryList');
+        historyEl.innerHTML = '';
+
+        const items = Object.values(historyData).reverse();
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center bg-[#1e1e1c] p-2 rounded border border-[#3d3b38]';
+            
+            let badgeClass = 'text-gray-400';
+            let label = 'Remíza';
+            if (item.result === '+') { badgeClass = 'text-green-500 font-extrabold'; label = 'Výhra'; }
+            if (item.result === '-') { badgeClass = 'text-red-500 font-extrabold'; label = 'Prohra'; }
+
+            div.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="${badgeClass} text-sm">${item.result}</span>
+                    <span>vs <strong>${item.opponent}</strong></span>
+                </div>
+                <span class="text-[10px] text-gray-500">${label}</span>
+            `;
+            historyEl.appendChild(div);
+        });
+
+        if (items.length === 0) {
+            historyEl.innerHTML = '<p class="text-gray-500 text-center py-2">Zatím žádné odehrané zápasy.</p>';
+        }
+    });
+
+    db.ref(`sachy/streaks/${myId}`).on('value', (snap) => {
+        const val = snap.val();
+        if (val && val.count) {
+            document.getElementById('userStreakBadge').innerText = `${val.count} Výher`;
+        }
     });
 }
 
@@ -511,7 +894,7 @@ function listenLeaderboard() {
         });
 
         if (list.length === 0) {
-            lbEl.innerHTML = '<p class="text-gray-500 text-center py-4 text-xs">Žádné odehrané výhry.</p>';
+            lbEl.innerHTML = '<p class="text-gray-500 text-center py-2 text-xs">Žádné odehrané výhry.</p>';
         }
     });
 }
@@ -558,13 +941,15 @@ function listenChat() {
 }
 
 function surrenderGame() {
+    toggleGameMenu();
     if (confirm('Opravdu chceš hru vzdát?')) {
         if (activeGameId) {
             db.ref(`sachy/games/${activeGameId}`).update({
                 status: 'won',
                 winner: opponentId
             });
-            recordWinStreak(opponentId, opponentName);
+            recordMatchResult(opponentId, opponentName, myId, myNickname, '+');
+            recordMatchResult(myId, myNickname, opponentId, opponentName, '-');
             playSound('gameEnd');
         }
     }
