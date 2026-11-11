@@ -1,8 +1,10 @@
-// Inicializace Firebase RTDB
+// Konfigurace Firebase RTDB & OAuth Client ID
 const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
+
+const GOOGLE_CLIENT_ID = "26054026514-qvfltgpdsq4ivhmlf00sple6c86lmjqj.apps.googleusercontent.com";
 
 let myId = 'user_' + Math.random().toString(36).substr(2, 9);
 let myNickname = '';
@@ -71,6 +73,7 @@ const initialBoard = [
     ['wR','wN','wB','wQ','wK','wB','wN','wR']
 ];
 
+// Automatická obnova relace
 auth.onAuthStateChanged((user) => {
     if (user) {
         myId = user.uid;
@@ -85,43 +88,65 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
+// Google Přihlášení přes vlastní OAuth2 Client ID
 window.loginWithGoogle = function() {
-    try {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+        const client = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: 'profile email',
+            callback: (tokenResponse) => {
+                if (tokenResponse.access_token) {
+                    const credential = firebase.auth.GoogleAuthProvider.credential(null, tokenResponse.access_token);
+                    auth.signInWithCredential(credential).then((result) => {
+                        const user = result.user;
+                        myId = user.uid;
+                        myNickname = user.displayName || 'Šachista';
+                        userPhotoURL = user.photoURL;
+                        isGoogleUser = true;
 
-        auth.signInWithPopup(provider).then((result) => {
-            const user = result.user;
-            myId = user.uid;
-            myNickname = user.displayName || 'Šachista';
-            userPhotoURL = user.photoURL;
-            isGoogleUser = true;
+                        const selClass = document.getElementById('playerClass').value;
+                        if (selClass) myClass = selClass;
 
-            const selClass = document.getElementById('playerClass').value;
-            if (selClass) myClass = selClass;
-
-            enterLobby();
-        }).catch(err => {
-            console.warn("Google Login notice:", err);
-            // Pokud není nastaven Auth domain v konzoli Firebase, nabídne zadání nicku
-            const fallbackName = prompt("Přihlášení přes Google vyžaduje nastavení Auth v Firebase Console. Zadej svou přezdívku:");
-            if (fallbackName) {
-                myNickname = fallbackName;
-                myClass = document.getElementById('playerClass').value;
-                isGoogleUser = false;
-                enterLobby();
+                        enterLobby();
+                    }).catch(err => {
+                        console.error("Chyba při verifikaci tokenu Firebase:", err);
+                        fallbackPopupLogin();
+                    });
+                }
             }
         });
-    } catch(e) {
-        const fallbackName = prompt("Zadej svou přezdívku pro vstup:");
+        client.requestAccessToken();
+    } else {
+        fallbackPopupLogin();
+    }
+};
+
+function fallbackPopupLogin() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    auth.signInWithPopup(provider).then((result) => {
+        const user = result.user;
+        myId = user.uid;
+        myNickname = user.displayName || 'Šachista';
+        userPhotoURL = user.photoURL;
+        isGoogleUser = true;
+
+        const selClass = document.getElementById('playerClass').value;
+        if (selClass) myClass = selClass;
+
+        enterLobby();
+    }).catch(err => {
+        console.warn("Popup login warning:", err);
+        const fallbackName = prompt("Zadej svou přezdívku pro rychlý vstup:");
         if (fallbackName) {
             myNickname = fallbackName;
             myClass = document.getElementById('playerClass').value;
             isGoogleUser = false;
             enterLobby();
         }
-    }
-};
+    });
+}
 
 window.joinLobbyAnonymous = function() {
     const nameInput = document.getElementById('playerName').value.trim();
@@ -142,7 +167,6 @@ function enterLobby() {
         ? `<img src="${userPhotoURL}" class="w-6 h-6 rounded-full border border-gray-400"> <span>${userDisplay}</span>`
         : `<span>${userDisplay}</span>`;
 
-    // Bezpečné přepnutí obrazovky v Tailwind CSS
     document.getElementById('loginSection').classList.add('hidden');
     document.getElementById('lobbySection').classList.remove('hidden');
     document.getElementById('gameSection').classList.add('hidden');
