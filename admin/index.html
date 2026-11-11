@@ -33,9 +33,14 @@
 
     <!-- Admin Dashboard -->
     <div id="dashboardScreen" class="hidden flex-1 flex flex-col h-full">
-        <header class="bg-gray-800 text-white p-4 flex justify-between items-center shadow-md shrink-0">
-            <h1 class="text-xl font-bold rainbow-admin">GJW Ultra Admin Panel</h1>
-            <div class="flex gap-4">
+        <header class="bg-gray-800 text-white p-4 flex flex-wrap justify-between items-center shadow-md shrink-0 gap-2">
+            <div class="flex items-center gap-3">
+                <h1 class="text-xl font-bold rainbow-admin">GJW Ultra Admin Panel</h1>
+                <div id="firebaseLiveStatus" class="text-xs text-gray-400 font-bold flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 bg-yellow-500 rounded-full inline-block animate-pulse"></span> Připojování...
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
                 <button onclick="enterChat('observed')" class="bg-green-600 px-3 py-1 rounded text-sm font-bold hover:bg-green-500">Vstoupit do Chatu (Viditelný)</button>
                 <button onclick="enterChat('hidden')" class="bg-gray-600 px-3 py-1 rounded text-sm font-bold hover:bg-gray-500">Vstoupit do Chatu (Duch)</button>
                 <button onclick="logoutAdmin()" class="bg-red-600 px-3 py-1 rounded text-sm font-bold hover:bg-red-500">Odhlásit</button>
@@ -43,20 +48,20 @@
         </header>
 
         <nav class="bg-white border-b flex px-4 shrink-0 overflow-x-auto">
-            <button onclick="switchTab('tab-chat')" class="tab-btn active px-4 py-3 hover:bg-gray-50 focus:outline-none">Moderace Zpráv</button>
-            <button onclick="switchTab('tab-tresty')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Aktivní Tresty</button>
-            <button onclick="switchTab('tab-piskvorky')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Piškvorky & Online Hráči</button>
-            <button onclick="switchTab('tab-fotky')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Správa Fotek</button>
-            <button onclick="switchTab('tab-hudba')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Správa Hudby</button>
-            <button onclick="switchTab('tab-rozsir')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Správa Rozšiř To</button>
-            <button onclick="switchTab('tab-memes')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none">Správa Memes</button>
+            <button onclick="switchTab('tab-chat')" class="tab-btn active px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Moderace Zpráv</button>
+            <button onclick="switchTab('tab-tresty')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Aktivní Tresty</button>
+            <button onclick="switchTab('tab-piskvorky')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Piškvorky & Online Hráči</button>
+            <button onclick="switchTab('tab-fotky')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Správa Fotek</button>
+            <button onclick="switchTab('tab-hudba')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Správa Hudby</button>
+            <button onclick="switchTab('tab-rozsir')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Správa Rozšiř To</button>
+            <button onclick="switchTab('tab-memes')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Správa Memes</button>
         </nav>
 
-        <main class="flex-1 overflow-y-auto p-6 bg-gray-100">
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
             <!-- TAB: Chaty -->
             <div id="tab-chat" class="tab-content">
                 <h2 class="text-xl font-bold mb-4">Historie a Moderace Chatu</h2>
-                <div class="bg-white rounded shadow overflow-hidden">
+                <div class="bg-white rounded shadow overflow-x-auto">
                     <table>
                         <thead><tr><th>Čas</th><th>Autor</th><th>Zpráva</th><th>Akce</th></tr></thead>
                         <tbody id="adminMessagesList"></tbody>
@@ -67,7 +72,7 @@
             <!-- TAB: Tresty -->
             <div id="tab-tresty" class="tab-content hidden">
                 <h2 class="text-xl font-bold mb-4">Aktivní Bany a Muty</h2>
-                <div class="bg-white rounded shadow overflow-hidden">
+                <div class="bg-white rounded shadow overflow-x-auto">
                     <table>
                         <thead><tr><th>Uživatel (ID)</th><th>Typ Trestu</th><th>Důvod</th><th>Vyprší</th><th>Akce</th></tr></thead>
                         <tbody id="adminRestrictionsList"></tbody>
@@ -82,7 +87,7 @@
                         <span>🎮 Právě probíhající Hry Piškvorek</span>
                         <span id="activeGamesBadge" class="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">0</span>
                     </h2>
-                    <div class="bg-white rounded shadow overflow-hidden">
+                    <div class="bg-white rounded shadow overflow-x-auto">
                         <table>
                             <thead>
                                 <tr>
@@ -105,7 +110,7 @@
                         <span>🟢 Online Uživatelé v Piškvorkách</span>
                         <span id="onlineLobbyBadge" class="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">0</span>
                     </h2>
-                    <div class="bg-white rounded shadow overflow-hidden">
+                    <div class="bg-white rounded shadow overflow-x-auto">
                         <table>
                             <thead>
                                 <tr>
@@ -142,10 +147,10 @@
     </div>
 
     <!-- MODAL: Sledování Zápasu Piškvorek (Spectator Mode) -->
-    <div id="spectatorModal" class="fixed inset-0 bg-black/70 z-[9999] hidden items-center justify-center p-4">
-        <div class="bg-white rounded-lg p-6 max-w-3xl w-full space-y-4 shadow-2xl relative max-h-[90vh] flex flex-col">
+    <div id="spectatorModal" class="fixed inset-0 bg-black/70 z-[9999] hidden items-center justify-center p-2 md:p-4">
+        <div class="bg-white rounded-lg p-4 md:p-6 max-w-3xl w-full space-y-4 shadow-2xl relative max-h-[95vh] flex flex-col">
             <div class="flex justify-between items-center border-b pb-3 shrink-0">
-                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <h3 class="text-base md:text-lg font-bold text-gray-800 flex items-center gap-2">
                     <span class="inline-block w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
                     Živé sledování zápasu piškvorek
                 </h3>
@@ -163,14 +168,14 @@
                     <div id="adminWinnerButtons" class="flex gap-2"></div>
                 </div>
                 
-                <div class="flex flex-col md:flex-row gap-6 items-center justify-center">
+                <div class="flex flex-col md:flex-row gap-4 md:gap-6 items-center justify-center">
                     <!-- Deska -->
-                    <div class="flex flex-col items-center">
-                        <div id="spectatorBoard" class="border p-2 bg-gray-200 rounded shadow-inner"></div>
+                    <div class="flex flex-col items-center overflow-x-auto w-full max-w-full py-2">
+                        <div id="spectatorBoard" class="border p-2 bg-gray-200 rounded shadow-inner mx-auto"></div>
                     </div>
                     
                     <!-- Chat zápasu -->
-                    <div class="w-full md:w-64 bg-gray-50 border rounded p-3 flex flex-col h-64 shrink-0">
+                    <div class="w-full md:w-64 bg-gray-50 border rounded p-3 flex flex-col h-48 md:h-64 shrink-0">
                         <h4 class="font-bold text-xs text-gray-700 mb-2 pb-1 border-b">In-game Chat zápasu</h4>
                         <div id="spectatorChatList" class="flex-1 overflow-y-auto text-xs space-y-1"></div>
                     </div>
@@ -184,8 +189,29 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let adminKey = null;
         let currentSpectateGameId = null;
+        let cachedLobbyMap = {};
+        let cachedGamesData = {};
+
+        // Sledování stavu připojení Firebase (klíčové pro mobilní telefony)
+        db.ref('.info/connected').on('value', snap => {
+            const statusEl = document.getElementById('firebaseLiveStatus');
+            if (!statusEl) return;
+            if (snap.val() === true) {
+                statusEl.innerHTML = '<span class="w-2.5 h-2.5 bg-green-500 rounded-full inline-block animate-pulse"></span> Živý přenos spojen';
+                statusEl.className = 'text-xs text-green-400 font-bold flex items-center gap-1.5';
+            } else {
+                statusEl.innerHTML = '<span class="w-2.5 h-2.5 bg-red-500 rounded-full inline-block"></span> Odpojeno (připojování...)';
+                statusEl.className = 'text-xs text-red-400 font-bold flex items-center gap-1.5';
+            }
+        });
+
+        // Automatický pokus o obnovení spojení při návratu do aplikace v telefonu
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                firebase.database().goOnline();
+            }
+        });
 
         function verifyLogin() {
             const pwd = document.getElementById('adminPassword').value;
@@ -308,84 +334,87 @@
             }
         }
 
-        function loadPiskvorkyAdmin() {
-            let lobbyMap = {};
+        function renderGamesTable() {
+            const tbody = document.getElementById('adminPiskvorkyGamesList');
+            const badge = document.getElementById('activeGamesBadge');
+            tbody.innerHTML = '';
 
+            const entries = Object.entries(cachedGamesData);
+            badge.innerText = entries.length;
+
+            if (entries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-gray-400 italic text-center py-3">Aktuálně neprobíhá žádná hra.</td></tr>';
+                return;
+            }
+
+            entries.forEach(([gameId, g]) => {
+                const tr = document.createElement('tr');
+                
+                const p1NameStr = g.player1?.name || cachedLobbyMap[g.player1?.id]?.name || g.player1?.id || 'Hráč 1';
+                const p2NameStr = g.player2?.name || cachedLobbyMap[g.player2?.id]?.name || g.player2?.id || 'Hráč 2';
+
+                const p1Name = `${p1NameStr} (${g.player1?.symbol || '?'})`;
+                const p2Name = `${p2NameStr} (${g.player2?.symbol || '?'})`;
+
+                const turnName = g.turn === g.player1?.id ? p1NameStr : p2NameStr;
+                const modeText = g.boardSize === 3 ? '3x3 (Jednodušší)' : '15x15 (Těžší)';
+
+                let statusBadge = '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">Hraje se</span>';
+                if (g.status === 'won') statusBadge = '<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">Ukončeno (Výhra)</span>';
+                else if (g.status === 'draw') statusBadge = '<span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded text-xs font-bold">Remíza</span>';
+
+                tr.innerHTML = `
+                    <td class="font-bold text-blue-900">${p1Name}</td>
+                    <td class="text-xs font-bold text-gray-400">vs</td>
+                    <td class="font-bold text-red-900">${p2Name}</td>
+                    <td class="text-xs">${modeText}</td>
+                    <td class="text-xs font-semibold">${g.status === 'playing' ? turnName : '-'}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <button onclick="spectateGame('${gameId}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded text-xs transition">
+                            👁️ Sledovat
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function loadPiskvorkyAdmin() {
+            // Posluchač pro lobby
             db.ref('piskvorky/lobby').on('value', snap => {
                 const tbody = document.getElementById('adminPiskvorkyLobbyList');
                 const badge = document.getElementById('onlineLobbyBadge');
                 tbody.innerHTML = '';
-                const users = snap.val() || {};
-                lobbyMap = users;
+                cachedLobbyMap = snap.val() || {};
 
-                const entries = Object.entries(users);
+                const entries = Object.entries(cachedLobbyMap);
                 badge.innerText = entries.length;
 
                 if (entries.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="4" class="text-gray-400 italic text-center py-3">Žádní hráči v lobby.</td></tr>';
-                    return;
+                } else {
+                    entries.forEach(([uid, u]) => {
+                        const tr = document.createElement('tr');
+                        const statusClass = u.status === 'playing' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800';
+                        const statusText = u.status === 'playing' ? 'Ve hře' : 'V lobby';
+
+                        tr.innerHTML = `
+                            <td class="font-bold">${u.name || uid}</td>
+                            <td>${u.class || '-'}</td>
+                            <td><span class="${statusClass} px-2 py-0.5 rounded text-xs font-bold">${statusText}</span></td>
+                            <td class="text-xs text-gray-500">${uid}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
                 }
-
-                entries.forEach(([uid, u]) => {
-                    const tr = document.createElement('tr');
-                    const statusClass = u.status === 'playing' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800';
-                    const statusText = u.status === 'playing' ? 'Ve hře' : 'V lobby';
-
-                    tr.innerHTML = `
-                        <td class="font-bold">${u.name || uid}</td>
-                        <td>${u.class || '-'}</td>
-                        <td><span class="${statusClass} px-2 py-0.5 rounded text-xs font-bold">${statusText}</span></td>
-                        <td class="text-xs text-gray-500">${uid}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                renderGamesTable();
             });
 
+            // Posluchač pro probíhající hry
             db.ref('piskvorky/games').on('value', snap => {
-                const tbody = document.getElementById('adminPiskvorkyGamesList');
-                const badge = document.getElementById('activeGamesBadge');
-                tbody.innerHTML = '';
-                const games = snap.val() || {};
-
-                const entries = Object.entries(games);
-                badge.innerText = entries.length;
-
-                if (entries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-gray-400 italic text-center py-3">Aktuálně neprobíhá žádná hra.</td></tr>';
-                    return;
-                }
-
-                entries.forEach(([gameId, g]) => {
-                    const tr = document.createElement('tr');
-                    
-                    const p1NameStr = g.player1?.name || (lobbyMap[g.player1?.id] ? lobbyMap[g.player1?.id].name : g.player1?.id) || 'Hráč 1';
-                    const p2NameStr = g.player2?.name || (lobbyMap[g.player2?.id] ? lobbyMap[g.player2?.id].name : g.player2?.id) || 'Hráč 2';
-
-                    const p1Name = `${p1NameStr} (${g.player1?.symbol || '?'})`;
-                    const p2Name = `${p2NameStr} (${g.player2?.symbol || '?'})`;
-
-                    const turnName = g.turn === g.player1?.id ? p1NameStr : p2NameStr;
-                    const modeText = g.boardSize === 3 ? '3x3 (Jednodušší)' : '15x15 (Těžší)';
-
-                    let statusBadge = '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">Hraje se</span>';
-                    if (g.status === 'won') statusBadge = '<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">Ukončeno (Výhra)</span>';
-                    else if (g.status === 'draw') statusBadge = '<span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded text-xs font-bold">Remíza</span>';
-
-                    tr.innerHTML = `
-                        <td class="font-bold text-blue-900">${p1Name}</td>
-                        <td class="text-xs font-bold text-gray-400">vs</td>
-                        <td class="font-bold text-red-900">${p2Name}</td>
-                        <td class="text-xs">${modeText}</td>
-                        <td class="text-xs font-semibold">${g.status === 'playing' ? turnName : '-'}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <button onclick="spectateGame('${gameId}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded text-xs transition">
-                                👁️ Sledovat
-                            </button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                cachedGamesData = snap.val() || {};
+                renderGamesTable();
             });
         }
 
@@ -397,57 +426,57 @@
             db.ref('piskvorky/games/' + gameId).off();
             db.ref('piskvorky/chats/' + gameId).off();
 
+            // Živý přenos desky a stavu zápasu bez asynchronních prodlev
             db.ref('piskvorky/games/' + gameId).on('value', snap => {
                 const g = snap.val();
                 if (!g) {
-                    document.getElementById('spectatorMatchInfo').innerHTML = '<span class="text-red-600">Hra byla ukončena nebo smazána.</span>';
+                    document.getElementById('spectatorMatchInfo').innerHTML = '<span class="text-red-600 font-bold">Hra byla ukončena nebo smazána.</span>';
                     document.getElementById('adminWinnerButtons').innerHTML = '';
+                    document.getElementById('spectatorBoard').innerHTML = '';
                     return;
                 }
 
-                db.ref('piskvorky/lobby').once('value').then(lobbySnap => {
-                    const lobby = lobbySnap.val() || {};
-                    const p1Name = g.player1?.name || lobby[g.player1?.id]?.name || g.player1?.id || 'Hráč 1';
-                    const p2Name = g.player2?.name || lobby[g.player2?.id]?.name || g.player2?.id || 'Hráč 2';
-                    const turnName = g.turn === g.player1?.id ? p1Name : p2Name;
+                const p1Name = g.player1?.name || cachedLobbyMap[g.player1?.id]?.name || g.player1?.id || 'Hráč 1';
+                const p2Name = g.player2?.name || cachedLobbyMap[g.player2?.id]?.name || g.player2?.id || 'Hráč 2';
+                const turnName = g.turn === g.player1?.id ? p1Name : p2Name;
 
-                    let statusTxt = `Na tahu: <strong>${turnName}</strong>`;
-                    if (g.status === 'won') {
-                        const winnerName = g.winner === g.player1?.id ? p1Name : p2Name;
-                        statusTxt = `<span class="text-green-700 font-bold">Vítěz: ${winnerName}</span>`;
-                        if (g.adminMessage) {
-                            statusTxt += ` <br><span class="text-xs text-amber-800 font-bold">(${g.adminMessage})</span>`;
-                        }
-                    } else if (g.status === 'draw') {
-                        statusTxt = `<span class="text-gray-700 font-bold">Konec: Remíza</span>`;
+                let statusTxt = `Na tahu: <strong class="text-blue-700">${turnName}</strong>`;
+                if (g.status === 'won') {
+                    const winnerName = g.winner === g.player1?.id ? p1Name : p2Name;
+                    statusTxt = `<span class="text-green-700 font-bold">🏆 Vítěz: ${winnerName}</span>`;
+                    if (g.adminMessage) {
+                        statusTxt += ` <br><span class="text-xs text-amber-800 font-bold">(${g.adminMessage})</span>`;
                     }
+                } else if (g.status === 'draw') {
+                    statusTxt = `<span class="text-gray-700 font-bold">🤝 Remíza</span>`;
+                }
 
-                    document.getElementById('spectatorMatchInfo').innerHTML = `
-                        <div>
-                            <strong>${p1Name} (${g.player1?.symbol})</strong> vs <strong>${p2Name} (${g.player2?.symbol})</strong>
-                            <div class="text-xs text-gray-500">Mód: ${g.boardSize}x${g.boardSize}</div>
-                        </div>
-                        <div>${statusTxt}</div>
+                document.getElementById('spectatorMatchInfo').innerHTML = `
+                    <div>
+                        <strong>${p1Name} (${g.player1?.symbol})</strong> vs <strong>${p2Name} (${g.player2?.symbol})</strong>
+                        <div class="text-xs text-gray-500">Mód: ${g.boardSize}x${g.boardSize}</div>
+                    </div>
+                    <div>${statusTxt}</div>
+                `;
+
+                const btnBox = document.getElementById('adminWinnerButtons');
+                if (g.status === 'playing') {
+                    btnBox.innerHTML = `
+                        <button onclick="forceAdminWin('${gameId}', '${g.player1?.id}', '${p1Name}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded text-xs shadow transition">
+                            👑 Vyhrává ${p1Name}
+                        </button>
+                        <button onclick="forceAdminWin('${gameId}', '${g.player2?.id}', '${p2Name}')" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1 rounded text-xs shadow transition">
+                            👑 Vyhrává ${p2Name}
+                        </button>
                     `;
-
-                    const btnBox = document.getElementById('adminWinnerButtons');
-                    if (g.status === 'playing') {
-                        btnBox.innerHTML = `
-                            <button onclick="forceAdminWin('${gameId}', '${g.player1?.id}', '${p1Name}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded text-xs shadow transition">
-                                👑 Vyhrává ${p1Name}
-                            </button>
-                            <button onclick="forceAdminWin('${gameId}', '${g.player2?.id}', '${p2Name}')" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1 rounded text-xs shadow transition">
-                                👑 Vyhrává ${p2Name}
-                            </button>
-                        `;
-                    } else {
-                        btnBox.innerHTML = `<span class="text-xs italic text-gray-500">Hra je již ukončena</span>`;
-                    }
-                });
+                } else {
+                    btnBox.innerHTML = `<span class="text-xs italic text-gray-500">Hra je již ukončena</span>`;
+                }
 
                 renderSpectatorBoard(g.board || [], g.boardSize || 3, g.lastMoveIndex);
             });
 
+            // Živý přenos chatu probíhající hry
             const chatList = document.getElementById('spectatorChatList');
             chatList.innerHTML = '';
             db.ref('piskvorky/chats/' + gameId).on('child_added', snap => {
@@ -457,7 +486,9 @@
                 div.className = 'border-b border-gray-100 pb-0.5';
                 div.innerHTML = `<span class="font-bold text-gray-800">${msg.sender}:</span> ${msg.text}`;
                 chatList.appendChild(div);
-                chatList.scrollTop = chatList.scrollHeight;
+                requestAnimationFrame(() => {
+                    chatList.scrollTop = chatList.scrollHeight;
+                });
             });
         }
 
@@ -487,8 +518,8 @@
         function renderSpectatorBoard(board, size, lastMoveIndex) {
             const boardEl = document.getElementById('spectatorBoard');
             boardEl.innerHTML = '';
-            const cellSize = size === 3 ? '65px' : '22px';
-            const fontSize = size === 3 ? '28px' : '12px';
+            const cellSize = size === 3 ? '60px' : '20px';
+            const fontSize = size === 3 ? '26px' : '11px';
 
             boardEl.style.display = 'grid';
             boardEl.style.gridTemplateColumns = `repeat(${size}, ${cellSize})`;
@@ -537,7 +568,7 @@
                     ${uploadHtml}
                     <button onclick="addContentItem('${dbNode}')" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Přidat záznam</button>
                 </div>
-                <div class="bg-white rounded shadow overflow-hidden">
+                <div class="bg-white rounded shadow overflow-x-auto">
                     <table>
                         <thead><tr><th>Náhled/Titulek</th><th>Cesta/URL</th><th>Akce</th></tr></thead>
                         <tbody id="list-${dbNode}"></tbody>
