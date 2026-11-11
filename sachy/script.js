@@ -1,6 +1,19 @@
-// Konfigurace Firebase RTDB & OAuth Client ID
-const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
-firebase.initializeApp(firebaseConfig);
+// Konfigurace Firebase s tvým získaným API klíčem
+const firebaseConfig = {
+    apiKey: "AIzaSyDwkNCpRshjgM4IvGs4OqRHghdvrDpWjao",
+    authDomain: "gjw-chat.firebaseapp.com",
+    databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "gjw-chat",
+    storageBucket: "gjw-chat.firebasestorage.app",
+    messagingSenderId: "26054026514",
+    appId: "1:26054026514:web:ddc576d453c73118723fcb"
+};
+
+// Inicializace Firebase v compat režimu
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
 const db = firebase.database();
 const auth = firebase.auth();
 
@@ -88,35 +101,40 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-// Google Přihlášení přes vlastní OAuth2 Client ID
+// Google Přihlášení
 window.loginWithGoogle = function() {
-    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
-        const client = google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CLIENT_ID,
-            scope: 'profile email',
-            callback: (tokenResponse) => {
-                if (tokenResponse.access_token) {
-                    const credential = firebase.auth.GoogleAuthProvider.credential(null, tokenResponse.access_token);
-                    auth.signInWithCredential(credential).then((result) => {
-                        const user = result.user;
-                        myId = user.uid;
-                        myNickname = user.displayName || 'Šachista';
-                        userPhotoURL = user.photoURL;
-                        isGoogleUser = true;
+    try {
+        if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+            const client = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'profile email',
+                callback: (tokenResponse) => {
+                    if (tokenResponse.access_token) {
+                        const credential = firebase.auth.GoogleAuthProvider.credential(null, tokenResponse.access_token);
+                        auth.signInWithCredential(credential).then((result) => {
+                            const user = result.user;
+                            myId = user.uid;
+                            myNickname = user.displayName || 'Šachista';
+                            userPhotoURL = user.photoURL;
+                            isGoogleUser = true;
 
-                        const selClass = document.getElementById('playerClass').value;
-                        if (selClass) myClass = selClass;
+                            const selClass = document.getElementById('playerClass').value;
+                            if (selClass) myClass = selClass;
 
-                        enterLobby();
-                    }).catch(err => {
-                        console.error("Chyba při verifikaci tokenu Firebase:", err);
-                        fallbackPopupLogin();
-                    });
+                            enterLobby();
+                        }).catch(err => {
+                            console.error("Chyba při verifikaci tokenu Firebase:", err);
+                            fallbackPopupLogin();
+                        });
+                    }
                 }
-            }
-        });
-        client.requestAccessToken();
-    } else {
+            });
+            client.requestAccessToken();
+        } else {
+            fallbackPopupLogin();
+        }
+    } catch (err) {
+        console.error("Login catch error:", err);
         fallbackPopupLogin();
     }
 };
@@ -137,8 +155,8 @@ function fallbackPopupLogin() {
 
         enterLobby();
     }).catch(err => {
-        console.warn("Popup login warning:", err);
-        const fallbackName = prompt("Zadej svou přezdívku pro rychlý vstup:");
+        console.warn("Popup login error:", err);
+        const fallbackName = prompt("Zadej přezdívku pro rychlý vstup:");
         if (fallbackName) {
             myNickname = fallbackName;
             myClass = document.getElementById('playerClass').value;
@@ -179,7 +197,10 @@ function enterLobby() {
         isGoogle: isGoogleUser,
         status: 'idle',
         timestamp: firebase.database.ServerValue.TIMESTAMP
+    }).catch(err => {
+        console.error("Lobby write error:", err);
     });
+
     userRef.onDisconnect().remove();
 
     listenLobby();
@@ -202,6 +223,7 @@ function listenLobby() {
         const users = snapshot.val() || {};
         const listEl = document.getElementById('playersList');
         const badge = document.getElementById('onlineBadge');
+        if (!listEl) return;
         listEl.innerHTML = '';
 
         let count = 0;
@@ -222,6 +244,7 @@ function listenLobby() {
             infoSpan.innerHTML = `${avatar} <span class="font-bold text-xs md:text-sm">${u.name} ${u.class ? '(' + u.class + ')' : ''}</span>`;
             
             const btn = document.createElement('button');
+            btn.type = 'button';
             if (u.status === 'playing') {
                 btn.className = 'bg-gray-600 text-xs px-3 py-1.5 rounded font-bold cursor-not-allowed opacity-60';
                 btn.innerText = 'Ve hře';
@@ -237,7 +260,7 @@ function listenLobby() {
             listEl.appendChild(div);
         }
 
-        badge.innerText = count;
+        if (badge) badge.innerText = count;
 
         if (count === 0) {
             listEl.innerHTML = '<p class="text-gray-500 text-center py-8 text-xs md:text-sm">V lobby zatím nikdo další není.</p>';
@@ -257,6 +280,7 @@ function listenInvites() {
     db.ref(`sachy/invites/${myId}`).on('value', (snapshot) => {
         const invite = snapshot.val();
         const modal = document.getElementById('inviteModal');
+        if (!modal) return;
         if (!invite) {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
@@ -276,8 +300,10 @@ window.acceptInvite = function() {
 
     db.ref(`sachy/invites/${myId}`).remove();
     const modal = document.getElementById('inviteModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 
     const matchId = 'chess_' + Math.random().toString(36).substr(2, 9);
     const p1White = Math.random() < 0.5;
@@ -303,8 +329,10 @@ window.acceptInvite = function() {
 window.rejectInvite = function() {
     db.ref(`sachy/invites/${myId}`).remove();
     const modal = document.getElementById('inviteModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 };
 
 db.ref('sachy/games').on('child_added', (snapshot) => {
@@ -362,12 +390,14 @@ function listenGame() {
         enPassantTarget = game.enPassant || null;
 
         const drawModal = document.getElementById('drawModal');
-        if (game.drawOffer && game.drawOffer !== myId) {
-            drawModal.classList.remove('hidden');
-            drawModal.classList.add('flex');
-        } else {
-            drawModal.classList.add('hidden');
-            drawModal.classList.remove('flex');
+        if (drawModal) {
+            if (game.drawOffer && game.drawOffer !== myId) {
+                drawModal.classList.remove('hidden');
+                drawModal.classList.add('flex');
+            } else {
+                drawModal.classList.add('hidden');
+                drawModal.classList.remove('flex');
+            }
         }
 
         currentViewIndex = fullBoardSnapshots.length - 1;
@@ -829,7 +859,7 @@ window.navMove = function(direction) {
 
 window.toggleGameMenu = function() {
     const dropdown = document.getElementById('gameActionDropdown');
-    dropdown.classList.toggle('hidden');
+    if (dropdown) dropdown.classList.toggle('hidden');
 };
 
 window.requestDraw = function() {
@@ -842,8 +872,10 @@ window.requestDraw = function() {
 
 window.respondDraw = function(accepted) {
     const modal = document.getElementById('drawModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
     if (!activeGameId) return;
 
     if (accepted) {
