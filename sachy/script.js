@@ -18,13 +18,13 @@ const auth = firebase.auth();
 
 const GOOGLE_CLIENT_ID = "26054026514-qvfltgpdsq4ivhmlf00sple6c86lmjqj.apps.googleusercontent.com";
 
-// Šedá ikonka pro anonymy & Modrá robotí ikonka pro Bota
-const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23cccccc"/><circle cx="50" cy="36" r="18" fill="%23e6e6e6"/><path d="M 20 82 C 20 62, 35 55, 50 55 C 65 55, 80 62, 80 82 Z" fill="%23e6e6e6"/></svg>`;
-const BOT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%232563eb"/><rect x="28" y="32" width="44" height="32" rx="6" fill="%23ffffff"/><circle cx="40" cy="45" r="5" fill="%231e3a8a"/><circle cx="60" cy="45" r="5" fill="%231e3a8a"/><rect x="42" y="54" width="16" height="4" rx="2" fill="%231e3a8a"/><rect x="46" y="16" width="8" height="16" fill="%23ffffff"/><circle cx="50" cy="14" r="6" fill="%23ef4444"/></svg>`;
+// Šedá ikonka pro anonymy & Modrá robotí ikonka pro Bota (použity jednoduché uvozovky uvnitř SVG)
+const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23cccccc'/><circle cx='50' cy='36' r='18' fill='%23e6e6e6'/><path d='M 20 82 C 20 62, 35 55, 50 55 C 65 55, 80 62, 80 82 Z' fill='%23e6e6e6'/></svg>`;
+const BOT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%232563eb'/><rect x='28' y='32' width='44' height='32' rx='6' fill='%23ffffff'/><circle cx='40' cy='45' r='5' fill='%231e3a8a'/><circle cx='60' cy='45' r='5' fill='%231e3a8a'/><rect x='42' y='54' width='16' height='4' rx='2' fill='%231e3a8a'/><rect x='46' y='16' width='8' height='16' fill='%23ffffff'/><circle cx='50' cy='14' r='6' fill='%23ef4444'/></svg>`;
 
 function getAvatarHTML(photoURL, sizeClass = "w-7 h-7") {
     const url = photoURL || DEFAULT_AVATAR;
-    return `<img src="${url}" class="${sizeClass} rounded-full object-cover border border-gray-500 shadow-sm">`;
+    return `<img src="${url}" class="${sizeClass} rounded-full object-cover border border-gray-500 shadow-sm" alt="Avatar">`;
 }
 
 let myId = 'user_' + Math.random().toString(36).substr(2, 9);
@@ -324,7 +324,6 @@ function triggerBotMove() {
 
     if (allLegalMoves.length === 0) return;
 
-    // Evaluace pozice bota pro ELO 500
     const scoredMoves = allLegalMoves.map(m => {
         let score = 0;
         const piece = gameBoard[m.from.r][m.from.c];
@@ -332,19 +331,16 @@ function triggerBotMove() {
         const pieceValues = { 'P': 100, 'N': 320, 'B': 330, 'R': 500, 'Q': 900, 'K': 20000 };
         const oppColor = botColor === 'w' ? 'b' : 'w';
 
-        // 1. Zisk figurky
         if (target && target[0] === oppColor) {
             const victimVal = pieceValues[target[1]] || 0;
             const attackerVal = pieceValues[piece[1]] || 0;
             score += (victimVal * 10) - attackerVal;
         }
 
-        // 2. Kontrola středu (d4, d5, e4, e5)
         if ((m.to.r === 3 || m.to.r === 4) && (m.to.c === 3 || m.to.c === 4)) {
             score += 25;
         }
 
-        // 3. Šachování
         const testBoard = gameBoard.map(row => [...row]);
         testBoard[m.from.r][m.from.c] = '';
         testBoard[m.to.r][m.to.c] = piece;
@@ -352,7 +348,6 @@ function triggerBotMove() {
             score += 50;
         }
 
-        // 4. Vyvarování se ohroženým polím
         if (isSquareAttacked(m.to.r, m.to.c, oppColor, testBoard)) {
             score -= (pieceValues[piece[1]] || 100) * 0.7;
         }
@@ -363,7 +358,6 @@ function triggerBotMove() {
     scoredMoves.sort((a, b) => b.score - a.score);
 
     let chosenMove;
-    // 500 ELO pravděpodobnost: 65 % dobrý tah, 35 % náhodný tah (chyba/nepřesnost)
     if (Math.random() < 0.65 && scoredMoves.length > 0) {
         const topPoolSize = Math.min(3, scoredMoves.length);
         const randIdx = Math.floor(Math.random() * topPoolSize);
@@ -373,7 +367,7 @@ function triggerBotMove() {
         chosenMove = scoredMoves[randIdx].move;
     }
 
-    const delay = Math.floor(Math.random() * 700) + 400; // 400 - 1100 ms
+    const delay = Math.floor(Math.random() * 700) + 400;
     botTimerTimeout = setTimeout(() => {
         if (!isBotGame || gameStatus !== 'playing') return;
         executeLocalBotMove(chosenMove.from, chosenMove.to);
@@ -546,7 +540,14 @@ function listenLobby() {
         for (let id in users) {
             if (id === myId) continue;
             const u = users[id];
+
+            if (!u || !u.name || u.name === 'undefined') {
+                db.ref(`sachy/lobby/${id}`).remove();
+                continue;
+            }
+
             count++;
+            const displayName = u.name || 'Šachista';
 
             const div = document.createElement('div');
             div.className = 'flex justify-between items-center bg-[#1e1e1c] p-2.5 rounded border border-[#3d3b38]';
@@ -555,7 +556,7 @@ function listenLobby() {
 
             const infoSpan = document.createElement('div');
             infoSpan.className = 'flex items-center gap-2';
-            infoSpan.innerHTML = `${avatarHTML} <span class="font-bold text-xs md:text-sm">${u.name} ${u.class ? '(' + u.class + ')' : ''}</span>`;
+            infoSpan.innerHTML = `${avatarHTML} <span class="font-bold text-xs md:text-sm">${displayName} ${u.class ? '(' + u.class + ')' : ''}</span>`;
             
             const btnGroup = document.createElement('div');
             btnGroup.className = 'flex items-center gap-1.5';
@@ -579,7 +580,7 @@ function listenLobby() {
                 addFriendBtn.className = 'btn-outline text-xs p-1.5 rounded text-blue-400 hover:border-blue-500';
                 addFriendBtn.title = 'Poslat žádost o přátelství';
                 addFriendBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>`;
-                addFriendBtn.onclick = () => sendFriendRequest(id, u.name);
+                addFriendBtn.onclick = () => sendFriendRequest(id, displayName);
                 btnGroup.appendChild(addFriendBtn);
             }
 
@@ -1764,6 +1765,7 @@ function listenLeaderboard() {
         if (!lbEl) return;
         lbEl.innerHTML = '';
         list.forEach((item, idx) => {
+            const displayName = item.name || 'Šachista';
             const div = document.createElement('div');
             div.className = 'flex justify-between items-center bg-[#1e1e1c] p-2.5 rounded border border-[#3d3b38]';
             const classText = item.class ? ` (${item.class})` : '';
@@ -1773,7 +1775,7 @@ function listenLeaderboard() {
                 <div class="flex items-center gap-2">
                     <span class="font-extrabold ${idx===0?'text-yellow-400':idx===1?'text-gray-300':'text-amber-600'} text-sm">${idx + 1}.</span>
                     ${avatarHTML}
-                    <span class="font-bold text-xs md:text-sm">${item.name}${classText}</span>
+                    <span class="font-bold text-xs md:text-sm">${displayName}${classText}</span>
                 </div>
                 <strong class="text-[#81b64c] text-xs md:text-sm">${item.count} výher</strong>
             `;
