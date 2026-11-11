@@ -1,4 +1,4 @@
-// Konfigurace Firebase RTDB & OAuth Client ID
+// Firebase Configuration & Client Auth
 const firebaseConfig = {
     apiKey: "AIzaSyDwkNCpRshjgM4IvGs4OqRHghdvrDpWjao",
     authDomain: "gjw-chat.firebaseapp.com",
@@ -18,7 +18,6 @@ const auth = firebase.auth();
 
 const GOOGLE_CLIENT_ID = "26054026514-qvfltgpdsq4ivhmlf00sple6c86lmjqj.apps.googleusercontent.com";
 
-// Šedá ikonka pro anonymy & Modrá robotí ikonka pro Bota (VŠECHNY UVOZOVKU UVNITŘ SVG JSOU JEDNODUCHÉ)
 const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23cccccc'/><circle cx='50' cy='36' r='18' fill='%23e6e6e6'/><path d='M 20 82 C 20 62, 35 55, 50 55 C 65 55, 80 62, 80 82 Z' fill='%23e6e6e6'/></svg>`;
 const BOT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%232563eb'/><rect x='28' y='32' width='44' height='32' rx='6' fill='%23ffffff'/><circle cx='40' cy='45' r='5' fill='%231e3a8a'/><circle cx='60' cy='45' r='5' fill='%231e3a8a'/><rect x='42' y='54' width='16' height='4' rx='2' fill='%231e3a8a'/><rect x='46' y='16' width='8' height='16' fill='%23ffffff'/><circle cx='50' cy='14' r='6' fill='%23ef4444'/></svg>`;
 
@@ -35,7 +34,6 @@ let isGoogleUser = false;
 
 // Stav hry s Botem
 let isBotGame = false;
-let selectedBotColorChoice = 'w';
 let selectedBotTimeLimit = 10;
 let botTimerTimeout = null;
 
@@ -63,6 +61,9 @@ let enPassantTarget = null;
 let whiteTimeSeconds = 600;
 let blackTimeSeconds = 600;
 let timerInterval = null;
+
+// Proměnné pro IG Canvas Crop
+let rawCropImage = null;
 
 const sounds = {
     move: new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_default/mp3/move-self.mp3'),
@@ -216,11 +217,12 @@ function updateHeaderUI() {
 }
 
 // ----------------------------------------------------
-// SPRÁVA ÚČTU & PROFILU
+// SPRÁVA ÚČTU + IG CANVASCROP FOTO
 // ----------------------------------------------------
 window.openProfileModal = function() {
     document.getElementById('editNicknameInput').value = myNickname || '';
     document.getElementById('editClassInput').value = myClass || '';
+    document.getElementById('cropBoxContainer').classList.add('hidden');
     const modal = document.getElementById('profileModal');
     if (modal) {
         modal.classList.remove('hidden');
@@ -236,6 +238,39 @@ window.closeProfileModal = function() {
     }
 };
 
+window.loadAvatarCropPreview = function(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            rawCropImage = new Image();
+            rawCropImage.onload = function() {
+                document.getElementById('cropBoxContainer').classList.remove('hidden');
+                document.getElementById('cropBoxContainer').classList.add('flex');
+                document.getElementById('cropZoomSlider').value = 1;
+                updateCropCanvas();
+            };
+            rawCropImage.src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
+window.updateCropCanvas = function() {
+    if (!rawCropImage) return;
+    const canvas = document.getElementById('cropCanvas');
+    const ctx = canvas.getContext('2d');
+    const zoom = parseFloat(document.getElementById('cropZoomSlider').value) || 1;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const sw = rawCropImage.width / zoom;
+    const sh = rawCropImage.height / zoom;
+    const sx = (rawCropImage.width - sw) / 2;
+    const sy = (rawCropImage.height - sh) / 2;
+
+    ctx.drawImage(rawCropImage, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+};
+
 window.saveProfileChanges = function() {
     const newName = document.getElementById('editNicknameInput').value.trim();
     if (!newName) {
@@ -245,17 +280,13 @@ window.saveProfileChanges = function() {
     myNickname = newName;
     myClass = document.getElementById('editClassInput').value;
 
-    const fileInput = document.getElementById('editAvatarInput');
-    if (fileInput && fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            userPhotoURL = e.target.result;
-            commitProfileToFirebase();
-        };
-        reader.readAsDataURL(fileInput.files[0]);
-    } else {
-        commitProfileToFirebase();
+    const cropBox = document.getElementById('cropBoxContainer');
+    if (!cropBox.classList.contains('hidden')) {
+        const canvas = document.getElementById('cropCanvas');
+        userPhotoURL = canvas.toDataURL('image/jpeg', 0.85);
     }
+
+    commitProfileToFirebase();
 };
 
 function commitProfileToFirebase() {
@@ -284,7 +315,7 @@ function commitProfileToFirebase() {
 }
 
 // ----------------------------------------------------
-// BOT (~500 ELO) REŽIM LOGIKA
+// BOT (~500 ELO) LOGIKA S AUTOMATICKÝM LOSEM BARVY
 // ----------------------------------------------------
 window.openBotModal = function() {
     const modal = document.getElementById('botModal');
@@ -296,18 +327,6 @@ window.closeBotModal = function() {
     const modal = document.getElementById('botModal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
-};
-
-window.selectBotColor = function(color) {
-    selectedBotColorChoice = color;
-    ['w', 'random', 'b'].forEach(c => {
-        const btn = document.getElementById(c === 'w' ? 'btnBotWhite' : c === 'random' ? 'btnBotRandom' : 'btnBotBlack');
-        if (c === color) {
-            btn.className = 'p-2 bg-[#81b64c] text-white border border-[#457524] rounded text-xs font-bold';
-        } else {
-            btn.className = 'p-2 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]';
-        }
-    });
 };
 
 window.selectBotTime = function(minutes) {
@@ -327,11 +346,8 @@ window.startBotGame = function() {
     isBotGame = true;
     activeGameId = 'bot_match_' + Date.now();
 
-    if (selectedBotColorChoice === 'random') {
-        myColor = Math.random() < 0.5 ? 'w' : 'b';
-    } else {
-        myColor = selectedBotColorChoice;
-    }
+    // Automatický los barvy pro bota
+    myColor = Math.random() < 0.5 ? 'w' : 'b';
 
     opponentName = 'Šachobot (500 ELO)';
     opponentId = 'bot_500';
@@ -491,7 +507,7 @@ function getValidatedLegalMovesForColor(r, c, color) {
 }
 
 // ----------------------------------------------------
-// LOBBY A SÍŤOVÁ LOGIKA
+// LOBBY A SÍŤOVÁ LOGIKA & ANONYMNÍ ÚKLID
 // ----------------------------------------------------
 function enterLobby() {
     updateHeaderUI();
@@ -524,7 +540,12 @@ function enterLobby() {
 
 window.logoutUser = function() {
     db.ref(`sachy/lobby/${myId}`).remove();
-    if (isGoogleUser) auth.signOut();
+    // Pokud je anonymní, promaž ho z DB uživatelů (ale v leaderboardu zůstává!)
+    if (!isGoogleUser) {
+        db.ref(`sachy/users/${myId}`).remove();
+    } else {
+        auth.signOut();
+    }
     location.reload();
 };
 
@@ -772,10 +793,9 @@ window.openQRModal = function() {
     document.getElementById('qrImgBox').innerHTML = qrImg;
     document.getElementById('manualQrGameIdInput').value = matchId;
 
-    const p1White = Math.random() < 0.5;
     db.ref(`sachy/games/${matchId}`).set({
-        player1: { id: myId, name: myNickname, photo: userPhotoURL || null, color: p1White ? 'w' : 'b' },
-        player2: { id: 'waiting', name: 'Čeká se...', photo: null, color: p1White ? 'b' : 'w' },
+        player1: { id: myId, name: myNickname, photo: userPhotoURL || null },
+        player2: { id: 'waiting', name: 'Čeká se...', photo: null },
         board: initialBoard,
         turn: 'w',
         status: 'waiting_qr',
@@ -809,7 +829,6 @@ function joinGameByCodeString(gameId) {
     db.ref(`sachy/games/${gameId}`).once('value', (snap) => {
         const game = snap.val();
         if (game && (game.status === 'waiting_qr' || game.status === 'voting')) {
-            // Kontrola Zamezující spojení sám se sebou
             if (game.player1 && game.player1.id === myId) {
                 alert('Nemůžeš se připojit do své vlastní hry!');
                 return;
@@ -818,8 +837,7 @@ function joinGameByCodeString(gameId) {
             db.ref(`sachy/games/${gameId}/player2`).set({
                 id: myId,
                 name: myNickname,
-                photo: userPhotoURL || null,
-                color: game.player1.color === 'w' ? 'b' : 'w'
+                photo: userPhotoURL || null
             });
             db.ref(`sachy/games/${gameId}`).update({
                 status: 'voting',
@@ -873,11 +891,10 @@ window.acceptInvite = function() {
     document.getElementById('inviteModal').classList.add('hidden');
 
     const matchId = 'chess_' + Math.random().toString(36).substr(2, 9);
-    const p1White = Math.random() < 0.5;
 
     db.ref(`sachy/games/${matchId}`).set({
-        player1: { id: invite.fromId, name: invite.fromName, photo: invite.fromPhoto || null, color: p1White ? 'w' : 'b' },
-        player2: { id: myId, name: myNickname, photo: userPhotoURL || null, color: p1White ? 'b' : 'w' },
+        player1: { id: invite.fromId, name: invite.fromName, photo: invite.fromPhoto || null },
+        player2: { id: myId, name: myNickname, photo: userPhotoURL || null },
         board: initialBoard,
         turn: 'w',
         status: 'voting',
@@ -920,15 +937,14 @@ function setupGameUI(game) {
     document.getElementById('gameSection').classList.remove('hidden');
 
     const isP1 = game.player1.id === myId;
-    myColor = isP1 ? game.player1.color : game.player2.color;
     opponentName = isP1 ? game.player2.name : game.player1.name;
     opponentId = isP1 ? game.player2.id : game.player1.id;
 
     const myPhoto = isP1 ? game.player1.photo : game.player2.photo;
     const oppPhoto = isP1 ? game.player2.photo : game.player1.photo;
 
-    document.getElementById('bottomPlayerName').innerText = `${myNickname} (${myColor === 'w' ? 'Bílý ♔' : 'Černý ♚'})`;
-    document.getElementById('topPlayerName').innerText = `${opponentName} (${myColor === 'w' ? 'Černý ♚' : 'Bílý ♔'})`;
+    document.getElementById('bottomPlayerName').innerText = `${myNickname}`;
+    document.getElementById('topPlayerName').innerText = `${opponentName}`;
 
     document.getElementById('bottomAvatar').innerHTML = getAvatarHTML(myPhoto, 'w-8 h-8');
     document.getElementById('topAvatar').innerHTML = getAvatarHTML(oppPhoto, 'w-8 h-8');
@@ -951,6 +967,14 @@ function listenGame() {
             return;
         }
 
+        // Pokud byly v DB nastavené barvy po coinflipu
+        if (game.p1Color && game.p2Color) {
+            const isP1 = game.player1.id === myId;
+            myColor = isP1 ? game.p1Color : game.p2Color;
+            document.getElementById('bottomPlayerName').innerText = `${myNickname} (${myColor === 'w' ? 'Bílý ♔' : 'Černý ♚'})`;
+            document.getElementById('topPlayerName').innerText = `${opponentName} (${myColor === 'w' ? 'Černý ♚' : 'Bílý ♔'})`;
+        }
+
         gameStatus = game.status;
         gameBoard = game.board;
         myTurn = game.turn === myColor;
@@ -968,7 +992,7 @@ function listenGame() {
         }
 
         if (game.status === 'voting') {
-            handleVotingPhase(game);
+            handleVotingAndCoinflipPhase(game);
         } else if (game.status === 'playing') {
             document.getElementById('timeVoteModal').classList.add('hidden');
             document.getElementById('gameOverModal').classList.add('hidden');
@@ -1001,10 +1025,31 @@ function listenGame() {
     });
 }
 
-function handleVotingPhase(game) {
+// ----------------------------------------------------
+// FÁZE HLASOVÁNÍ ČASU & AUTOMATICKÉHO HODU MINCÍ O BARVU
+// ----------------------------------------------------
+function handleVotingAndCoinflipPhase(game) {
     const modal = document.getElementById('timeVoteModal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+
+    // Pokud barva ještě nebyla vylosována a jsme Player 1, spustíme automatický coinflip v DB
+    if (!game.p1Color && game.player1.id === myId) {
+        const p1GetsWhite = Math.random() < 0.5;
+        db.ref(`sachy/games/${activeGameId}`).update({
+            p1Color: p1GetsWhite ? 'w' : 'b',
+            p2Color: p1GetsWhite ? 'b' : 'w'
+        });
+    }
+
+    // Visual Coin Flip Text
+    const coinEl = document.getElementById('colorCoinflipText');
+    if (game.p1Color) {
+        const isP1 = game.player1.id === myId;
+        const assignedColor = isP1 ? game.p1Color : game.p2Color;
+        coinEl.innerHTML = `Vylosovaná barva: <strong>${assignedColor === 'w' ? 'Bílý ♔ (Začínáš)' : 'Černý ♚ (Druhý)'}</strong>`;
+        coinEl.classList.remove('animate-bounce');
+    }
 
     const votes = game.votes || {};
     const myVote = votes[myId];
@@ -1032,13 +1077,6 @@ function handleVotingPhase(game) {
     const now = Date.now();
     const remaining = Math.max(0, Math.ceil((game.voteEndTime - now) / 1000));
     document.getElementById('voteTimerSec').innerText = remaining;
-
-    const vKeys = Object.keys(votes);
-    if (vKeys.length === 2 && remaining > 0) {
-        document.getElementById('voteStatusText').innerText = `Oba hráči odhlasovali! Vyhodnocuji...`;
-    } else {
-        document.getElementById('voteStatusText').innerText = `Probíhá hlasování o čase...`;
-    }
 
     if (remaining <= 0 && game.status === 'voting') {
         finalizeTimeVote(game);
@@ -1159,7 +1197,9 @@ function handleTimeout(losingColor) {
         const g = snap.val();
         if (!g || g.status !== 'playing') return;
 
-        const winnerId = g.player1.color === winningColor ? g.player1.id : g.player2.id;
+        const isP1Winner = (g.p1Color === winningColor);
+        const winnerId = isP1Winner ? g.player1.id : g.player2.id;
+
         db.ref(`sachy/games/${activeGameId}`).update({
             status: 'won',
             winner: winnerId,
@@ -1194,7 +1234,7 @@ function showGameOverModal(game) {
         const isWinner = game.winner === myId;
         if (isWinner) {
             titleEl.innerText = 'Vítězství!';
-            descEl.innerText = game.reason === 'timeout' ? 'Soupeřovi vypršel čas.' : 'Vyhrál jsi matem nebo vzdáním soupeře!';
+            descEl.innerText = game.reason === 'timeout' ? 'Soupeřovi vypršel čas.' : (game.reason === 'left' ? 'Soupeř opustil hru (Kontumace)!' : 'Vyhrál jsi matem nebo vzdáním soupeře!');
         } else {
             titleEl.innerText = 'Porážka';
             descEl.innerText = game.reason === 'timeout' ? 'Vypršel ti čas.' : `Vyhrál ${opponentName}.`;
@@ -1694,7 +1734,7 @@ window.respondDraw = function(accepted) {
 window.surrenderGame = function() {
     window.toggleGameMenu();
     if (gameStatus !== 'playing') {
-        alert('Zápas již skončil, nelze se vzdát!');
+        alert('Zápas již skončil!');
         return;
     }
 
@@ -1716,6 +1756,39 @@ window.surrenderGame = function() {
             recordMatchResult(myId, myNickname, opponentId, opponentName, '-');
             playSound('gameEnd');
         }
+    }
+};
+
+// ----------------------------------------------------
+// LOGIKA ODCHODU DO LOBBY S KONTUMACÍ BĚHEM HRY
+// ----------------------------------------------------
+window.leaveToLobbyDirect = function() {
+    const dropdown = document.getElementById('gameActionDropdown');
+    if (dropdown && !dropdown.classList.contains('hidden')) dropdown.classList.add('hidden');
+
+    if (gameStatus === 'playing') {
+        if (confirm('Zápas stále probíhá! Pokud opustíš hru nyní, prohraješ kontumačně. Chceš odejít?')) {
+            if (isBotGame) {
+                gameStatus = 'won';
+                stopClocks();
+                exitGame();
+                return;
+            }
+
+            if (activeGameId) {
+                db.ref(`sachy/games/${activeGameId}`).update({
+                    status: 'won',
+                    winner: opponentId,
+                    reason: 'left'
+                });
+                recordMatchResult(opponentId, opponentName, myId, myNickname, '+');
+                recordMatchResult(myId, myNickname, opponentId, opponentName, '-');
+            }
+            exitGame();
+        }
+    } else {
+        // Zápas už skončil, odejdi bez dotazování a bez ovlivnění DB
+        exitGame();
     }
 };
 
@@ -1859,7 +1932,6 @@ window.exitGame = function() {
     if (botTimerTimeout) clearTimeout(botTimerTimeout);
 
     if (activeGameId && !isBotGame) {
-        db.ref(`sachy/games/${activeGameId}`).remove();
         db.ref(`sachy/lobby/${myId}/status`).set('idle');
     }
 
