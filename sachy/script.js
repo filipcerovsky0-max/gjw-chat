@@ -1,3 +1,4 @@
+// Inicializace Firebase RTDB
 const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -22,7 +23,6 @@ let fullBoardSnapshots = [];
 let currentViewIndex = -1;
 let chatListenerRegistered = false;
 
-// Proměnné pro Drag & Drop (Myš i Touch)
 let draggedFromSquare = null;
 let touchStartSquare = null;
 
@@ -78,33 +78,52 @@ auth.onAuthStateChanged((user) => {
         userPhotoURL = user.photoURL;
         isGoogleUser = true;
 
-        if (document.getElementById('loginSection').style.display !== 'none') {
+        const loginSec = document.getElementById('loginSection');
+        if (loginSec && !loginSec.classList.contains('hidden')) {
             enterLobby();
         }
     }
 });
 
-function loginWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
+window.loginWithGoogle = function() {
+    try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
 
-    auth.signInWithPopup(provider).then((result) => {
-        const user = result.user;
-        myId = user.uid;
-        myNickname = user.displayName || 'Šachista';
-        userPhotoURL = user.photoURL;
-        isGoogleUser = true;
+        auth.signInWithPopup(provider).then((result) => {
+            const user = result.user;
+            myId = user.uid;
+            myNickname = user.displayName || 'Šachista';
+            userPhotoURL = user.photoURL;
+            isGoogleUser = true;
 
-        const selClass = document.getElementById('playerClass').value;
-        if (selClass) myClass = selClass;
+            const selClass = document.getElementById('playerClass').value;
+            if (selClass) myClass = selClass;
 
-        enterLobby();
-    }).catch(err => {
-        alert("Chyba při přihlášení přes Google: " + err.message);
-    });
-}
+            enterLobby();
+        }).catch(err => {
+            console.warn("Google Login notice:", err);
+            // Pokud není nastaven Auth domain v konzoli Firebase, nabídne zadání nicku
+            const fallbackName = prompt("Přihlášení přes Google vyžaduje nastavení Auth v Firebase Console. Zadej svou přezdívku:");
+            if (fallbackName) {
+                myNickname = fallbackName;
+                myClass = document.getElementById('playerClass').value;
+                isGoogleUser = false;
+                enterLobby();
+            }
+        });
+    } catch(e) {
+        const fallbackName = prompt("Zadej svou přezdívku pro vstup:");
+        if (fallbackName) {
+            myNickname = fallbackName;
+            myClass = document.getElementById('playerClass').value;
+            isGoogleUser = false;
+            enterLobby();
+        }
+    }
+};
 
-function joinLobbyAnonymous() {
+window.joinLobbyAnonymous = function() {
     const nameInput = document.getElementById('playerName').value.trim();
     if (!nameInput) {
         alert('Zadej prosím svou přezdívku!');
@@ -115,7 +134,7 @@ function joinLobbyAnonymous() {
     isGoogleUser = false;
 
     enterLobby();
-}
+};
 
 function enterLobby() {
     const userDisplay = `${myNickname} ${myClass ? '(' + myClass + ')' : ''}`;
@@ -123,8 +142,10 @@ function enterLobby() {
         ? `<img src="${userPhotoURL}" class="w-6 h-6 rounded-full border border-gray-400"> <span>${userDisplay}</span>`
         : `<span>${userDisplay}</span>`;
 
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('lobbySection').style.display = 'grid';
+    // Bezpečné přepnutí obrazovky v Tailwind CSS
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('lobbySection').classList.remove('hidden');
+    document.getElementById('gameSection').classList.add('hidden');
 
     const userRef = db.ref(`sachy/lobby/${myId}`);
     userRef.set({
@@ -146,11 +167,11 @@ function enterLobby() {
     }
 }
 
-function logoutUser() {
+window.logoutUser = function() {
     db.ref(`sachy/lobby/${myId}`).remove();
     if (isGoogleUser) auth.signOut();
     location.reload();
-}
+};
 
 function listenLobby() {
     db.ref('sachy/lobby').on('value', (snapshot) => {
@@ -211,23 +232,28 @@ function sendInvite(targetId) {
 function listenInvites() {
     db.ref(`sachy/invites/${myId}`).on('value', (snapshot) => {
         const invite = snapshot.val();
+        const modal = document.getElementById('inviteModal');
         if (!invite) {
-            document.getElementById('inviteModal').style.display = 'none';
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             return;
         }
 
         window.currentInvite = invite;
         document.getElementById('inviteText').innerText = `${invite.fromName} tě vyzývá na šachový zápas!`;
-        document.getElementById('inviteModal').style.display = 'flex';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     });
 }
 
-function acceptInvite() {
+window.acceptInvite = function() {
     const invite = window.currentInvite;
     if (!invite) return;
 
     db.ref(`sachy/invites/${myId}`).remove();
-    document.getElementById('inviteModal').style.display = 'none';
+    const modal = document.getElementById('inviteModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
 
     const matchId = 'chess_' + Math.random().toString(36).substr(2, 9);
     const p1White = Math.random() < 0.5;
@@ -248,12 +274,14 @@ function acceptInvite() {
 
     db.ref(`sachy/lobby/${invite.fromId}/status`).set('playing');
     db.ref(`sachy/lobby/${myId}/status`).set('playing');
-}
+};
 
-function rejectInvite() {
+window.rejectInvite = function() {
     db.ref(`sachy/invites/${myId}`).remove();
-    document.getElementById('inviteModal').style.display = 'none';
-}
+    const modal = document.getElementById('inviteModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+};
 
 db.ref('sachy/games').on('child_added', (snapshot) => {
     const game = snapshot.val();
@@ -267,8 +295,9 @@ db.ref('sachy/games').on('child_added', (snapshot) => {
 });
 
 function setupGameUI(game) {
-    document.getElementById('lobbySection').style.display = 'none';
-    document.getElementById('gameSection').style.display = 'grid';
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('lobbySection').classList.add('hidden');
+    document.getElementById('gameSection').classList.remove('hidden');
 
     const isP1 = game.player1.id === myId;
     myColor = isP1 ? game.player1.color : game.player2.color;
@@ -308,10 +337,13 @@ function listenGame() {
         castlingRights = game.castling || { wK: true, wQ: true, bK: true, bQ: true };
         enPassantTarget = game.enPassant || null;
 
+        const drawModal = document.getElementById('drawModal');
         if (game.drawOffer && game.drawOffer !== myId) {
-            document.getElementById('drawModal').style.display = 'flex';
+            drawModal.classList.remove('hidden');
+            drawModal.classList.add('flex');
         } else {
-            document.getElementById('drawModal').style.display = 'none';
+            drawModal.classList.add('hidden');
+            drawModal.classList.remove('flex');
         }
 
         currentViewIndex = fullBoardSnapshots.length - 1;
@@ -342,6 +374,7 @@ function listenGame() {
 
 function renderBoard(lastMove) {
     const boardEl = document.getElementById('chessBoard');
+    if (!boardEl) return;
     boardEl.innerHTML = '';
 
     const isFlipped = myColor === 'b';
@@ -389,7 +422,6 @@ function renderBoard(lastMove) {
                 pieceDiv.className = 'piece';
                 pieceDiv.style.backgroundImage = `url('${pieceSVGs[piece]}')`;
                 
-                // Drag & Drop na myši i na dotykovém displeji
                 if (!isViewingHistory && piece[0] === myColor && myTurn) {
                     pieceDiv.draggable = true;
                     pieceDiv.ondragstart = (e) => handleDragStart(e, row, col);
@@ -400,7 +432,6 @@ function renderBoard(lastMove) {
                 square.appendChild(pieceDiv);
             }
 
-            // Tečky a kroužky pro tahy
             if (!isViewingHistory) {
                 const isLegal = legalMoves.some(m => m.r === row && m.c === col);
                 if (isLegal) {
@@ -416,7 +447,6 @@ function renderBoard(lastMove) {
                 }
             }
 
-            // Drag Over & Drop handlers
             square.ondragover = (e) => {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
@@ -438,7 +468,6 @@ function renderBoard(lastMove) {
     }
 }
 
-// Drag & Drop Logika
 function handleDragStart(e, r, c) {
     if (!myTurn) return;
     draggedFromSquare = { r, c };
@@ -459,7 +488,6 @@ function handleDrop(toR, toC) {
     draggedFromSquare = null;
 }
 
-// Dotykové ovládání na mobilu
 function handleTouchStart(e, r, c) {
     if (!myTurn) return;
     touchStartSquare = { r, c };
@@ -764,7 +792,7 @@ function executeMove(from, to) {
     }
 }
 
-function navMove(direction) {
+window.navMove = function(direction) {
     if (fullBoardSnapshots.length === 0) return;
 
     if (direction === 'first') currentViewIndex = 0;
@@ -773,23 +801,25 @@ function navMove(direction) {
     else if (direction === 'last') currentViewIndex = fullBoardSnapshots.length - 1;
 
     renderBoard(null);
-}
+};
 
-function toggleGameMenu() {
+window.toggleGameMenu = function() {
     const dropdown = document.getElementById('gameActionDropdown');
     dropdown.classList.toggle('hidden');
-}
+};
 
-function requestDraw() {
-    toggleGameMenu();
+window.requestDraw = function() {
+    window.toggleGameMenu();
     if (activeGameId) {
         db.ref(`sachy/games/${activeGameId}/drawOffer`).set(myId);
         alert('Žádost o remízu byla odeslána soupeřovi.');
     }
-}
+};
 
-function respondDraw(accepted) {
-    document.getElementById('drawModal').style.display = 'none';
+window.respondDraw = function(accepted) {
+    const modal = document.getElementById('drawModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
     if (!activeGameId) return;
 
     if (accepted) {
@@ -800,10 +830,10 @@ function respondDraw(accepted) {
     } else {
         db.ref(`sachy/games/${activeGameId}/drawOffer`).remove();
     }
-}
+};
 
-function addFriend() {
-    toggleGameMenu();
+window.addFriend = function() {
+    window.toggleGameMenu();
     if (!isGoogleUser) {
         alert('Pro přidávání přátel se musíte přihlásit přes Google účet!');
         return;
@@ -815,7 +845,7 @@ function addFriend() {
         });
         alert(`Uživatel ${opponentName} byl přidán do tvých přátel!`);
     }
-}
+};
 
 function recordMatchResult(pId, pName, oppId, oppName, resultSymbol) {
     if (!pId) return;
@@ -838,6 +868,7 @@ function loadUserHistory() {
     db.ref(`sachy/history/${myId}`).limitToLast(10).on('value', (snapshot) => {
         const historyData = snapshot.val() || {};
         const historyEl = document.getElementById('userHistoryList');
+        if (!historyEl) return;
         historyEl.innerHTML = '';
 
         const items = Object.values(historyData).reverse();
@@ -868,7 +899,8 @@ function loadUserHistory() {
     db.ref(`sachy/streaks/${myId}`).on('value', (snap) => {
         const val = snap.val();
         if (val && val.count) {
-            document.getElementById('userStreakBadge').innerText = `${val.count} Výher`;
+            const badge = document.getElementById('userStreakBadge');
+            if (badge) badge.innerText = `${val.count} Výher`;
         }
     });
 }
@@ -879,6 +911,7 @@ function listenLeaderboard() {
         const list = Object.values(data).sort((a,b) => b.count - a.count);
 
         const lbEl = document.getElementById('leaderboardList');
+        if (!lbEl) return;
         lbEl.innerHTML = '';
         list.forEach((item, idx) => {
             const div = document.createElement('div');
@@ -901,6 +934,7 @@ function listenLeaderboard() {
 
 function renderHistory() {
     const container = document.getElementById('moveHistory');
+    if (!container) return;
     container.innerHTML = '';
     moveHistory.forEach(m => {
         const div = document.createElement('div');
@@ -910,7 +944,7 @@ function renderHistory() {
     container.scrollTop = container.scrollHeight;
 }
 
-function sendChatMessage() {
+window.sendChatMessage = function() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
     if (!msg) return;
@@ -921,14 +955,15 @@ function sendChatMessage() {
         timestamp: firebase.database.ServerValue.TIMESTAMP
     });
     input.value = '';
-}
+};
 
-function handleChatKeyPress(e) {
-    if (e.key === 'Enter') sendChatMessage();
-}
+window.handleChatKeyPress = function(e) {
+    if (e.key === 'Enter') window.sendChatMessage();
+};
 
 function listenChat() {
     const chatEl = document.getElementById('chatMessages');
+    if (!chatEl) return;
     chatEl.innerHTML = '';
     db.ref(`sachy/chats/${activeGameId}`).on('child_added', (snapshot) => {
         const msg = snapshot.val();
@@ -940,8 +975,8 @@ function listenChat() {
     });
 }
 
-function surrenderGame() {
-    toggleGameMenu();
+window.surrenderGame = function() {
+    window.toggleGameMenu();
     if (confirm('Opravdu chceš hru vzdát?')) {
         if (activeGameId) {
             db.ref(`sachy/games/${activeGameId}`).update({
@@ -953,15 +988,16 @@ function surrenderGame() {
             playSound('gameEnd');
         }
     }
-}
+};
 
-function exitGame() {
+window.exitGame = function() {
     if (activeGameId) {
         db.ref(`sachy/games/${activeGameId}`).remove();
         db.ref(`sachy/lobby/${myId}/status`).set('idle');
         activeGameId = null;
         chatListenerRegistered = false;
     }
-    document.getElementById('gameSection').style.display = 'none';
-    document.getElementById('lobbySection').style.display = 'grid';
-}
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('gameSection').classList.add('hidden');
+    document.getElementById('lobbySection').classList.remove('hidden');
+};
