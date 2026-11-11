@@ -9,12 +9,14 @@
     <meta name="theme-color" content="#302e2b">
     <link rel="canonical" href="https://gjwprostejov.com/sachy/">
 
+    <!-- CDN Zdroje -->
     <link rel="preconnect" href="https://images.chesscomfiles.com" crossorigin>
     <link rel="preconnect" href="https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>♟️</text></svg>">
 
+    <!-- CSS / Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -44,6 +46,9 @@
         .btn-chess { background-color: #81b64c; color: white; font-weight: bold; border-bottom: 4px solid #457524; border-radius: 6px; transition: all 0.1s ease; cursor: pointer; }
         .btn-chess:hover { background-color: #a3d168; }
         .btn-chess:active { border-bottom: 0px; transform: translateY(4px); }
+
+        .btn-outline { background-color: #1e1e1c; border: 1px solid #3d3b38; color: #e3e3e3; font-weight: 600; border-radius: 6px; transition: all 0.15s ease; cursor: pointer; }
+        .btn-outline:hover { border-color: #81b64c; background-color: #262421; }
         
         .g-sign-in-btn {
             display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%;
@@ -56,9 +61,9 @@
         .coord-rank { top: 2px; left: 3px; }
         .coord-file { bottom: 2px; right: 3px; }
 
-        .coin { width: 80px; height: 80px; background: #eab308; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #1e1e1c; border: 4px solid #fef08a; margin: 0 auto; transition: transform 2s ease-out; }
-        .coin.flip { animation: spin 2s ease-out forwards; }
-        @keyframes spin { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(1800deg); } }
+        .slot-container { width: 120px; height: 90px; background: #1e1e1c; border: 3px solid #eab308; border-radius: 8px; overflow: hidden; position: relative; margin: 0 auto; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
+        .slot-reel { display: flex; flex-direction: column; align-items: center; position: absolute; width: 100%; top: 0; transition: top 0.1s ease-out; }
+        .slot-item { height: 90px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; color: #81b64c; }
     </style>
 </head>
 <body class="min-h-full flex flex-col justify-between">
@@ -66,11 +71,18 @@
     <!-- Horní Lišta -->
     <header class="bg-[#262421] px-4 md:px-6 py-2.5 border-b border-[#3d3b38] flex justify-between items-center shadow-md shrink-0">
         <div class="flex items-center gap-3">
-            <span class="text-2xl">♟️</span>
+            <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24"><path d="M19 22H5v-2h14v2m-3-3H8v-2h8v2m1-4H7l.83-5h1.74l-.47-2.83C8.42 10.04 8 9.5 8 8.83V5c0-.55.45-1 1-1h6c.55 0 1 .45 1 1v3.83c0 .67-.42 1.21-1.1 1.34L14.43 13h1.74l.83 5z"/></svg>
             <h1 class="text-lg md:text-xl font-extrabold tracking-wide text-yellow-400">chess.gjw</h1>
         </div>
-        <!-- Kliknutím na toto vpravo nahoře se otevře úprava profilu (pouze pro Google uživatele) -->
-        <div id="userInfoHeader" class="text-xs md:text-sm font-semibold text-gray-300 flex items-center gap-2 cursor-pointer hover:opacity-80 transition" title="Klikni pro úpravu profilu" onclick="openProfileModal()"></div>
+
+        <div class="flex items-center gap-3">
+            <button type="button" id="btnCommunity" onclick="openCommunityModal()" class="hidden relative p-2 bg-[#1e1e1c] border border-[#3d3b38] rounded-full hover:border-[#81b64c] transition" title="Přátelé a Žádosti">
+                <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <span id="friendReqBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+            </button>
+
+            <div id="userInfoHeader" class="text-xs md:text-sm font-semibold text-gray-300 flex items-center gap-2 cursor-pointer hover:opacity-80 transition" title="Spravovat profil" onclick="openProfileModal()"></div>
+        </div>
     </header>
 
     <!-- Hlavní Obsah -->
@@ -124,26 +136,45 @@
 
         <!-- 2. Lobby & Žebříček -->
         <section id="lobbySection" class="hidden max-w-5xl w-full grid md:grid-cols-3 gap-4 md:gap-6">
-            <div class="md:col-span-2 bg-[#262421] p-4 rounded-lg border border-[#3d3b38] shadow-lg flex flex-col h-96 md:h-[500px]">
-                <div class="flex justify-between items-center mb-4 border-b border-[#3d3b38] pb-3 shrink-0">
-                    <h3 class="text-base font-bold flex items-center gap-2">
-                        <span>🟢 Online v chess.gjw</span>
-                        <span id="onlineBadge" class="bg-[#81b64c] text-white text-xs px-2 py-0.5 rounded-full">0</span>
-                    </h3>
-                    <button type="button" onclick="logoutUser()" class="text-xs text-gray-400 hover:text-white underline">Odhlásit se</button>
+            <div class="md:col-span-2 bg-[#262421] p-4 rounded-lg border border-[#3d3b38] shadow-lg flex flex-col h-[520px]">
+                
+                <div class="flex flex-col gap-3 mb-4 border-b border-[#3d3b38] pb-3 shrink-0">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-base font-bold flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                            <span>Online v chess.gjw</span>
+                            <span id="onlineBadge" class="bg-[#81b64c] text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                        </h3>
+                        <button type="button" onclick="logoutUser()" class="text-xs text-gray-400 hover:text-white underline">Odhlásit se</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button type="button" onclick="shareGameLink()" class="btn-chess py-2 px-3 text-xs flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+                            <span>Pozvi homies ze třídy!</span>
+                        </button>
+                        <button type="button" onclick="openQRModal()" class="btn-outline py-2 px-3 text-xs flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-4v-3m0 3h2m4 1h2m-6 4h2m-4 0h-2m-2-4h-2m0 4h2m-2-4v-1m0 1H8m6 0h-2m2 0h2m-4-8h2m-2 0h-2m2 0V7m0 1h2M7 7h.01M7 17h.01M17 7h.01M5 3h4a2 2 0 012 2v4a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zm0 10h4a2 2 0 012 2v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4a2 2 0 012-2zm10-10h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+                            <span>QR Výzva / Kód</span>
+                        </button>
+                    </div>
                 </div>
+
                 <div id="playersList" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
             </div>
 
             <div class="space-y-4">
                 <div class="bg-[#262421] p-4 rounded-lg border border-[#3d3b38] shadow-lg">
-                    <h3 class="text-sm font-bold mb-3 border-b border-[#3d3b38] pb-2">🥇 TOP 3 Žebříček Výher</h3>
+                    <h3 class="text-sm font-bold mb-3 border-b border-[#3d3b38] pb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 011.238 1.488l-1.026 1.465 1.465 1.026a1 1 0 01-.39 1.849l-2.072.345.345 2.072a1 1 0 01-1.849.39l-1.026-1.465-1.465 1.026a1 1 0 01-1.488-1.238l.8-1.599L11 4.323V3a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+                        <span>TOP 3 Žebříček Výher</span>
+                    </h3>
                     <div id="leaderboardList" class="space-y-2"></div>
                 </div>
 
                 <div id="userHistoryBox" class="bg-[#262421] p-4 rounded-lg border border-[#3d3b38] shadow-lg flex-1 flex flex-col">
                     <h3 class="text-sm font-bold mb-3 border-b border-[#3d3b38] pb-2 flex justify-between">
-                        <span>📜 Tvoje historie her</span>
+                        <span>Tvoje historie her</span>
                         <span id="userStreakBadge" class="text-xs text-[#81b64c] font-bold"></span>
                     </h3>
                     <div id="userHistoryList" class="space-y-1.5 max-h-48 overflow-y-auto text-xs pr-1"></div>
@@ -156,7 +187,7 @@
             
             <div class="w-full bg-[#262421] px-3 py-2 rounded flex justify-between items-center border border-[#3d3b38]">
                 <div class="flex items-center gap-2">
-                    <div id="topAvatar" class="w-8 h-8 rounded bg-gray-600 flex items-center justify-center font-bold text-xs overflow-hidden">?</div>
+                    <div id="topAvatar" class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center"></div>
                     <div id="topPlayerName" class="font-bold text-xs md:text-sm">Soupeř</div>
                 </div>
                 <div id="topTimer" class="bg-[#1e1e1c] px-3 py-1 rounded text-lg font-mono font-bold border border-[#3d3b38]">10:00</div>
@@ -168,43 +199,110 @@
 
             <div class="w-full flex justify-between items-center bg-[#262421] px-3 py-2 rounded border border-[#3d3b38]">
                 <div class="flex items-center gap-2">
-                    <div id="bottomAvatar" class="w-8 h-8 rounded bg-[#81b64c] flex items-center justify-center font-bold text-xs overflow-hidden">TY</div>
+                    <div id="bottomAvatar" class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center"></div>
                     <div id="bottomPlayerName" class="font-bold text-xs md:text-sm">Ty</div>
                 </div>
                 <div id="bottomTimer" class="bg-[#1e1e1c] px-3 py-1 rounded text-lg font-mono font-bold border border-[#3d3b38]">10:00</div>
             </div>
 
             <div class="w-full bg-[#1e1e1c] border border-[#3d3b38] rounded flex justify-around items-center py-2 px-4 shadow-xl">
-                <button type="button" onclick="toggleGameMenu()" title="Nabídka akcí" class="text-xl hover:text-yellow-400 p-1">☰</button>
-                <button type="button" onclick="toggleChatModal()" title="Chat" class="text-xl hover:text-yellow-400 p-1 relative">
-                    💬 <span id="chatBadge" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+                <button type="button" onclick="toggleGameMenu()" title="Nabídka akcí" class="p-1 hover:text-yellow-400 text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
-                <button type="button" onclick="navMove('prev')" title="Zpět" class="text-xl hover:text-yellow-400 p-1">❮</button>
-                <button type="button" onclick="navMove('next')" title="Vpřed" class="text-xl hover:text-yellow-400 p-1">❯</button>
+                <button type="button" onclick="toggleChatModal()" title="Chat zápasu" class="p-1 hover:text-yellow-400 text-gray-300 relative">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    <span id="chatBadge" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+                </button>
+                <button type="button" onclick="navMove('prev')" title="Tah Zpět" class="p-1 hover:text-yellow-400 text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <button type="button" onclick="navMove('next')" title="Tah Vpřed" class="p-1 hover:text-yellow-400 text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
             </div>
 
         </section>
 
     </main>
 
-    <!-- Modal pro Úpravu Profilu (Google Uživatelé) -->
+    <!-- Modal pro Komunitu & Přátele -->
+    <div id="communityModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-[1000]">
+        <div class="bg-[#262421] border border-[#3d3b38] rounded-lg max-w-md w-full p-5 space-y-4 shadow-2xl flex flex-col h-[460px]">
+            <div class="flex justify-between items-center border-b border-[#3d3b38] pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <span>Komunita & Přátelé</span>
+                </h3>
+                <button type="button" onclick="closeCommunityModal()" class="text-gray-400 hover:text-white font-bold text-lg">✕</button>
+            </div>
+
+            <div class="flex border-b border-[#3d3b38] text-xs font-bold">
+                <button type="button" id="tabFriendsBtn" onclick="switchCommunityTab('friends')" class="flex-1 py-2 text-[#81b64c] border-b-2 border-[#81b64c]">Moje přátelé</button>
+                <button type="button" id="tabRequestsBtn" onclick="switchCommunityTab('requests')" class="flex-1 py-2 text-gray-400 hover:text-white">Žádosti <span id="reqTabCount" class="text-yellow-400"></span></button>
+            </div>
+
+            <div id="tabFriendsContent" class="flex-1 overflow-y-auto space-y-2 text-xs"></div>
+            <div id="tabRequestsContent" class="hidden flex-1 overflow-y-auto space-y-2 text-xs"></div>
+        </div>
+    </div>
+
+    <!-- Modal pro Úpravu Profilu -->
     <div id="profileModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-[1000]">
         <div class="bg-[#262421] border border-[#3d3b38] p-6 rounded-lg max-w-sm w-full space-y-4 shadow-2xl">
-            <h3 class="text-lg font-bold text-white border-b border-[#3d3b38] pb-2">Úprava profilu</h3>
+            <h3 class="text-lg font-bold text-white border-b border-[#3d3b38] pb-2">Nastavení profilu</h3>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1">Nová přezdívka</label>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Přezdívka</label>
                     <input type="text" id="editNicknameInput" class="w-full bg-[#1e1e1c] border border-[#3d3b38] p-2.5 rounded text-white text-sm focus:outline-none focus:border-[#81b64c]">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1">Vlastní profilový obrázek (soubor)</label>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Třída</label>
+                    <select id="editClassInput" class="w-full bg-[#1e1e1c] border border-[#3d3b38] p-2.5 rounded text-white text-sm focus:outline-none focus:border-[#81b64c]">
+                        <option value="">-- Bez třídy --</option>
+                        <option value="O1.A">O1.A</option><option value="O1.B">O1.B</option>
+                        <option value="O2.A">O2.A</option><option value="O2.B">O2.B</option>
+                        <option value="O3.A">O3.A</option><option value="O3.B">O3.B</option>
+                        <option value="O4.A">O4.A</option><option value="O4.B">O4.B</option>
+                        <option value="O5.A">O5.A</option><option value="O5.B">O5.B</option>
+                        <option value="O6.A">O6.A</option><option value="O6.B">O6.B</option>
+                        <option value="O7.A">O7.A</option><option value="O7.B">O7.B</option>
+                        <option value="O8.A">O8.A</option><option value="O8.B">O8.B</option>
+                    </select>
+                </div>
+                <div id="googleAvatarUploadGroup">
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Vlastní profilový obrázek</label>
                     <input type="file" id="editAvatarInput" accept="image/*" class="w-full text-xs text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-[#81b64c] file:text-white hover:file:bg-[#a3d168] cursor-pointer">
                 </div>
             </div>
             <div class="flex gap-2 pt-2">
-                <button type="button" onclick="saveProfileChanges()" class="flex-1 btn-chess py-2.5 rounded text-xs">Uložit</button>
+                <button type="button" onclick="saveProfileChanges()" class="flex-1 btn-chess py-2.5 rounded text-xs">Uložit změny</button>
                 <button type="button" onclick="closeProfileModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2.5 rounded text-xs">Zrušit</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal pro QR Výzvu & Skener -->
+    <div id="qrModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-[1000]">
+        <div class="bg-[#262421] border border-[#3d3b38] p-6 rounded-lg max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <h3 class="text-base font-bold text-white border-b border-[#3d3b38] pb-2">QR Výzva ke hře</h3>
+            
+            <div id="qrCodeContainer" class="flex flex-col items-center justify-center space-y-3">
+                <div id="qrImgBox" class="p-3 bg-white rounded-lg"></div>
+                <p class="text-xs text-gray-400">Naskenuj QR kód druhým telefonem pro připojení do zápasu.</p>
+            </div>
+
+            <div class="relative flex py-1 items-center">
+                <div class="flex-grow border-t border-[#3d3b38]"></div>
+                <span class="flex-shrink mx-3 text-[10px] font-bold text-gray-500">NEBO NASKENUJ</span>
+                <div class="flex-grow border-t border-[#3d3b38]"></div>
+            </div>
+
+            <div>
+                <input type="text" id="manualQrGameIdInput" placeholder="Zadej Kód zápasu..." class="w-full bg-[#1e1e1c] border border-[#3d3b38] p-2.5 rounded text-xs text-white text-center focus:outline-none focus:border-[#81b64c] mb-2">
+                <button type="button" onclick="joinGameByCode()" class="w-full btn-chess py-2 text-xs">Připojit se kódem</button>
+            </div>
+
+            <button type="button" onclick="closeQRModal()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 text-xs rounded">Zavřít</button>
         </div>
     </div>
 
@@ -212,10 +310,22 @@
     <div id="gameActionDropdown" class="hidden fixed inset-0 bg-black/60 z-[90] flex items-end justify-center p-4">
         <div class="bg-[#262421] border border-[#3d3b38] rounded-t-xl max-w-md w-full p-4 space-y-2 shadow-2xl">
             <h4 class="text-xs font-bold text-gray-400 border-b border-[#3d3b38] pb-2 text-center">MOŽNOSTI ZÁPASU</h4>
-            <button type="button" id="btnSurrender" onclick="surrenderGame()" class="w-full text-left px-4 py-3 bg-[#1e1e1c] hover:bg-red-900/50 text-red-400 font-bold rounded border border-[#3d3b38]">🏳️ Vzdát zápas</button>
-            <button type="button" id="btnDraw" onclick="requestDraw()" class="w-full text-left px-4 py-3 bg-[#1e1e1c] hover:bg-gray-700 text-gray-200 font-bold rounded border border-[#3d3b38]">🤝 Požádat o remízu</button>
-            <button type="button" onclick="addFriend()" class="w-full text-left px-4 py-3 bg-[#1e1e1c] hover:bg-gray-700 text-blue-400 font-bold rounded border border-[#3d3b38]">👤 Přidat do přátel</button>
-            <button type="button" onclick="exitGame()" class="w-full text-left px-4 py-3 bg-[#1e1e1c] hover:bg-gray-700 text-gray-300 font-bold rounded border border-[#3d3b38]">🚪 Odejít do Lobby</button>
+            <button type="button" id="btnSurrender" onclick="surrenderGame()" class="w-full text-left px-4 py-3 bg-[#1e1e1c] hover:bg-red-900/50 text-red-400 font-bold rounded border border-[#3d3b38] flex items-center gap-3">
+                <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
+                <span>Vzdát zápas</span>
+            </button>
+            <button type="button" id="btnDraw" onclick="requestDraw()" class="w-full text-left px-4 py-3 bg-[#1e1e1c] hover:bg-gray-700 text-gray-200 font-bold rounded border border-[#3d3b38] flex items-center gap-3">
+                <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Požádat o remízu</span>
+            </button>
+            <button type="button" id="btnAddFriendInGame" onclick="sendFriendRequestInGame()" class="w-full text-left px-4 py-3 bg-[#1e1e1c] hover:bg-gray-700 text-blue-400 font-bold rounded border border-[#3d3b38] flex items-center gap-3">
+                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                <span>Poslat žádost o přátelství</span>
+            </button>
+            <button type="button" onclick="exitGame()" class="w-full text-left px-4 py-3 bg-[#1e1e1c] hover:bg-gray-700 text-gray-300 font-bold rounded border border-[#3d3b38] flex items-center gap-3">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                <span>Odejít do Lobby</span>
+            </button>
             <button type="button" onclick="toggleGameMenu()" class="w-full py-2 bg-gray-700 text-xs font-bold rounded mt-2">Zavřít</button>
         </div>
     </div>
@@ -224,7 +334,7 @@
     <div id="chatModal" class="hidden fixed inset-0 bg-black/70 z-[95] flex items-center justify-center p-4">
         <div class="bg-[#262421] border border-[#3d3b38] rounded-lg max-w-sm w-full p-4 flex flex-col h-96 shadow-2xl">
             <div class="flex justify-between items-center border-b border-[#3d3b38] pb-2 mb-2">
-                <h3 class="font-bold text-sm">💬 Chat zápasu</h3>
+                <h3 class="font-bold text-sm">Chat zápasu</h3>
                 <button type="button" onclick="toggleChatModal()" class="text-gray-400 font-bold text-lg">✕</button>
             </div>
             <div id="chatMessages" class="flex-1 overflow-y-auto text-xs space-y-1.5 p-2 bg-[#1e1e1c] rounded border border-[#3d3b38] mb-3"></div>
@@ -238,21 +348,36 @@
     <!-- Modal Hlasování o Čase -->
     <div id="timeVoteModal" class="fixed inset-0 bg-black/85 hidden items-center justify-center p-4 z-[999]">
         <div class="bg-[#262421] border border-[#3d3b38] p-6 rounded-lg max-w-sm w-full text-center space-y-4 shadow-2xl">
-            <span class="text-3xl">⏱️</span>
             <h3 class="text-lg font-bold">Hlasování o čase zápasu</h3>
             <p class="text-xs text-gray-400">Vyber preferovaný čas. Zbývá: <span id="voteTimerSec" class="font-mono text-yellow-400 font-bold">20</span>s</p>
 
             <div class="grid grid-cols-3 gap-2">
-                <button type="button" onclick="voteTime(3)" id="btnVote3" class="p-3 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]">3 min</button>
-                <button type="button" onclick="voteTime(5)" id="btnVote5" class="p-3 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]">5 min</button>
-                <button type="button" onclick="voteTime(10)" id="btnVote10" class="p-3 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]">10 min</button>
+                <div class="relative">
+                    <button type="button" onclick="voteTime(3)" id="btnVote3" class="w-full p-3 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]">3 min</button>
+                    <span id="oppVoteTag3" class="hidden absolute -top-2 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow">Soupeř</span>
+                </div>
+                <div class="relative">
+                    <button type="button" onclick="voteTime(5)" id="btnVote5" class="w-full p-3 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]">5 min</button>
+                    <span id="oppVoteTag5" class="hidden absolute -top-2 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow">Soupeř</span>
+                </div>
+                <div class="relative">
+                    <button type="button" onclick="voteTime(10)" id="btnVote10" class="w-full p-3 bg-[#1e1e1c] border border-[#3d3b38] rounded text-xs font-bold hover:border-[#81b64c]">10 min</button>
+                    <span id="oppVoteTag10" class="hidden absolute -top-2 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow">Soupeř</span>
+                </div>
             </div>
 
             <div id="voteStatusText" class="text-xs text-gray-300 font-medium">Čekání na hlasy hráčů...</div>
 
-            <div id="coinFlipArea" class="hidden py-2">
-                <div id="coinEl" class="coin">?</div>
-                <p id="coinFlipText" class="text-xs text-yellow-400 font-bold mt-2">Nerozhodně! Rozlosovávám čas...</p>
+            <div id="slotMachineArea" class="hidden py-2 space-y-2">
+                <div class="slot-container">
+                    <div id="slotReel" class="slot-reel">
+                        <div class="slot-item">3 min</div>
+                        <div class="slot-item">5 min</div>
+                        <div class="slot-item">10 min</div>
+                        <div class="slot-item">3 min</div>
+                    </div>
+                </div>
+                <p id="slotMachineText" class="text-xs text-yellow-400 font-bold">Nerozhodně! Roztočení časového automatu...</p>
             </div>
         </div>
     </div>
@@ -260,7 +385,9 @@
     <!-- Modal Konce Zápasu & Odveta -->
     <div id="gameOverModal" class="fixed inset-0 bg-black/85 hidden items-center justify-center p-4 z-[999]">
         <div class="bg-[#262421] border border-[#3d3b38] p-6 rounded-lg max-w-sm w-full text-center space-y-4 shadow-2xl">
-            <span id="gameOverIcon" class="text-5xl">🏆</span>
+            <div id="gameOverIcon" class="flex justify-center text-yellow-400">
+                <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 011.238 1.488l-1.026 1.465 1.465 1.026a1 1 0 01-.39 1.849l-2.072.345.345 2.072a1 1 0 01-1.849.39l-1.026-1.465-1.465 1.026a1 1 0 01-1.488-1.238l.8-1.599L11 4.323V3a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+            </div>
             <h3 id="gameOverTitle" class="text-xl font-bold">Konec zápasu</h3>
             <p id="gameOverDesc" class="text-sm text-gray-300"></p>
 
@@ -275,15 +402,15 @@
         </div>
     </div>
 
-    <!-- Modal Výzvy -->
+    <!-- Modal Výzvy (S fotkou a jménem vyzývajícího hráče) -->
     <div id="inviteModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-[999]">
         <div class="bg-[#262421] border border-[#3d3b38] p-6 rounded-lg max-w-sm w-full text-center space-y-4 shadow-2xl">
-            <span class="text-4xl">⚔️</span>
-            <h3 class="text-xl font-bold">Šachová Výzva!</h3>
+            <div id="inviteAvatar" class="flex justify-center"></div>
+            <h3 class="text-xl font-bold text-white">Šachová Výzva!</h3>
             <p id="inviteText" class="text-sm text-gray-300"></p>
             <div class="flex gap-3">
-                <button type="button" onclick="acceptInvite()" class="flex-1 btn-chess py-2.5 rounded">Přijmout</button>
-                <button type="button" onclick="rejectInvite()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded">Odmítnout</button>
+                <button type="button" onclick="acceptInvite()" class="flex-1 btn-chess py-2.5 rounded text-xs">Přijmout</button>
+                <button type="button" onclick="rejectInvite()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded text-xs">Odmítnout</button>
             </div>
         </div>
     </div>
@@ -291,7 +418,6 @@
     <!-- Modal Remízy -->
     <div id="drawModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-[999]">
         <div class="bg-[#262421] border border-[#3d3b38] p-6 rounded-lg max-w-sm w-full text-center space-y-4 shadow-2xl">
-            <span class="text-4xl">🤝</span>
             <h3 class="text-xl font-bold">Nabídka Remízy</h3>
             <p class="text-sm text-gray-300">Soupeř ti nabízí remízu.</p>
             <div class="flex gap-3">
