@@ -24,7 +24,7 @@
             <h2 class="text-2xl font-bold text-center text-gray-800">jaks to tu nasel!! to vubec neni pro tebe padej odsud</h2>
             <div>
                 <label class="block text-sm font-bold mb-1">heslo poprosim</label>
-                <input type="password" id="adminPassword" class="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ha potrebujes heslo">
+                <input type="password" id="adminPassword" class="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ha potrebujes heslo" onkeydown="if(event.key==='Enter') verifyLogin()">
             </div>
             <button onclick="verifyLogin()" class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition">Přihlásit se</button>
             <p id="loginError" class="text-red-500 text-sm text-center hidden font-bold">Chybné heslo!</p>
@@ -50,6 +50,7 @@
         <nav class="bg-white border-b flex px-4 shrink-0 overflow-x-auto">
             <button onclick="switchTab('tab-chat')" class="tab-btn active px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Moderace Zpráv</button>
             <button onclick="switchTab('tab-tresty')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Aktivní Tresty</button>
+            <button onclick="switchTab('tab-moderatori')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">👑 Moderátoři & Kódy (/mod/)</button>
             <button onclick="switchTab('tab-piskvorky')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Piškvorky & Online Hráči</button>
             <button onclick="switchTab('tab-fotky')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Správa Fotek</button>
             <button onclick="switchTab('tab-hudba')" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">Správa Hudby</button>
@@ -77,6 +78,78 @@
                         <thead><tr><th>Uživatel (ID)</th><th>Typ Trestu</th><th>Důvod</th><th>Vyprší</th><th>Akce</th></tr></thead>
                         <tbody id="adminRestrictionsList"></tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- TAB: Moderátoři & Kódy (/mod/) -->
+            <div id="tab-moderatori" class="tab-content hidden space-y-6">
+                <div class="bg-white p-5 rounded shadow border border-blue-200 space-y-3">
+                    <h2 class="text-lg font-bold text-gray-800">🔑 Vytvořit jednorázový přístupový kód pro /mod/</h2>
+                    <p class="text-xs text-gray-600">
+                        Vygenerovaný kód se zobrazí <strong>pouze jednou</strong> hned po vytvoření. Začne fungovat jako přihlašovací heslo do <code>/mod/</code>, jakmile ho uživatel poprvé zadá.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <input type="email" id="newModEmail" placeholder="E-mail podporovatele (nepovinné, lze doplnit i později)" class="border p-2 rounded text-sm">
+                        <input type="text" id="newModNote" placeholder="Poznámka / přezdívka (např. O6.B - 100 Kč)" class="border p-2 rounded text-sm">
+                        <button onclick="generateModCode()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
+                            + Vygenerovat kód (heslo)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded shadow border border-amber-200">
+                    <h3 class="text-base font-bold text-amber-900 mb-3">💸 Žádosti o Admina z /podpora/ (příspěvky 100 Kč+)</h3>
+                    <div class="overflow-x-auto">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Datum</th>
+                                    <th>E-mail</th>
+                                    <th>Přezdívka</th>
+                                    <th>Částka</th>
+                                    <th>Akce</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminDonateRequestsList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded shadow">
+                    <h3 class="text-base font-bold text-gray-800 mb-3">👑 Správa Moderátorů & Historie jejich změn (klikni pro detail)</h3>
+                    <div class="overflow-x-auto">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Stav kódu</th>
+                                    <th>E-mail moderátora</th>
+                                    <th>Poznámka</th>
+                                    <th>Vytvořeno / Aktivováno</th>
+                                    <th>Počet zásahů</th>
+                                    <th>Akce</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminModeratorsList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded shadow border border-gray-200">
+                    <h3 class="text-base font-bold text-gray-800 mb-3">🧾 Přehled příspěvků ze Zdi legend (/podpora/)</h3>
+                    <div class="overflow-x-auto">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Datum</th>
+                                    <th>Přezdívka</th>
+                                    <th>Částka</th>
+                                    <th>Vzkaz</th>
+                                    <th>Admin bonus</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminDonationsWallList"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -146,6 +219,65 @@
         </main>
     </div>
 
+    <!-- MODAL: Jednorázové zobrazení vygenerovaného kódu -->
+    <div id="oneTimeCodeModal" class="fixed inset-0 bg-black/75 z-[9999] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full space-y-4 shadow-2xl border-2 border-amber-500">
+            <h3 class="text-lg font-bold text-red-700">⚠️ JEDNORÁZOVÝ PŘÍSTUPOVÝ KÓD</h3>
+            <p class="text-xs text-gray-700">
+                Tento kód (heslo pro <code>/mod/</code>) se zobrazuje <strong>pouze teď a už nikdy znovu</strong>. Zkopíruj ho a pošli moderátorovi!
+            </p>
+            <div class="bg-gray-100 border-2 border-dashed border-gray-400 p-4 rounded text-center">
+                <span id="generatedCodeDisplay" class="font-mono text-2xl font-bold tracking-wider text-blue-900 select-all"></span>
+            </div>
+            <div class="flex gap-2 justify-end">
+                <button onclick="copyGeneratedCode()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded text-sm">📋 Zkopírovat kód</button>
+                <button onclick="closeOneTimeCodeModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded text-sm">Zavřít (už jsem uložil)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Detail Moderátora a Audit Log změn -->
+    <div id="modDetailModal" class="fixed inset-0 bg-black/75 z-[9999] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg p-5 max-w-4xl w-full space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b pb-3 shrink-0">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800" id="modDetailTitle">Detail Moderátora</h3>
+                    <p class="text-xs text-gray-500" id="modDetailSub">-</p>
+                </div>
+                <button onclick="closeModDetailModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded text-sm font-bold">✕ Zavřít</button>
+            </div>
+
+            <div class="bg-gray-50 p-3 rounded border flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div class="flex flex-wrap items-center gap-2 flex-1">
+                    <label class="text-xs font-bold">E-mail moderátora:</label>
+                    <input type="email" id="modDetailEmailInput" class="border bg-white px-2.5 py-1 rounded text-sm w-64" placeholder="Zadej e-mail...">
+                    <button onclick="saveModDetailEmail()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold">Uložit e-mail</button>
+                </div>
+                <button id="modDetailRevokeBtn" onclick="revokeModFromModal()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold">
+                    🚫 Odebrat funkci Admina
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+                <h4 class="font-bold text-sm mb-2">📜 Historie změn a zásahů v chatu (Audit Log)</h4>
+                <div class="border rounded overflow-x-auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Čas</th>
+                                <th>Akce</th>
+                                <th>Cíl (Autor / ID)</th>
+                                <th>Z čeho (Původní stav)</th>
+                                <th>Na co (Nový stav)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modAuditLogTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: Sledování Zápasu Piškvorek (Spectator Mode) -->
     <div id="spectatorModal" class="fixed inset-0 bg-black/70 z-[9999] hidden items-center justify-center p-2 md:p-4">
         <div class="bg-white rounded-lg p-4 md:p-6 max-w-3xl w-full space-y-4 shadow-2xl relative max-h-[95vh] flex flex-col">
@@ -162,19 +294,16 @@
                     Načítám info o zápasu...
                 </div>
 
-                <!-- Tlačítka pro rozhodnutí admina -->
                 <div id="adminControlsBox" class="bg-amber-50 border border-amber-300 p-3 rounded flex flex-col sm:flex-row items-center justify-between gap-2">
                     <span class="text-xs font-bold text-amber-900">⚡ ROZHODNUTÍ ADMINA Z NEBES:</span>
                     <div id="adminWinnerButtons" class="flex gap-2"></div>
                 </div>
                 
                 <div class="flex flex-col md:flex-row gap-4 md:gap-6 items-center justify-center">
-                    <!-- Deska -->
                     <div class="flex flex-col items-center overflow-x-auto w-full max-w-full py-2">
                         <div id="spectatorBoard" class="border p-2 bg-gray-200 rounded shadow-inner mx-auto"></div>
                     </div>
                     
-                    <!-- Chat zápasu -->
                     <div class="w-full md:w-64 bg-gray-50 border rounded p-3 flex flex-col h-48 md:h-64 shrink-0">
                         <h4 class="font-bold text-xs text-gray-700 mb-2 pb-1 border-b">In-game Chat zápasu</h4>
                         <div id="spectatorChatList" class="flex-1 overflow-y-auto text-xs space-y-1"></div>
@@ -192,8 +321,25 @@
         let currentSpectateGameId = null;
         let cachedLobbyMap = {};
         let cachedGamesData = {};
+        let cachedModerators = {};
+        let cachedAuditLogs = {};
+        let activeDetailModId = null;
 
-        // Sledování stavu připojení Firebase (klíčové pro mobilní telefony)
+        async function sha256(str) {
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         db.ref('.info/connected').on('value', snap => {
             const statusEl = document.getElementById('firebaseLiveStatus');
             if (!statusEl) return;
@@ -206,7 +352,6 @@
             }
         });
 
-        // Automatický pokus o obnovení spojení při návratu do aplikace v telefonu
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 firebase.database().goOnline();
@@ -240,6 +385,7 @@
         }
 
         function enterChat(mode) {
+            sessionStorage.removeItem('gjw_mod_id');
             sessionStorage.setItem('gjw_admin_session', 'true');
             sessionStorage.setItem('gjw_admin_mode', mode);
             window.location.href = '../chat/';
@@ -255,11 +401,267 @@
         function initDashboard() {
             loadMessages();
             loadRestrictions();
+            loadModeratorsManager();
             loadPiskvorkyAdmin();
             buildContentManager('fotky', 'Fotek', true);
             buildContentManager('hudba', 'Hudby', false);
             buildContentManager('promoDesigns', 'Materiálů', true);
             buildContentManager('memes', 'Memes', true);
+        }
+
+        function createRandomCodeString() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            const part = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+            return `GJW-${part(4)}-${part(4)}`;
+        }
+
+        async function generateModCode(prefillEmail = '', prefillNote = '', requestKey = null) {
+            const emailInput = document.getElementById('newModEmail');
+            const noteInput = document.getElementById('newModNote');
+
+            const email = (prefillEmail || emailInput.value || '').trim();
+            const note = (prefillNote || noteInput.value || '').trim();
+
+            const rawCode = createRandomCodeString();
+            const codeHash = await sha256(rawCode);
+
+            await db.ref('moderators').push({
+                codeHash: codeHash,
+                email: email,
+                note: note,
+                status: 'unused',
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            if (requestKey) {
+                await db.ref('adminRequests/' + requestKey).update({ status: 'code_generated' });
+            }
+
+            if (!prefillEmail) emailInput.value = '';
+            if (!prefillNote) noteInput.value = '';
+
+            document.getElementById('generatedCodeDisplay').innerText = rawCode;
+            document.getElementById('oneTimeCodeModal').classList.remove('hidden');
+            document.getElementById('oneTimeCodeModal').classList.add('flex');
+        }
+
+        function copyGeneratedCode() {
+            const code = document.getElementById('generatedCodeDisplay').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                alert("Kód zkopírován do schránky: " + code);
+            });
+        }
+
+        function closeOneTimeCodeModal() {
+            document.getElementById('generatedCodeDisplay').innerText = '';
+            document.getElementById('oneTimeCodeModal').classList.remove('flex');
+            document.getElementById('oneTimeCodeModal').classList.add('hidden');
+        }
+
+        function deleteAdminRequest(key) {
+            if (!confirm("Opravdu smazat tuto žádost z /podpora/?")) return;
+            db.ref('adminRequests/' + key).remove();
+        }
+
+        function loadModeratorsManager() {
+            db.ref('modAuditLogs').on('value', snap => {
+                cachedAuditLogs = snap.val() || {};
+                renderModeratorsTable();
+                if (activeDetailModId) renderModDetailLogs(activeDetailModId);
+            });
+
+            db.ref('moderators').on('value', snap => {
+                cachedModerators = snap.val() || {};
+                renderModeratorsTable();
+            });
+
+            db.ref('adminRequests').on('value', snap => {
+                const tbody = document.getElementById('adminDonateRequestsList');
+                tbody.innerHTML = '';
+                const reqs = snap.val() || {};
+                const entries = Object.entries(reqs).reverse();
+
+                if (entries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-gray-400 italic text-center py-3">Zatím žádné žádosti z /podpora/.</td></tr>';
+                    return;
+                }
+
+                entries.forEach(([key, r]) => {
+                    const tr = document.createElement('tr');
+                    const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString() : '-';
+                    const isDone = r.status === 'code_generated';
+                    tr.innerHTML = `
+                        <td class="text-xs text-gray-500">${dateStr}</td>
+                        <td class="font-bold">${escapeHtml(r.email || '-')}</td>
+                        <td>${escapeHtml(r.nickname || '-')}</td>
+                        <td class="font-bold text-red-700">${r.amount || 0} Kč</td>
+                        <td class="space-x-2 whitespace-nowrap">
+                            ${isDone
+                                ? '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">✓ Kód vygenerován</span>'
+                                : `<button onclick="generateModCode('${escapeHtml(r.email || '')}', 'Podpora ${r.amount} Kč (${escapeHtml(r.nickname || '')})', '${key}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded text-xs font-bold">Vygenerovat kód</button>`
+                            }
+                            <button onclick="deleteAdminRequest('${key}')" class="text-red-600 hover:underline text-xs font-bold">Smazat</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+
+            db.ref('donations').limitToLast(25).on('value', snap => {
+                const tbody = document.getElementById('adminDonationsWallList');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                const dons = snap.val() || {};
+                const entries = Object.entries(dons).reverse();
+
+                if (entries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-gray-400 italic text-center py-3">Zatím žádné příspěvky.</td></tr>';
+                    return;
+                }
+
+                entries.forEach(([, d]) => {
+                    const tr = document.createElement('tr');
+                    const dateStr = d.timestamp ? new Date(d.timestamp).toLocaleString() : '-';
+                    tr.innerHTML = `
+                        <td class="text-xs text-gray-500">${dateStr}</td>
+                        <td class="font-bold">${escapeHtml(d.name || 'Anonym')}</td>
+                        <td class="font-bold text-red-700">${d.amount || 0} Kč</td>
+                        <td class="text-xs">${escapeHtml(d.message || '-')}</td>
+                        <td>${d.hasAdminBonus ? '<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-bold">👑 ANO (100 Kč+)</span>' : '<span class="text-xs text-gray-400">Ne</span>'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        function renderModeratorsTable() {
+            const tbody = document.getElementById('adminModeratorsList');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const entries = Object.entries(cachedModerators).reverse();
+            if (entries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-gray-400 italic text-center py-4">Zatím nebyl vygenerován žádný kód pro /mod/.</td></tr>';
+                return;
+            }
+
+            entries.forEach(([modId, m]) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-blue-50/50 cursor-pointer transition';
+                tr.onclick = (e) => {
+                    if (e.target.closest('button')) return;
+                    openModDetailModal(modId);
+                };
+
+                let statusBadge = '';
+                if (m.status === 'unused') {
+                    statusBadge = '<span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-bold">⏳ Čeká na zadání v /mod/</span>';
+                } else if (m.status === 'active') {
+                    statusBadge = '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">🟢 Aktivní v /mod/</span>';
+                } else {
+                    statusBadge = '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs font-bold">🚫 Odebráno</span>';
+                }
+
+                const createdStr = m.createdAt ? new Date(m.createdAt).toLocaleString() : '-';
+                const activatedStr = m.activatedAt ? new Date(m.activatedAt).toLocaleString() : 'Zatím nezadáno';
+                const logsCount = cachedAuditLogs[modId] ? Object.keys(cachedAuditLogs[modId]).length : 0;
+
+                tr.innerHTML = `
+                    <td>${statusBadge}</td>
+                    <td class="font-bold text-blue-900">${m.email ? escapeHtml(m.email) : '<span class="text-gray-400 italic font-normal">(klikni pro doplnění e-mailu)</span>'}</td>
+                    <td class="text-xs">${escapeHtml(m.note || '-')}</td>
+                    <td class="text-xs text-gray-500">Vytvořeno: ${createdStr}<br>Aktivace: <strong>${activatedStr}</strong></td>
+                    <td><span class="bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-xs font-bold">${logsCount} změn</span></td>
+                    <td class="space-x-2 whitespace-nowrap">
+                        <button onclick="openModDetailModal('${modId}')" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded text-xs font-bold">Detail & Změny</button>
+                        ${m.status !== 'revoked'
+                            ? `<button onclick="revokeModerator('${modId}')" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded text-xs font-bold">Odebrat funkci</button>`
+                            : `<button onclick="deleteModeratorRecord('${modId}')" class="text-gray-500 hover:underline text-xs">Smazat záznam</button>`
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openModDetailModal(modId) {
+            activeDetailModId = modId;
+            const mod = cachedModerators[modId];
+            if (!mod) return;
+
+            document.getElementById('modDetailTitle').innerText = `Moderátor: ${mod.email || mod.note || modId}`;
+            document.getElementById('modDetailSub').innerText = `ID: ${modId} | Stav: ${mod.status === 'active' ? 'Aktivní' : (mod.status === 'unused' ? 'Neaktivovaný kód' : 'Odebraná funkce')}`;
+            document.getElementById('modDetailEmailInput').value = mod.email || '';
+
+            const revokeBtn = document.getElementById('modDetailRevokeBtn');
+            if (mod.status === 'revoked') {
+                revokeBtn.style.display = 'none';
+            } else {
+                revokeBtn.style.display = 'inline-block';
+            }
+
+            renderModDetailLogs(modId);
+            document.getElementById('modDetailModal').classList.remove('hidden');
+            document.getElementById('modDetailModal').classList.add('flex');
+        }
+
+        function closeModDetailModal() {
+            activeDetailModId = null;
+            document.getElementById('modDetailModal').classList.remove('flex');
+            document.getElementById('modDetailModal').classList.add('hidden');
+        }
+
+        function saveModDetailEmail() {
+            if (!activeDetailModId) return;
+            const newEmail = document.getElementById('modDetailEmailInput').value.trim();
+            db.ref('moderators/' + activeDetailModId).update({ email: newEmail }).then(() => {
+                alert("E-mail byl uložen.");
+                document.getElementById('modDetailTitle').innerText = `Moderátor: ${newEmail || activeDetailModId}`;
+            });
+        }
+
+        function revokeModerator(modId) {
+            if (!confirm("Opravdu odebrat tomuto uživateli funkci Admina v chatu (/mod/)? Okamžitě ztratí přístup.")) return;
+            db.ref('moderators/' + modId).update({
+                status: 'revoked',
+                revokedAt: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        function revokeModFromModal() {
+            if (!activeDetailModId) return;
+            revokeModerator(activeDetailModId);
+            closeModDetailModal();
+        }
+
+        function deleteModeratorRecord(modId) {
+            if (!confirm("Trvale smazat tento záznam z tabulky?")) return;
+            db.ref('moderators/' + modId).remove();
+        }
+
+        function renderModDetailLogs(modId) {
+            const tbody = document.getElementById('modAuditLogTableBody');
+            tbody.innerHTML = '';
+            const logsObj = cachedAuditLogs[modId] || {};
+            const entries = Object.values(logsObj).reverse();
+
+            if (entries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-gray-400 italic text-center py-4">Tento moderátor zatím neprovedl žádnou změnu.</td></tr>';
+                return;
+            }
+
+            entries.forEach(log => {
+                const tr = document.createElement('tr');
+                const timeStr = log.timestamp ? new Date(log.timestamp).toLocaleString() : '-';
+                tr.innerHTML = `
+                    <td class="text-xs text-gray-500 whitespace-nowrap">${timeStr}</td>
+                    <td><span class="bg-blue-100 text-blue-900 px-2 py-0.5 rounded text-xs font-bold">${escapeHtml(log.action)}</span></td>
+                    <td class="text-xs font-semibold">${escapeHtml(log.target)}</td>
+                    <td class="text-xs bg-red-50 text-red-900 max-w-xs break-words">${escapeHtml(log.before)}</td>
+                    <td class="text-xs bg-green-50 text-green-900 max-w-xs break-words">${escapeHtml(log.after)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         function loadMessages() {
@@ -274,9 +676,9 @@
                     tr.innerHTML = `
                         <td class="text-xs text-gray-500">${msg.time || '-'}</td>
                         <td class="font-bold">${msg.isSystem ? 'SYSTÉM' : userDisplay}</td>
-                        <td class="w-1/2">${msg.text}</td>
+                        <td class="w-1/2">${escapeHtml(msg.text)}</td>
                         <td class="space-x-2">
-                            <button onclick="editMessage('${key}', \`${msg.text.replace(/`/g, '\\`')}\`)" class="text-blue-600 hover:underline text-sm font-bold">Upravit</button>
+                            <button onclick="editMessage('${key}', \`${(msg.text || '').replace(/`/g, '\\`')}\`)" class="text-blue-600 hover:underline text-sm font-bold">Upravit</button>
                             <button onclick="deleteMessage('${key}')" class="text-red-600 hover:underline text-sm font-bold">Smazat</button>
                         </td>
                     `;
@@ -381,7 +783,6 @@
         }
 
         function loadPiskvorkyAdmin() {
-            // Posluchač pro lobby
             db.ref('piskvorky/lobby').on('value', snap => {
                 const tbody = document.getElementById('adminPiskvorkyLobbyList');
                 const badge = document.getElementById('onlineLobbyBadge');
@@ -411,7 +812,6 @@
                 renderGamesTable();
             });
 
-            // Posluchač pro probíhající hry
             db.ref('piskvorky/games').on('value', snap => {
                 cachedGamesData = snap.val() || {};
                 renderGamesTable();
@@ -426,7 +826,6 @@
             db.ref('piskvorky/games/' + gameId).off();
             db.ref('piskvorky/chats/' + gameId).off();
 
-            // Živý přenos desky a stavu zápasu bez asynchronních prodlev
             db.ref('piskvorky/games/' + gameId).on('value', snap => {
                 const g = snap.val();
                 if (!g) {
@@ -476,7 +875,6 @@
                 renderSpectatorBoard(g.board || [], g.boardSize || 3, g.lastMoveIndex);
             });
 
-            // Živý přenos chatu probíhající hry
             const chatList = document.getElementById('spectatorChatList');
             chatList.innerHTML = '';
             db.ref('piskvorky/chats/' + gameId).on('child_added', snap => {

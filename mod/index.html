@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="cs" class="h-full bg-gray-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GJW Mod Panel | Moderace Chatu</title>
+    <meta name="robots" content="noindex, nofollow">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; }
+        .tab-btn.active { border-bottom: 2px solid #2563eb; color: #1d4ed8; font-weight: bold; }
+        .rainbow-admin {
+            background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8fafc; }
+    </style>
+</head>
+<body class="h-full flex flex-col">
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="fixed inset-0 bg-gray-900 z-50 flex flex-col items-center justify-center p-4">
+        <div class="bg-white p-8 rounded shadow-2xl max-w-sm w-full space-y-4">
+            <div class="text-center">
+                <img src="https://i.imgur.com/QvqvK3M.png" alt="GJW Logo" class="max-h-16 mx-auto mb-2">
+                <h2 class="text-xl font-bold text-gray-800">👑 Moderátorský Panel Chatu</h2>
+                <p class="text-xs text-gray-500 mt-1">Zadej svůj přístupový kód (heslo) od správce GJW</p>
+            </div>
+            <div>
+                <label class="block text-sm font-bold mb-1">Přístupové heslo</label>
+                <input type="password" id="modPassword" class="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Zadej vygenerovaný kód..." onkeydown="if(event.key==='Enter') verifyModLogin()">
+            </div>
+            <button onclick="verifyModLogin()" id="loginBtn" class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition">Přihlásit se do /mod/</button>
+            <p id="loginError" class="text-red-600 text-xs text-center hidden font-bold"></p>
+            <div class="text-center pt-2 border-t">
+                <a href="../chat/" class="text-xs text-blue-600 underline">&laquo; Zpět do GJW Chatu</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mod Dashboard -->
+    <div id="dashboardScreen" class="hidden flex-1 flex flex-col h-full">
+        <header class="bg-gray-800 text-white p-4 flex flex-wrap justify-between items-center shadow-md shrink-0 gap-2">
+            <div class="flex items-center gap-3">
+                <h1 class="text-lg font-bold rainbow-admin">GJW Chat Mod Panel</h1>
+                <span id="modIdentityBadge" class="bg-gray-700 text-xs px-2.5 py-1 rounded text-gray-200">Moderátor</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="enterChatAsMod('observed')" class="bg-green-600 px-3 py-1 rounded text-sm font-bold hover:bg-green-500">Vstoupit do Chatu (Viditelný)</button>
+                <button onclick="enterChatAsMod('hidden')" class="bg-gray-600 px-3 py-1 rounded text-sm font-bold hover:bg-gray-500">Vstoupit do Chatu (Duch)</button>
+                <button onclick="logoutMod()" class="bg-red-600 px-3 py-1 rounded text-sm font-bold hover:bg-red-500">Odhlásit</button>
+            </div>
+        </header>
+
+        <nav class="bg-white border-b flex px-4 shrink-0 overflow-x-auto">
+            <button onclick="switchTab('tab-chat', this)" class="tab-btn active px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">💬 Zprávy & Moderace Uživatelů</button>
+            <button onclick="switchTab('tab-tresty', this)" class="tab-btn px-4 py-3 hover:bg-gray-50 focus:outline-none shrink-0">🔨 Aktivní Tresty (Ban / Mute)</button>
+        </nav>
+
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
+            <!-- TAB: Zprávy -->
+            <div id="tab-chat" class="tab-content">
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                    <h2 class="text-xl font-bold">Živá historie zpráv v chatu</h2>
+                    <input type="text" id="msgSearchInput" oninput="renderModMessages()" placeholder="🔍 Hledat ve zprávách nebo podle autora..." class="border bg-white px-3 py-1.5 rounded text-sm w-full sm:w-72">
+                </div>
+                <div class="bg-white rounded shadow overflow-x-auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Čas</th>
+                                <th>Autor</th>
+                                <th>Zpráva</th>
+                                <th>Úprava zprávy</th>
+                                <th>Trest uživateli</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modMessagesList"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: Tresty -->
+            <div id="tab-tresty" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">Aktivní Bany a Muty</h2>
+                <div class="bg-white rounded shadow overflow-x-auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Uživatel (ID)</th>
+                                <th>Typ trestu</th>
+                                <th>Důvod</th>
+                                <th>Vyprší</th>
+                                <th>Akce</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modRestrictionsList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let currentModId = sessionStorage.getItem('gjw_mod_id') || null;
+        let currentModLabel = sessionStorage.getItem('gjw_mod_label') || 'Moderátor';
+        let cachedMessages = {};
+
+        async function sha256(str) {
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function logModAction(actionType, target, beforeVal, afterVal) {
+            if (!currentModId) return;
+            db.ref('modAuditLogs/' + currentModId).push({
+                action: actionType,
+                target: target || '-',
+                before: beforeVal !== undefined ? String(beforeVal) : '-',
+                after: afterVal !== undefined ? String(afterVal) : '-',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        async function verifyModLogin() {
+            const rawPwd = document.getElementById('modPassword').value.trim();
+            const errEl = document.getElementById('loginError');
+            const btn = document.getElementById('loginBtn');
+            errEl.classList.add('hidden');
+
+            if (!rawPwd) {
+                errEl.innerText = "Zadej přístupový kód!";
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Ověřuji kód...";
+
+            try {
+                const inputHash = await sha256(rawPwd);
+                const snap = await db.ref('moderators').once('value');
+                const mods = snap.val() || {};
+
+                let matchedId = null;
+                let matchedMod = null;
+
+                for (const [id, m] of Object.entries(mods)) {
+                    if (m.codeHash === inputHash) {
+                        matchedId = id;
+                        matchedMod = m;
+                        break;
+                    }
+                }
+
+                if (!matchedId || !matchedMod) {
+                    errEl.innerText = "Neplatný přístupový kód!";
+                    errEl.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerText = "Přihlásit se do /mod/";
+                    return;
+                }
+
+                if (matchedMod.status === 'revoked') {
+                    errEl.innerText = "Tvé moderátorské oprávnění bylo správcem odebráno.";
+                    errEl.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerText = "Přihlásit se do /mod/";
+                    return;
+                }
+
+                // Pokud se přihlásil poprvé (stav 'unused'), aktivujeme kód a zaregistrujeme ho
+                if (matchedMod.status === 'unused') {
+                    await db.ref('moderators/' + matchedId).update({
+                        status: 'active',
+                        activatedAt: firebase.database.ServerValue.TIMESTAMP,
+                        lastLoginAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    logModAction('AKTIVACE_UCTU', matchedMod.email || matchedId, 'Nepoužitý kód', 'Aktivní moderátor');
+                } else {
+                    await db.ref('moderators/' + matchedId).update({
+                        lastLoginAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+
+                currentModId = matchedId;
+                currentModLabel = matchedMod.email || matchedMod.note || ('Mod #' + matchedId.slice(-4));
+                sessionStorage.setItem('gjw_mod_id', currentModId);
+                sessionStorage.setItem('gjw_mod_label', currentModLabel);
+
+                startModSession();
+            } catch (e) {
+                errEl.innerText = "Chyba připojení: " + e.message;
+                errEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.innerText = "Přihlásit se do /mod/";
+            }
+        }
+
+        function startModSession() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboardScreen').classList.remove('hidden');
+            document.getElementById('modIdentityBadge').innerText = '👑 ' + currentModLabel;
+
+            // Hlídač v reálném čase: jakmile mu v /admin odebereš práva, okamžitě ho to vykopne
+            db.ref('moderators/' + currentModId).on('value', snap => {
+                const modData = snap.val();
+                if (!modData || modData.status !== 'active') {
+                    alert("Tvá oprávnění moderátora byla správcem odebrána.");
+                    logoutMod();
+                }
+            });
+
+            loadModMessages();
+            loadModRestrictions();
+        }
+
+        if (currentModId) {
+            startModSession();
+        }
+
+        function logoutMod() {
+            sessionStorage.removeItem('gjw_mod_id');
+            sessionStorage.removeItem('gjw_mod_label');
+            sessionStorage.removeItem('gjw_admin_session');
+            location.reload();
+        }
+
+        function enterChatAsMod(mode) {
+            sessionStorage.setItem('gjw_admin_session', 'true');
+            sessionStorage.setItem('gjw_admin_mode', mode);
+            sessionStorage.setItem('gjw_mod_id', currentModId);
+            window.location.href = '../chat/';
+        }
+
+        function switchTab(tabId, btnEl) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            btnEl.classList.add('active');
+            document.getElementById(tabId).classList.remove('hidden');
+        }
+
+        function loadModMessages() {
+            db.ref('messages').on('value', snap => {
+                cachedMessages = snap.val() || {};
+                renderModMessages();
+            });
+        }
+
+        function renderModMessages() {
+            const tbody = document.getElementById('modMessagesList');
+            const filter = (document.getElementById('msgSearchInput').value || '').toLowerCase().trim();
+            tbody.innerHTML = '';
+
+            const entries = Object.entries(cachedMessages).reverse();
+            entries.forEach(([key, msg]) => {
+                const author = msg.user || 'Neznámý';
+                const text = msg.text || '';
+
+                if (filter && !author.toLowerCase().includes(filter) && !text.toLowerCase().includes(filter)) {
+                    return;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = msg.isSystem ? 'bg-gray-50 text-gray-500 italic' : '';
+                const userDisplay = msg.isAdmin
+                    ? `<span class="rainbow-admin">${escapeHtml(author)}</span>`
+                    : `<span class="font-bold text-blue-900">${escapeHtml(author)}</span>`;
+
+                const userActions = msg.isSystem || !msg.userId
+                    ? `<span class="text-xs text-gray-400">-</span>`
+                    : `<div class="flex flex-wrap gap-1">
+                        <button onclick="modKickUser('${msg.userId}', '${escapeHtml(author)}')" class="bg-gray-200 hover:bg-gray-300 text-gray-900 px-2 py-0.5 rounded text-xs font-bold">Kick</button>
+                        <button onclick="modMuteUser('${msg.userId}', '${escapeHtml(author)}')" class="bg-orange-100 hover:bg-orange-200 text-orange-800 px-2 py-0.5 rounded text-xs font-bold">Mute</button>
+                        <button onclick="modBanUser('${msg.userId}', '${escapeHtml(author)}')" class="bg-red-100 hover:bg-red-200 text-red-800 px-2 py-0.5 rounded text-xs font-bold">Ban</button>
+                       </div>`;
+
+                tr.innerHTML = `
+                    <td class="text-xs text-gray-500 whitespace-nowrap">${escapeHtml(msg.time || '-')}</td>
+                    <td class="whitespace-nowrap">${msg.isSystem ? 'SYSTÉM' : userDisplay}<br><span class="text-[10px] text-gray-400">${escapeHtml(msg.userId || '')}</span></td>
+                    <td class="max-w-md break-words">${escapeHtml(text)}</td>
+                    <td class="whitespace-nowrap space-x-2">
+                        <button onclick="modEditMessage('${key}')" class="text-blue-600 hover:underline text-xs font-bold">Upravit</button>
+                        <button onclick="modDeleteMessage('${key}')" class="text-red-600 hover:underline text-xs font-bold">Smazat</button>
+                    </td>
+                    <td>${userActions}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function modEditMessage(key) {
+            const msg = cachedMessages[key];
+            if (!msg) return;
+            const oldText = msg.text || '';
+            const newText = prompt("Upravit text zprávy:", oldText);
+            if (newText !== null && newText.trim() !== '' && newText !== oldText) {
+                db.ref('messages/' + key).update({ text: newText });
+                logModAction('UPRAVA_ZPRAVY', `${msg.user || 'Neznámý'} (${key})`, oldText, newText);
+            }
+        }
+
+        function modDeleteMessage(key) {
+            const msg = cachedMessages[key];
+            if (!msg) return;
+            if (confirm("Opravdu trvale smazat tuto zprávu?")) {
+                db.ref('messages/' + key).remove();
+                logModAction('SMAZANI_ZPRAVY', `${msg.user || 'Neznámý'} (${key})`, msg.text || '', '[SMAZÁNO]');
+            }
+        }
+
+        function parseDuration(str) {
+            str = str.toLowerCase().trim();
+            if (str === 'perm') return 0;
+            const num = parseInt(str, 10);
+            if (isNaN(num)) return 60000;
+            if (str.includes('s')) return num * 1000;
+            if (str.includes('m')) return num * 60000;
+            if (str.includes('h')) return num * 3600000;
+            if (str.includes('d')) return num * 86400000;
+            if (str.includes('w')) return num * 604800000;
+            return num * 60000;
+        }
+
+        function findUserFingerprint(uid, callback) {
+            db.ref('presence/' + uid).once('value', snap => {
+                const pData = snap.val();
+                if (pData && pData.fingerprint) return callback(pData.fingerprint);
+                for (const m of Object.values(cachedMessages)) {
+                    if (m.userId === uid && m.fingerprint) return callback(m.fingerprint);
+                }
+                callback('unknown_fp');
+            });
+        }
+
+        function modKickUser(uid, username) {
+            if (!confirm(`Opravdu vyhodit uživatele "${username}" z chatu?`)) return;
+            findUserFingerprint(uid, targetFp => {
+                db.ref('restrictions/' + uid).set({
+                    kicked: true,
+                    fingerprint: targetFp,
+                    userId: uid
+                });
+                logModAction('KICK', `${username} (${uid})`, 'Aktivní v chatu', 'Vyhozen (Kick)');
+                alert("Uživatel byl vyhozen.");
+            });
+        }
+
+        function modMuteUser(uid, username) {
+            const val = prompt(`Zadejte délku ztlumení pro "${username}" (např. 30s, 10m, 2h, 1d nebo 'perm' pro natrvalo):`);
+            if (!val) return;
+            const ms = parseDuration(val);
+            const permanent = val.toLowerCase().trim() === 'perm';
+
+            findUserFingerprint(uid, targetFp => {
+                db.ref('restrictions/' + uid).update({
+                    mute: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms, username: username },
+                    fingerprint: targetFp,
+                    userId: uid
+                });
+                logModAction('MUTE', `${username} (${uid})`, 'Bez omezení', permanent ? 'Mute natrvalo' : `Mute (${val})`);
+                alert("Uživatel byl ztlumen.");
+            });
+        }
+
+        function modBanUser(uid, username) {
+            const val = prompt(`Zadejte délku banu pro "${username}" (např. 1h, 7d, 30d nebo 'perm' pro natrvalo):`);
+            if (!val) return;
+            const reason = prompt("Zadejte důvod banu:") || "Porušení pravidel";
+            const ms = parseDuration(val);
+            const permanent = val.toLowerCase().trim() === 'perm';
+
+            findUserFingerprint(uid, targetFp => {
+                db.ref('restrictions/' + uid).update({
+                    ban: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms, reason: reason, username: username },
+                    fingerprint: targetFp,
+                    userId: uid
+                });
+                logModAction('BAN', `${username} (${uid})`, 'Bez banu', `${permanent ? 'Natrvalo' : val} | Důvod: ${reason}`);
+                alert("Uživatel byl zabanován.");
+            });
+        }
+
+        function loadModRestrictions() {
+            db.ref('restrictions').on('value', snap => {
+                const tbody = document.getElementById('modRestrictionsList');
+                tbody.innerHTML = '';
+                const rests = snap.val() || {};
+                Object.entries(rests).forEach(([uid, rest]) => {
+                    if (rest.ban) appendRestrictionRow(tbody, uid, rest.ban, 'BAN', rest.userId);
+                    if (rest.mute) appendRestrictionRow(tbody, uid, rest.mute, 'MUTE', rest.userId);
+                });
+            });
+        }
+
+        function appendRestrictionRow(tbody, uid, penalty, type, fallbackName) {
+            const tr = document.createElement('tr');
+            const isPerm = penalty.permanent;
+            const expStr = isPerm ? 'Natrvalo' : new Date(penalty.expiresAt).toLocaleString();
+            const reason = penalty.reason || '-';
+            const name = penalty.username || fallbackName || uid;
+
+            tr.innerHTML = `
+                <td><span class="font-bold">${escapeHtml(name)}</span><br><span class="text-[10px] text-gray-500">${escapeHtml(uid)}</span></td>
+                <td><span class="${type === 'BAN' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'} px-2 py-1 rounded text-xs font-bold">${type}</span></td>
+                <td>${escapeHtml(reason)}</td>
+                <td>${expStr}</td>
+                <td><button onclick="modRemovePenalty('${uid}', '${type.toLowerCase()}', '${escapeHtml(name)}')" class="bg-green-600 text-white px-2.5 py-1 rounded text-xs font-bold hover:bg-green-700">Zrušit trest</button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function modRemovePenalty(uid, type, name) {
+            if (!confirm(`Opravdu zrušit ${type.toUpperCase()} pro uživatele "${name}"?`)) return;
+            db.ref(`restrictions/${uid}/${type}`).remove();
+            db.ref(`restrictions/${uid}`).once('value').then(s => {
+                const val = s.val();
+                if (!val || (!val.ban && !val.mute && !val.kicked)) {
+                    db.ref(`restrictions/${uid}`).remove();
+                }
+            });
+            logModAction('ZRUSENI_TRESTU', `${name} (${uid})`, `Aktivní ${type.toUpperCase()}`, 'Trest zrušen');
+        }
+    </script>
+</body>
+</html>

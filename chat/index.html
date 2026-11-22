@@ -295,16 +295,39 @@
 
         let isAdmin = sessionStorage.getItem('gjw_admin_session') === 'true';
         let adminMode = sessionStorage.getItem('gjw_admin_mode') || 'observed';
+        let currentModId = sessionStorage.getItem('gjw_mod_id') || null;
         let activeProfileUid = null;
         let activeProfileName = null;
         let restrictionInterval = null;
 
+        function logModActionFromChat(actionType, target, beforeVal, afterVal) {
+            if (!currentModId) return;
+            db.ref('modAuditLogs/' + currentModId).push({
+                action: actionType,
+                target: target || '-',
+                before: beforeVal !== undefined ? String(beforeVal) : '-',
+                after: afterVal !== undefined ? String(afterVal) : '-',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem('gjw_admin_session') === 'true') {
                 isAdmin = true;
-                currentUser = "admin (Admin)";
+                currentUser = currentModId ? "Moderátor (Admin)" : "admin (Admin)";
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('userSubtitle').innerText = currentUser;
+
+                if (currentModId) {
+                    db.ref('moderators/' + currentModId).on('value', snap => {
+                        const modData = snap.val();
+                        if (!modData || modData.status !== 'active') {
+                            alert("Tvá práva Admina v chatu byla odebrána.");
+                            handleLogout();
+                        }
+                    });
+                }
+
                 renderMessages();
             } else if (currentUser) {
                 document.getElementById('loginScreen').style.display = 'none';
@@ -417,6 +440,7 @@
         function handleLogout() {
             localStorage.removeItem('gjw_saved_user');
             sessionStorage.removeItem('gjw_admin_session');
+            sessionStorage.removeItem('gjw_mod_id');
             location.reload();
         }
 
@@ -451,10 +475,30 @@
             scrollToBottomSmooth();
         }
 
+        function editMessageInChat(firebaseKey) {
+            if (!isAdmin) return;
+            db.ref('messages/' + firebaseKey).once('value', snap => {
+                const msg = snap.val();
+                if (!msg) return;
+                const oldText = msg.text || '';
+                const newText = prompt("Upravit text zprávy:", oldText);
+                if (newText !== null && newText.trim() !== '' && newText !== oldText) {
+                    db.ref('messages/' + firebaseKey).update({ text: newText });
+                    logModActionFromChat('UPRAVA_ZPRAVY', `${msg.user || 'Neznámý'} (${firebaseKey})`, oldText, newText);
+                }
+            });
+        }
+
         function deleteMessage(firebaseKey) {
             if (!isAdmin) return;
             if (confirm("Opravdu smazat tuto zprávu?")) {
-                db.ref('messages/' + firebaseKey).remove();
+                db.ref('messages/' + firebaseKey).once('value', snap => {
+                    const msg = snap.val();
+                    db.ref('messages/' + firebaseKey).remove();
+                    if (msg) {
+                        logModActionFromChat('SMAZANI_ZPRAVY', `${msg.user || 'Neznámý'} (${firebaseKey})`, msg.text || '', '[SMAZÁNO]');
+                    }
+                });
             }
         }
 
@@ -484,6 +528,7 @@
                     fingerprint: targetFp,
                     userId: activeProfileUid
                 });
+                logModActionFromChat('KICK', `${activeProfileName} (${activeProfileUid})`, 'Aktivní v chatu', 'Vyhozen (Kick)');
                 alert("Uživatel byl vyhozen.");
                 closeUserProfileModal();
             });
@@ -501,10 +546,11 @@
                 const targetFp = pData ? pData.fingerprint : 'unknown_fp';
 
                 db.ref('restrictions/' + activeProfileUid).update({
-                    mute: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms },
+                    mute: { permanent: permanent, expiresAt: permanent ? 0 : Date.now() + ms, username: activeProfileName },
                     fingerprint: targetFp,
                     userId: activeProfileUid
                 });
+                logModActionFromChat('MUTE', `${activeProfileName} (${activeProfileUid})`, 'Bez omezení', permanent ? 'Mute natrvalo' : `Mute (${val})`);
                 alert("Uživatel byl ztlumen.");
                 closeUserProfileModal();
             });
@@ -527,6 +573,7 @@
                     fingerprint: targetFp,
                     userId: activeProfileUid
                 });
+                logModActionFromChat('BAN', `${activeProfileName} (${activeProfileUid})`, 'Bez banu', `${permanent ? 'Natrvalo' : val} | Důvod: ${reason}`);
                 alert("Uživatel byl zabanován.");
                 closeUserProfileModal();
             });
@@ -644,7 +691,6 @@
         function scrollToAndHighlightMsg(targetKey, targetUser, targetText) {
             let el = targetKey ? document.getElementById('msg-' + targetKey) : null;
             
-            // Záložní vyhledávání podle jména a textu pro starší zprávy
             if (!el && targetUser && targetText) {
                 const allWrappers = document.querySelectorAll('.message-wrapper');
                 for (let wrap of allWrappers) {
@@ -659,9 +705,9 @@
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 const inner = el.querySelector('.message-card-inner');
                 if (inner) {
-                    inner.style.backgroundColor = '#fef08a'; // Žluté zvýraznění (Instagram-style)
+                    inner.style.backgroundColor = '#fef08a';
                     setTimeout(() => {
-                        inner.style.backgroundColor = '#ffffff'; // Návrat do původní bílé
+                        inner.style.backgroundColor = '#ffffff';
                     }, 1500);
                 }
             }
@@ -778,7 +824,11 @@
 
                         let deleteBtnHtml = '';
                         if (isAdmin) {
-                            deleteBtnHtml = `<button onclick="deleteMessage('${key}')" class="absolute top-1 right-2 text-[10px] text-red-600 hidden group-hover:inline-block cursor-pointer bg-red-50 px-1 border border-red-200 rounded z-20">Smazat</button>`;
+                            deleteBtnHtml = `
+                                <div class="absolute top-1 right-2 hidden group-hover:flex gap-1 z-20">
+                                    <button onclick="editMessageInChat('${key}')" class="text-[10px] text-blue-600 cursor-pointer bg-blue-50 px-1 border border-blue-200 rounded">Upravit</button>
+                                    <button onclick="deleteMessage('${key}')" class="text-[10px] text-red-600 cursor-pointer bg-red-50 px-1 border border-red-200 rounded">Smazat</button>
+                                </div>`;
                         }
 
                         wrapper.innerHTML = `
