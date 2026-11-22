@@ -3,97 +3,119 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Právní informace a Ochrana soukromí - GJW</title>
-    <meta content="#D5D8DC" data-react-helmet="true" name="theme-color"/>
+    <title>Ochrana soukromí & Právní podmínky | Studenstvo GJW</title>
+    <meta name="robots" content="noindex, follow">
     <style>
         body {
             background-color: #f0f0f0;
-            color: #000000;
+            color: #111111;
             font-family: Arial, Helvetica, sans-serif;
             font-size: 14px;
-            margin: 15px;
-            padding: 10px;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
+            line-height: 1.55;
+            margin: 15px auto;
+            padding: 12px;
+            max-width: 780px;
             box-sizing: border-box;
-            line-height: 1.6;
         }
-        .stred { text-align: center; }
-        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
-        h1 { font-size: 20px; font-weight: bold; margin: 15px 0; color: #000000; }
-        h2 { font-size: 16px; font-weight: bold; margin-top: 25px; color: #1e293b; }
-        p { font-size: 14px; color: #333; }
-        ul { margin: 10px 0; padding-left: 20px; }
-        li { margin-bottom: 5px; color: #333; }
-        .back-link { color: #0000EE; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 15px; }
-        .back-link:hover { text-decoration: underline; }
-        .box {
-            background: #fff;
-            border: 1px solid #b0b0a8;
-            padding: 20px;
-            border-radius: 6px;
-            margin: 15px 0;
+        .zpet-link {
+            display: inline-block;
+            color: #0000EE;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 14px;
         }
-        .highlight {
+        .zpet-link:hover { text-decoration: underline; }
+        .legal-box {
+            background: #ffffff;
+            border: 2px solid #222;
+            box-shadow: 5px 5px 0px #222;
+            padding: 22px;
+        }
+        h1 {
+            font-size: 22px;
+            margin: 0 0 8px 0;
+            border-bottom: 2px solid #222;
+            padding-bottom: 8px;
+        }
+        h2 {
+            font-size: 16px;
+            color: #b30000;
+            margin: 20px 0 6px 0;
+        }
+        p, li {
+            font-size: 13px;
+            color: #222;
+        }
+        ul {
+            padding-left: 20px;
+            margin: 6px 0 12px 0;
+        }
+        .upozorneni {
             background: #fff8c5;
             border-left: 4px solid #d4b126;
-            padding: 10px 15px;
-            margin: 15px 0;
+            padding: 10px 12px;
+            font-size: 12px;
+            margin: 12px 0;
         }
     </style>
 </head>
 <body>
-    <a class="back-link" href="../">&laquo; Zpět na hlavní stránku</a>
-    <hr class="oddeleni">
 
-    <div class="stred">
-        <h1>⚖️ Právní informace, Ochrana soukromí & Podmínky užití</h1>
-        <p>Transparentní přehled o provozu portálu, nakládání s daty a pravidlech komunity GJW.</p>
-    </div>
+    <a href="../" class="zpet-link">← Zpět na hlavní stránku Studenstva GJW</a>
 
-    <div class="box">
-        <h2>1. Úvodní ustanovení a charakter projektu</h2>
-        <p>Tento webový portál je nekomerční, nezávislý studentský projekt vytvořený studenty pro studenty a širší komunitu Gymnázia Jiřího Wolkera (GJW). Vstupem na stránky a jejich používáním vyjadřujete souhlas s těmito podmínkami. Portál slouží výhradně pro zábavu, informování, svobodnou výměnu názorů a studentskou tvorbu.</p>
-    </div>
+    <div class="legal-box">
+        <h1>Ochrana soukromí &amp; Právní podmínky (GDPR)</h1>
+        <p style="font-size: 11px; color: #666;">Poslední aktualizace: listopad 2026 | Platné pro doménu <strong>gjwprostejov.com</strong></p>
 
-    <div class="box">
-        <h2>2. Zpracování údajů a soukromí (GDPR)</h2>
-        <p>Respektujeme vaše soukromí. Vzhledem k charakteru portálu shromažďujeme jen absolutní minimum technických a uživatelských dat:</p>
-        <ul>
-            <li><strong>Uživatelská data (Přezdívky, příspěvky v chatu a nahrané materiály):</strong> Data, která sami dobrovolně vyplníte do chatu nebo nahrajete na web (např. do sekce temné stránky školy či piškvorek), jsou uložena v databázi za účelem fungování stránek.</li>
-            <li><strong>Technická data a Cookies:</strong> Pro správnou funkci stránek (např. relace, nastavení a lokální stav v prohlížeči) můžeme využívat lokální úložiště (LocalStorage) nebo standardní technické cookies nezbytné pro provoz infrastruktury (Firebase / Vercel).</li>
-        </ul>
-    </div>
-
-    <div class="box">
-        <h2>3. S čím NENAKLÁDÁME</h2>
-        <div class="highlight">
-            <p><strong>Prohlášení o ochraně dat:</strong> Žádná sesbíraná data neprodáváme, nepronajímáme, neposkytujeme třetím stranám ani je nevyužíváme k marketingovým účelům či profilování.</p>
-        </div>
-    </div>
-
-    <div class="box">
-        <h2>4. Provozní infrastruktura</h2>
-        <p>Provoz webu zajišťují spolehlivé cloudové a hostingové služby (Vercel a Firebase Realtime Database od společnosti Google). Tyto platformy zpracovávají technické provozní záznamy (logy) v souladu s vlastními bezpečnostními standardy a ochranou osobních údajů.</p>
-    </div>
-
-    <div class="box">
-        <h2>5. Odpovědnost za obsah (Uživatelsky generovaný obsah)</h2>
-        <p>Veškeré texty, zprávy v chatu, obrázky a další obsah nahrávaný uživateli vyjadřují výhradně názory jejich autorů. Provozovatel portálu nenese přímou odpovědnost za uživatelsky generovaný obsah, avšak razantně uplatňuje zásadu rychlého odstranění závadného obsahu.</p>
-        <p>Pokud na webu narazíte na obsah porušující zákony ČR, dobré mravy, autorská práva nebo ohrožující osobnostní práva, kontaktujte nás neprodleně na e-mailu uvedené níže a obsah bude okamžitě smazán.</p>
-    </div>
-
-    <div class="box">
-        <h2>6. Práva uživatelů a mazání dat</h2>
-        <p>Máte plné právo na <strong>výmaz svých údajů</strong>, příspěvků či záznamů z našich databází. Pro uplatnění vašich práv nebo nahlášení závadného obsahu nás můžete kdykoliv kontaktovat na e-mailové adrese:</p>
-        <p style="text-align: center; font-size: 16px;">
-            📧 <strong><a href="mailto:gjw_anonym@proton.me" style="color: #0000EE;">gjw_anonym@proton.me</a></strong>
+        <h2>1. Charakter portálu a provozovatel</h2>
+        <p>
+            Portál <strong>Studenstvo GJW</strong> (<code>gjwprostejov.com</code>) je neoficiální, nezávislý studentský projekt provozovaný za účelem studentské zábavy, komunikace a sdílení studijních materiálů. Portál není oficiální webovou prezentací Gymnázia Jiřího Wolkera v Prostějově a není s vedením školy právně ani organizačně spojen.
         </p>
-        <p>Žádosti řešíme bez zbytečného odkladu.</p>
+        <p>
+            Kontaktní e-mail provozovatele pro právní záležitosti, žádosti o odstranění obsahu nebo dotazy k ochraně osobních údajů: <strong>gjw_anonym@proton.me</strong>.
+        </p>
+
+        <h2>2. Dobrovolné příspěvky na provoz portálu (Donate)</h2>
+        <p>
+            Uživatelé mohou dobrovolně finančně podpořit provoz portálu (náklady na doménu, hosting, databáze a další technický rozvoj) prostřednictvím sekce <code>/podpora/</code>.
+        </p>
+        <ul>
+            <li><strong>Povaha plnění:</strong> Veškeré finanční příspěvky jsou dobrovolným darem na podporu provozu webu. Nejedná se o kupní smlouvu ani o úhradu za garantované komerční služby.</li>
+            <li><strong>Nevratnost příspěvků:</strong> Vzhledem k dobrovolné povaze daru na provoz komunitního projektu jsou uhrazené příspěvky nevratné, pokud právní předpisy nestanoví jinak.</li>
+            <li><strong>Zpracování plateb:</strong> Online platby jsou technicky zajištěny prostřednictvím certifikované platební brány <strong>Stripe</strong> (Stripe Payments Europe, Ltd.). Provozovatel portálu nemá přístup k číslům platebních karet ani k přihlašovacím údajům k bankovnictví.</li>
+        </ul>
+
+        <h2>3. Podmínky bonusu „Admin v chatu“</h2>
+        <p>
+            Pokud uživatel odešle dobrovolný příspěvek ve výši alespoň <strong>100 Kč</strong> a zároveň vyplní kontaktní e-mailovou adresu, může mu provozovatel jako poděkování udělit status a moderátorská oprávnění <strong>Admina v Diskuzním portálu (chatu)</strong>.
+        </p>
+        <div class="upozorneni">
+            <strong>Důležité podmínky pro držitele statusu Admin:</strong>
+            <ul style="margin: 6px 0 0 0;">
+                <li>Status Admina je nenárokový komunitní bonus, nikoli zakoupená doživotní funkce.</li>
+                <li>Admin je povinen jednat v zájmu komunity, neomezovat bezdůvodně ostatní uživatele, nešířit spam, nezákonný obsah ani neničit chod chatu.</li>
+                <li><strong>Právo na odebrání práv:</strong> Provozovatel portálu si vyhrazuje právo status a oprávnění Admina kdykoli omezit nebo zcela odebrat, a to zejména v případě, že uživatel není pro chat a komunitu přínosný, zneužívá moderátorská práva, porušuje pravidla portálu nebo je dlouhodobě neaktivní.</li>
+                <li>Odebráním statusu Admina nevzniká uživateli žádný nárok na vrácení dobrovolného příspěvku ani na jinou finanční či nefinanční kompenzaci.</li>
+            </ul>
+        </div>
+
+        <h2>4. Ochrana osobních údajů (GDPR)</h2>
+        <p>
+            Portál zpracovává pouze nezbytné minimum údajů v souladu s Nařízením Evropského parlamentu a Rady (EU) 2016/679 (GDPR):
+        </p>
+        <ul>
+            <li><strong>E-mailová adresa (při příspěvku od 100 Kč):</strong> Zpracovává se výhradně za účelem komunikace ohledně nastavení oprávnění Admina v chatu a párování platby. E-mail není veřejně zobrazován ani předáván třetím stranám (vyjma platebního zprostředkovatele Stripe při samotné transakci).</li>
+            <li><strong>Přezdívka a vzkaz na Zdi legend:</strong> Údaje dobrovolně vyplněné uživatelem do formuláře podpory jsou veřejně zobrazeny v přehledu podporovatelů na stránce <code>/podpora/</code>.</li>
+            <li><strong>Chat, herní sekce a technická data:</strong> Zprávy v chatu, herní statistiky a anonymní počítadla návštěv jsou ukládány v databázi Google Firebase (region EU – <code>europe-west1</code>) pro zajištění funkčnosti portálu.</li>
+            <li><strong>Práva subjektu údajů:</strong> Každý uživatel má právo požádat o výmaz své přezdívky ze Zdi legend, smazání e-mailu z evidence žádostí o Admina nebo odstranění svých příspěvků zasláním žádosti na e-mail <strong>gjw_anonym@proton.me</strong>.</li>
+        </ul>
+
+        <h2>5. Odpovědnost za obsah a dostupnost</h2>
+        <p>
+            Za obsah příspěvků vkládaných uživateli do chatu, zpovědnice či vzkazů nesou odpovědnost jejich autoři. Provozovatel si vyhrazuje právo jakýkoli nevhodný, urážlivý nebo protiprávní obsah bez předchozího upozornění odstranit a zablokovat přístup uživateli, který pravidla porušuje. Provozovatel negarantuje nepřetržitou dostupnost portálu ani jednotlivých funkcí.
+        </p>
     </div>
 
-    <hr class="oddeleni">
-    <p style="font-size: 11px; color: #666; text-align: center;">Copyright © 2026 Gymnázium Jiřího Wolkera. Všechna práva ukradena.</p>
 </body>
 </html>

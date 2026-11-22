@@ -150,6 +150,138 @@
             0% { opacity: 0.7; transform: scale(1); box-shadow: 0 0 4px rgba(255, 65, 108, 0.4); }
             100% { opacity: 1; transform: scale(1.08); box-shadow: 0 0 12px rgba(255, 75, 43, 0.9); }
         }
+
+        /* =========================================================
+           TEMATICKÝ DONATE POP-UP (GJW RETRO OKNO + POST-IT STYL)
+           ========================================================= */
+        .gjw-popup-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            animation: fadeInOverlay 0.25s ease-out;
+        }
+
+        .gjw-popup-overlay.aktivni {
+            display: flex;
+        }
+
+        .gjw-popup-okno {
+            background: #f0f0f0;
+            border: 3px solid #222;
+            box-shadow: 8px 8px 0px #222, 0 15px 35px rgba(0, 0, 0, 0.5);
+            max-width: 430px;
+            width: 100%;
+            font-family: Arial, Helvetica, sans-serif;
+            overflow: hidden;
+            animation: popInBox 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        .gjw-popup-lista {
+            background: linear-gradient(90deg, #b30000, #ff4b2b);
+            color: #fff;
+            padding: 7px 12px;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #222;
+            letter-spacing: 0.3px;
+        }
+
+        .gjw-popup-zavrit {
+            background: #f0f0f0;
+            color: #000;
+            border: 2px solid #222;
+            font-weight: bold;
+            font-size: 12px;
+            width: 22px;
+            height: 22px;
+            line-height: 17px;
+            text-align: center;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .gjw-popup-zavrit:hover {
+            background: #ffcccc;
+        }
+
+        .gjw-popup-obsah {
+            padding: 18px 18px 16px 18px;
+            text-align: center;
+        }
+
+        .gjw-popup-papirek {
+            background: #fff8c5;
+            border: 1px solid #e2d27f;
+            border-left: 5px solid #d4b126;
+            padding: 10px 12px;
+            margin: 10px 0 14px 0;
+            font-family: 'Papyrus', fantasy, sans-serif;
+            font-size: 14px;
+            color: #222;
+            text-align: left;
+            transform: rotate(-0.6deg);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.08);
+        }
+
+        .gjw-popup-btn-prispet {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: #fff !important;
+            text-decoration: none !important;
+            font-weight: bold;
+            font-size: 15px;
+            padding: 12px 14px;
+            border: 2px solid #222;
+            box-shadow: 3px 3px 0px #222;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            box-sizing: border-box;
+        }
+
+        .gjw-popup-btn-prispet:hover {
+            filter: brightness(1.06);
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px #222;
+        }
+
+        .gjw-popup-btn-prispet:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #222;
+        }
+
+        .gjw-popup-btn-ne {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 11px;
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .gjw-popup-btn-ne:hover {
+            color: #000;
+        }
+
+        @keyframes fadeInOverlay {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes popInBox {
+            from { opacity: 0; transform: scale(0.85) translateY(12px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
         
         @media (max-width: 600px) {
             body { margin: 10px; padding: 5px; font-size: 15px; }
@@ -160,6 +292,36 @@
 <body>
     <!-- Malinký šedý easter egg vlevo nahoře -->
     <a href="./tajny" class="secret-easter-egg">zkusil si uz gjwprostejov.com/tajny ?</a>
+
+    <!-- TEMATICKÝ DONATE POP-UP -->
+    <div id="gjwDonatePopup" class="gjw-popup-overlay" role="dialog" aria-modal="true" aria-labelledby="popupNadpis">
+        <div class="gjw-popup-okno">
+            <div class="gjw-popup-lista">
+                <span id="popupNadpis">⚠️ DŮLEŽITÉ HLÁŠENÍ STUDENSTVA GJW</span>
+                <button type="button" class="gjw-popup-zavrit" onclick="zavritDonatePopup()" title="Zavřít">✕</button>
+            </div>
+            <div class="gjw-popup-obsah">
+                <div style="font-size: 32px; margin-bottom: 4px;">🌭☕👑</div>
+                <h3 style="margin: 0 0 6px 0; font-size: 18px; color: #111;">Udržme GJW 2.0 při životě!</h3>
+                <p style="margin: 0; font-size: 12px; color: #444; line-height: 1.4;">
+                    Tenhle portál běží bez školních dotací, jen na kofeinu, párku v rohlíku a doméně zaplacené z brigády.
+                </p>
+
+                <div class="gjw-popup-papirek">
+                    <strong>📌 Vzkaz od adminstva:</strong><br>
+                    „Každá dvacka jde přímo na hosting a doménu <em>gjwprostejov.com</em>. A když přispěješ <strong>100 Kč+</strong> a zadáš e-mail, dostaneš <strong>Admina v chatu</strong>!“
+                </div>
+
+                <a href="./podpora/" class="gjw-popup-btn-prispet">
+                    💸 Chci přispět na chod portálu →
+                </a>
+
+                <button type="button" class="gjw-popup-btn-ne" onclick="zavritDonatePopup()">
+                    Nemám ani na párek v rohlíku (zavřít)
+                </button>
+            </div>
+        </div>
+    </div>
 
     <p class="stred">
         <span class="logo-wrapper">
@@ -185,6 +347,11 @@
         </div>
     </div>
     <br>
+    <hr class="oddeleni">
+
+    <!-- 0. PODPORA PORTÁLU -->
+    <h2 id="druhynadpis"><a href="./podpora/">💸 Podpořit chod portálu</a> <span class="badge-novinka">Důležité!</span></h2>
+    <p class="tady">Přispěj dvackou na doménu a servery, nebo nad 100 Kč získej Admina v chatu!</p>
     <hr class="oddeleni">
 
     <!-- 1. ŠACHY -->
@@ -323,6 +490,28 @@
 
         const dnesDen = new Date().getDay();
         document.getElementById('hlaskaDneContainer').innerText = hlaskyTydne[dnesDen];
+
+        // Logika pro zobrazení Donate Pop-upu po 2,2 sekundách
+        function otevritDonatePopup() {
+            const popup = document.getElementById('gjwDonatePopup');
+            if (popup) popup.classList.add('aktivni');
+        }
+
+        function zavritDonatePopup() {
+            const popup = document.getElementById('gjwDonatePopup');
+            if (popup) popup.classList.remove('aktivni');
+            sessionStorage.setItem('gjw_donate_popup_zavreno', '1');
+        }
+
+        document.getElementById('gjwDonatePopup').addEventListener('click', function(e) {
+            if (e.target === this) zavritDonatePopup();
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!sessionStorage.getItem('gjw_donate_popup_zavreno')) {
+                setTimeout(otevritDonatePopup, 2200);
+            }
+        });
 
         const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podpoř Studenstvo GJW | GJW 2.0</title>
+    <meta name="robots" content="noindex, nofollow">
+    
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        body {
+            background-color: #f0f0f0;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            margin: 15px auto;
+            padding: 10px;
+            max-width: 720px;
+            box-sizing: border-box;
+        }
+        .stred { text-align: center; }
+        .zpet-link {
+            display: inline-block;
+            color: #0000EE;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+        .zpet-link:hover { text-decoration: underline; }
+        .oddeleni { border: 0; height: 1px; background: #ccc; margin: 18px 0; }
+        
+        .hlavni-box {
+            background: #ffffff;
+            border: 2px solid #222;
+            box-shadow: 5px 5px 0px #222;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .papirek-info {
+            background: #fff8c5;
+            border: 1px solid #e2d27f;
+            border-left: 5px solid #d4b126;
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin: 0 0 16px 0;
+            box-shadow: 2px 3px 6px rgba(0,0,0,0.08);
+            font-family: 'Papyrus', fantasy, sans-serif;
+            transform: rotate(-0.4deg);
+        }
+
+        .castka-hlavni-obal {
+            background: #f7f7f7;
+            border: 2px solid #222;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+
+        .castka-input-radek {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .castka-velky-input {
+            flex: 1;
+            font-size: 24px;
+            font-weight: bold;
+            color: #b30000;
+            padding: 10px 12px;
+            border: 2px solid #222;
+            background: #ffffff;
+            font-family: Arial, Helvetica, sans-serif;
+            box-sizing: border-box;
+        }
+
+        .castka-velky-input:focus {
+            outline: none;
+            border-color: #b30000;
+            background: #fffdf0;
+        }
+
+        .castka-mena {
+            font-size: 20px;
+            font-weight: bold;
+            color: #222;
+            padding: 0 6px;
+        }
+
+        .suggestions-label {
+            font-size: 11px;
+            color: #666;
+            margin: 8px 0 6px 0;
+            display: block;
+        }
+
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        @media (min-width: 560px) {
+            .suggestions-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .suggestion-chip {
+            background: #f4f4f4;
+            border: 1px solid #999;
+            padding: 7px 8px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            user-select: none;
+        }
+
+        .suggestion-chip:hover {
+            background: #fff8c5;
+            border-color: #222;
+        }
+
+        .suggestion-chip.aktivni {
+            background: #fff8c5;
+            border: 2px solid #b30000;
+            box-shadow: 2px 2px 0px #b30000;
+        }
+
+        .chip-cena {
+            font-size: 12px;
+            font-weight: bold;
+            color: #b30000;
+            display: block;
+        }
+
+        .chip-text {
+            font-size: 10px;
+            color: #444;
+            line-height: 1.25;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .admin-odmena-box {
+            background: #f9f9f9;
+            border: 2px dashed #888;
+            padding: 12px;
+            margin: 14px 0;
+            transition: all 0.2s ease;
+        }
+
+        .admin-odmena-box.odemceno {
+            background: #fff8c5;
+            border: 2px solid #b30000;
+            box-shadow: 3px 3px 0px #222;
+        }
+
+        .admin-badge {
+            display: inline-block;
+            background: #666;
+            color: #fff;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .admin-odmena-box.odemceno .admin-badge {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+        }
+
+        .pole-skupina {
+            margin: 12px 0;
+        }
+
+        .pole-skupina label {
+            display: block;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 4px;
+            color: #222;
+        }
+
+        .pole-input {
+            width: 100%;
+            padding: 9px 10px;
+            border: 2px solid #222;
+            background: #ffffff;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .pole-input:focus {
+            outline: none;
+            border-color: #b30000;
+        }
+
+        .btn-zaplatit {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: #fff;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 14px;
+            border: 2px solid #222;
+            box-shadow: 4px 4px 0px #222;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: transform 0.1s ease;
+        }
+
+        .btn-zaplatit:hover:not(:disabled) {
+            filter: brightness(1.06);
+        }
+
+        .btn-zaplatit:active:not(:disabled) {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #222;
+        }
+
+        .btn-zaplatit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status-banner {
+            display: none;
+            padding: 12px 15px;
+            border: 2px solid #222;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .status-ok {
+            background: #d4edda;
+            color: #155724;
+            border-color: #155724;
+        }
+
+        .status-cancel {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #721c24;
+        }
+
+        .zed-polozka {
+            background: #f9f9f9;
+            border: 1px solid #ccc;
+            border-left: 4px solid #b30000;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="../" class="zpet-link">← Zpět na hlavní stránku GJW 2.0</a>
+
+    <div class="stred">
+        <img src="https://i.imgur.com/QvqvK3M.png" alt="GJW Logo" style="max-width: 240px; height: auto;">
+        <h1 style="font-family: 'Papyrus', fantasy, sans-serif; font-size: 24px; margin: 6px 0;">
+            💸 Podpoř chod Studenstva GJW
+        </h1>
+    </div>
+
+    <div id="statusBanner" class="status-banner"></div>
+
+    <div class="hlavni-box">
+        <div class="papirek-info">
+            <strong>📌 Kam jdou tvoje prachy?</strong><br>
+            Na doménu <strong>gjwprostejov.com</strong>, databázi pro chat a šachy, a taky na kofein a párky v rohlíku při kódění po nocích.
+        </div>
+
+        <div class="castka-hlavni-obal">
+            <label for="vlastniCastka" style="font-weight: bold; font-size: 14px; color: #111; display: block;">
+                Kolik chceš přispět? (min. 15 Kč)
+            </label>
+            <div class="castka-input-radek">
+                <input type="number" id="vlastniCastka" class="castka-velky-input" min="15" max="10000" value="50" oninput="zmenaCastky()">
+                <span class="castka-mena">Kč</span>
+            </div>
+
+            <span class="suggestions-label">💡 Rychlé návrhy pro inspiraci (klikni pro doplnění):</span>
+            <div class="suggestions-grid">
+                <div class="suggestion-chip" data-amount="20" onclick="nastavCastku(20)">
+                    <span class="chip-cena">🌭 20 Kč</span>
+                    <span class="chip-text">Půlka párku v rohlíku v bufetu</span>
+                </div>
+
+                <div class="suggestion-chip aktivni" data-amount="50" onclick="nastavCastku(50)">
+                    <span class="chip-cena">☕ 50 Kč</span>
+                    <span class="chip-text">Kafe před třema písemkama</span>
+                </div>
+
+                <div class="suggestion-chip" data-amount="100" onclick="nastavCastku(100)">
+                    <span class="chip-cena">👑 100 Kč</span>
+                    <span class="chip-text">Admin v chatu + příspěvek na doménu</span>
+                </div>
+
+                <div class="suggestion-chip" data-amount="250" onclick="nastavCastku(250)">
+                    <span class="chip-cena">🚀 250 Kč</span>
+                    <span class="chip-text">Admin v chatu + sponzor ročníku</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="adminOdmenaBox" class="admin-odmena-box">
+            <span id="adminBadge" class="admin-badge">🔒 Bonus od 100 Kč</span>
+            <div id="adminInfoText" style="font-size: 12px; color: #333; margin-bottom: 8px; line-height: 1.4;">
+                <strong>Chceš Admina v chatu?</strong> Přispěj <strong>100 Kč nebo víc</strong> a zadej svůj e-mail níže – nastavíme ti práva admina v Diskuzním portálu!
+            </div>
+            <label for="emailInput" style="font-weight: bold; font-size: 12px; display: block; margin-bottom: 4px;">
+                Tvůj e-mail (pro přidělení Admina v chatu):
+            </label>
+            <input type="email" id="emailInput" class="pole-input" placeholder="tvuj.email@seznam.cz">
+            <p style="font-size: 10px; color: #666; margin: 6px 0 0 0; line-height: 1.35;">
+                * Status Admina je dobrovolný bonus. Provozovatel si vyhrazuje právo práva Admina kdykoli bez náhrady odebrat, pokud nebude přínosem pro komunitu nebo zneužije pravomoci.
+            </p>
+        </div>
+
+        <div class="pole-skupina">
+            <label for="prezdivkaInput">Tvoje přezdívka / třída na Zeď slávy (nepovinné):</label>
+            <input type="text" id="prezdivkaInput" class="pole-input" maxlength="35" placeholder="např. Anonym z O6.B">
+        </div>
+
+        <div class="pole-skupina">
+            <label for="vzkazInput">Vzkaz pro ostatní studenty (nepovinné):</label>
+            <input type="text" id="vzkazInput" class="pole-input" maxlength="100" placeholder="např. Ať žije GJW, matika je smrt!">
+        </div>
+
+        <button type="button" id="btnZaplatit" class="btn-zaplatit" onclick="spustitStripePlatbu()">
+            💳 Přispět 50 Kč přes Stripe (Karta / Apple Pay / Google Pay)
+        </button>
+
+        <p style="font-size: 11px; color: #666; text-align: center; margin: 10px 0 0 0;">
+            🔒 Bezpečná platba přes Stripe. Odesláním souhlasíš s <a href="../legal/" style="color: #0000EE;">Právními podmínkami a GDPR</a> (příspěvek je dobrovolný a nevratný).
+        </p>
+    </div>
+
+    <div class="hlavni-box">
+        <h3 style="margin: 0 0 10px 0; font-size: 15px; font-family: 'Papyrus', fantasy, sans-serif;">
+            🏆 Zeď legend (poslední podporovatelé)
+        </h3>
+        <div id="zedPodporovatelu">
+            <p style="font-size: 12px; color: #666;">Načítám podporovatele...</p>
+        </div>
+    </div>
+
+    <hr class="oddeleni">
+    <p style="font-size: 11px; color: #666; text-align: center;">
+        Studenstvo GJW &copy; 2026 | <a href="../legal/" style="color: #666;">Právní podmínky & GDPR</a>
+    </p>
+
+    <script>
+        const STRIPE_PUBLIC_KEY = "pk_live_51URyHUPNlDqLCtmyUZeG02wuvLXNx5FxG17MGsKaclHCcSBmw5hSbC588cVL8gBi7zjwKqmwN0fjyzs7h7951jPd00qRBWodgF";
+        const stripe = Stripe(STRIPE_PUBLIC_KEY);
+
+        const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function nastavCastku(castka) {
+            document.getElementById('vlastniCastka').value = castka;
+            zmenaCastky();
+        }
+
+        function zmenaCastky() {
+            const val = parseInt(document.getElementById('vlastniCastka').value, 10) || 0;
+
+            document.querySelectorAll('.suggestion-chip').forEach(chip => {
+                if (parseInt(chip.dataset.amount, 10) === val) {
+                    chip.classList.add('aktivni');
+                } else {
+                    chip.classList.remove('aktivni');
+                }
+            });
+
+            const adminBox = document.getElementById('adminOdmenaBox');
+            const adminBadge = document.getElementById('adminBadge');
+            const adminText = document.getElementById('adminInfoText');
+
+            if (val >= 100) {
+                adminBox.classList.add('odemceno');
+                adminBadge.innerText = '👑 ODEMČENO: Admin v chatu!';
+                adminText.innerHTML = '<strong>Pecka! Přispíváš ' + val + ' Kč.</strong> Vyplň svůj e-mail níže a po zaplacení ti nastavíme <strong>Admina v chatu</strong>!';
+            } else {
+                adminBox.classList.remove('odemceno');
+                adminBadge.innerText = '🔒 Bonus od 100 Kč';
+                adminText.innerHTML = '<strong>Chceš Admina v chatu?</strong> Přispěj <strong>100 Kč nebo víc</strong> a zadej svůj e-mail níže – nastavíme ti práva admina v Diskuzním portálu!';
+            }
+
+            const btn = document.getElementById('btnZaplatit');
+            const zobrazena = val >= 15 ? val : 15;
+            btn.innerText = `💳 Přispět ${zobrazena} Kč přes Stripe (Karta / Apple Pay / Google Pay)`;
+        }
+
+        async function spustitStripePlatbu() {
+            const castka = parseInt(document.getElementById('vlastniCastka').value, 10);
+            if (!castka || castka < 15) {
+                alert("Minimální příspěvek je 15 Kč (kvůli poplatkům platební brány).");
+                return;
+            }
+
+            const email = document.getElementById('emailInput').value.trim();
+            const prezdivka = document.getElementById('prezdivkaInput').value.trim() || "Anonym z GJW";
+            const vzkaz = document.getElementById('vzkazInput').value.trim();
+
+            if (castka >= 100 && !email) {
+                const pokracovatBezEmailu = confirm("Přispíváš 100 Kč nebo víc, ale nevyplnil/a jsi e-mail pro přidělení Admina v chatu.\n\nChceš přesto pokračovat bez e-mailu?");
+                if (!pokracovatBezEmailu) {
+                    document.getElementById('emailInput').focus();
+                    return;
+                }
+            }
+
+            const btn = document.getElementById('btnZaplatit');
+            btn.disabled = true;
+            btn.innerText = "⏳ Připravuji platební bránu Stripe...";
+
+            sessionStorage.setItem('gjw_pending_donate', JSON.stringify({
+                name: prezdivka,
+                message: vzkaz,
+                amount: castka,
+                email: email
+            }));
+
+            try {
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: castka,
+                        nickname: prezdivka,
+                        message: vzkaz,
+                        email: email
+                    })
+                });
+
+                const session = await response.json();
+                if (!response.ok || !session.id) {
+                    throw new Error(session.error || "Nepodařilo se vytvořit platbu.");
+                }
+
+                const result = await stripe.redirectToCheckout({ sessionId: session.id });
+                if (result.error) {
+                    alert(result.error.message);
+                }
+            } catch (err) {
+                alert("Chyba při komunikaci se Stripe: " + err.message);
+                btn.disabled = false;
+                zmenaCastky();
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const status = params.get('status');
+            const banner = document.getElementById('statusBanner');
+
+            if (status === 'success') {
+                banner.style.display = 'block';
+                banner.className = 'status-banner status-ok';
+
+                const pendingRaw = sessionStorage.getItem('gjw_pending_donate');
+                if (pendingRaw) {
+                    const pending = JSON.parse(pendingRaw);
+                    const jeAdminNarok = pending.amount >= 100 && pending.email;
+
+                    banner.innerText = jeAdminNarok
+                        ? `🎉 DÍKY MOC! Platba ${pending.amount} Kč proběhla. Žádost o Admina v chatu pro ${pending.email} byla zaznamenána!`
+                        : `🎉 DÍKY MOC! Platba ${pending.amount} Kč proběhla úspěšně. Jsi legenda GJW!`;
+
+                    db.ref('donations').push({
+                        name: pending.name,
+                        message: pending.message,
+                        amount: pending.amount,
+                        hasAdminBonus: !!jeAdminNarok,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+
+                    if (jeAdminNarok) {
+                        db.ref('adminRequests').push({
+                            email: pending.email,
+                            nickname: pending.name,
+                            amount: pending.amount,
+                            status: 'pending',
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+                        });
+                    }
+
+                    sessionStorage.removeItem('gjw_pending_donate');
+                } else {
+                    banner.innerText = '🎉 DÍKY MOC! Platba proběhla úspěšně. Jsi legenda GJW!';
+                }
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (status === 'cancel') {
+                banner.style.display = 'block';
+                banner.className = 'status-banner status-cancel';
+                banner.innerText = '❌ Platba byla zrušena. Nic se nestrhlo.';
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            db.ref('donations').limitToLast(15).on('value', (snap) => {
+                const data = snap.val();
+                const kontejner = document.getElementById('zedPodporovatelu');
+                if (!data) {
+                    kontejner.innerHTML = '<p style="font-size: 12px; color: #666;">Zatím tu nikdo není – buď první legenda!</p>';
+                    return;
+                }
+
+                const seznam = Object.values(data).reverse();
+                kontejner.innerHTML = seznam.map(d => {
+                    const safeName = String(d.name || 'Anonym').replace(/</g, '&lt;');
+                    const safeMsg = d.message ? ` – <i>„${String(d.message).replace(/</g, '&lt;')}“</i>` : '';
+                    const crown = d.hasAdminBonus ? ' 👑' : '';
+                    return `
+                        <div class="zed-polozka">
+                            <strong>${safeName}${crown}</strong> přispěl/a <strong style="color: #b30000;">${d.amount} Kč</strong>${safeMsg}
+                        </div>
+                    `;
+                }).join('');
+            });
+        });
+    </script>
+</body>
+</html>
