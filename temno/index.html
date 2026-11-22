@@ -28,9 +28,10 @@
         .retro-box { background: #ffffff; border: 1px solid #b0b0a8; padding: 12px; margin-bottom: 15px; }
         .retro-button {
             background: #e2e8f0; border: 1px solid #94a3b8; padding: 5px 12px;
-            font-family: Arial, sans-serif; font-size: 12px; cursor: pointer; color: #000; border-radius: 3px;
+            font-family: Arial, sans-serif; font-size: 12px; cursor: pointer; color: #000; border-radius: 3px; font-weight: bold;
         }
         .retro-button:hover { background: #cbd5e1; }
+        .retro-button:disabled { opacity: 0.6; cursor: not-allowed; }
         .retro-input {
             background: #ffffff; border: 1px solid #94a3b8; padding: 6px;
             font-family: Arial, sans-serif; font-size: 12px; color: #000; border-radius: 3px; width: 100%; box-sizing: border-box; margin-bottom: 8px;
@@ -40,9 +41,11 @@
         }
         .gallery-item img {
             max-width: 100%; height: auto; display: block; margin-top: 6px; border: 1px solid #eee;
+            background: #f8f8f8;
         }
         a { color: #0000EE; text-decoration: underline; }
-        .loading-status { text-align: center; font-size: 11px; color: #777; margin: 10px 0; }
+        .loading-status { text-align: center; font-size: 11px; color: #555; margin: 12px 0; }
+        .meta-bar { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #666; margin-bottom: 4px; }
     </style>
 </head>
 <body>
@@ -56,25 +59,133 @@
         <h3 style="font-size: 13px; margin: 0 0 8px 0; font-weight: bold;">Nahrát nový důkaz:</h3>
         <input type="text" id="darkCaptionInput" placeholder="Popisek důkazu..." class="retro-input">
         <input type="file" id="darkFileInput" accept="image/*" class="retro-input">
-        <button onclick="uploadDarkEvidence()" class="retro-button font-bold" id="uploadBtn">Nahrát do galerie</button>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <button onclick="uploadDarkEvidence()" class="retro-button" id="uploadBtn">Nahrát do galerie</button>
+            <span id="compressInfo" style="font-size: 11px; color: #555;"></span>
+        </div>
     </div>
 
     <div id="darkGalleryList">
-        <!-- Zde se dynamicky načtou fotky -->
-        <p class="tady italic">Načítám důkazy...</p>
+        <p class="tady italic" id="initialLoader">Rychlé načítání nejnovějších důkazů...</p>
     </div>
 
+    <div id="scrollSentinel" style="height: 20px;"></div>
     <div id="loadingStatus" class="loading-status" style="display: none;">Načítám další starší důkazy...</div>
+    <div class="stred" id="loadMoreWrap" style="display: none; margin-bottom: 20px;">
+        <button onclick="loadOlderBatch()" class="retro-button" id="loadMoreBtn">Načíst starší důkazy</button>
+    </div>
 
     <script>
         const firebaseConfig = { databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app" };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.database();
 
-        function uploadDarkEvidence() {
+        const galleryList = document.getElementById('darkGalleryList');
+        const loadingStatus = document.getElementById('loadingStatus');
+        const loadMoreWrap = document.getElementById('loadMoreWrap');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+        const PAGE_SIZE = 5;
+        const renderedKeys = new Set();
+        let oldestLoadedKey = null;
+        let isFetchingBatch = false;
+        let noMoreData = false;
+
+        // ----------------------------------------------------
+        // 1. LOKÁLNÍ INDEXEDDB CACHE (0 ms OKAMŽITÉ NAČTENÍ)
+        // ----------------------------------------------------
+        const IDB_NAME = 'gjw_temno_cache_v1';
+        const IDB_STORE = 'posts';
+
+        function openCacheDB() {
+            return new Promise((resolve) => {
+                if (!window.indexedDB) return resolve(null);
+                const req = indexedDB.open(IDB_NAME, 1);
+                req.onupgradeneeded = (e) => {
+                    const dbInstance = e.target.result;
+                    if (!dbInstance.objectStoreNames.contains(IDB_STORE)) {
+                        dbInstance.createObjectStore(IDB_STORE, { keyPath: 'key' });
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+            });
+        }
+
+        async function getCachedPosts(limit = 10) {
+            const idb = await openCacheDB();
+            if (!idb) return [];
+            return new Promise((resolve) => {
+                const tx = idb.transaction(IDB_STORE, 'readonly');
+                const store = tx.objectStore(IDB_STORE);
+                const req = store.getAll();
+                req.onsuccess = () => {
+                    const all = req.result || [];
+                    all.sort((a, b) => (a.key < b.key ? 1 : -1));
+                    resolve(all.slice(0, limit));
+                };
+                req.onerror = () => resolve([]);
+            });
+        }
+
+        async function savePostToCache(key, item) {
+            const idb = await openCacheDB();
+            if (!idb) return;
+            try {
+                const tx = idb.transaction(IDB_STORE, 'readwrite');
+                tx.objectStore(IDB_STORE).put({ key, ...item });
+            } catch (e) {}
+        }
+
+        // ----------------------------------------------------
+        // 2. KLIENT-SIDE KOMPRESE OBRÁZKU (Z 5 MB -> ~100 KB)
+        // ----------------------------------------------------
+        function compressImageFile(file, maxDim = 1080, quality = 0.72) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('Chyba čtení souboru'));
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('Neplatný obrázek'));
+                    img.onload = () => {
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxDim || h > maxDim) {
+                            if (w > h) {
+                                h = Math.round((h * maxDim) / w);
+                                w = maxDim;
+                            } else {
+                                w = Math.round((w * maxDim) / h);
+                                h = maxDim;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+
+                        // Zkusíme moderní WebP, případně JPEG
+                        let compressed = canvas.toDataURL('image/webp', quality);
+                        if (!compressed.startsWith('data:image/webp')) {
+                            compressed = canvas.toDataURL('image/jpeg', quality);
+                        }
+                        resolve(compressed);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function uploadDarkEvidence() {
             const captionInput = document.getElementById('darkCaptionInput');
             const fileInput = document.getElementById('darkFileInput');
             const uploadBtn = document.getElementById('uploadBtn');
+            const compressInfo = document.getElementById('compressInfo');
             const caption = captionInput.value.trim() || "Bez popisku";
             
             if (fileInput.files.length === 0) {
@@ -83,85 +194,176 @@
             }
 
             const file = fileInput.files[0];
-            const reader = new FileReader();
-            
-            uploadBtn.innerText = "Nahrávám...";
+            uploadBtn.innerText = "Optimalizuji fotku...";
             uploadBtn.disabled = true;
 
-            reader.onload = function(e) {
-                const base64Image = e.target.result;
-                
-                db.ref('darkEvidence').push({
+            try {
+                const compressedBase64 = await compressImageFile(file, 1080, 0.72);
+                const sizeKB = Math.round((compressedBase64.length * 3) / 4 / 1024);
+                compressInfo.innerText = `Velikost po optimalizaci: ~${sizeKB} kB`;
+                uploadBtn.innerText = "Nahrávám...";
+
+                const postPayload = {
                     caption: caption,
-                    image: base64Image,
+                    image: compressedBase64,
                     time: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                }, (error) => {
-                    uploadBtn.innerText = "Nahrát do galerie";
-                    uploadBtn.disabled = false;
-                    if (error) {
-                        alert("Chyba při nahrávání.");
-                    } else {
-                        captionInput.value = '';
-                        fileInput.value = '';
-                        alert("Důkaz úspěšně nahrán do galerie temné stránky školy");
-                    }
-                });
-            };
-            reader.readAsDataURL(file);
+                };
+
+                const newRef = db.ref('darkEvidence').push();
+                await newRef.set(postPayload);
+                await savePostToCache(newRef.key, postPayload);
+
+                captionInput.value = '';
+                fileInput.value = '';
+                alert("Důkaz úspěšně nahrán do galerie temné stránky školy");
+            } catch (error) {
+                alert("Chyba při nahrávání obrázku.");
+            } finally {
+                uploadBtn.innerText = "Nahrát do galerie";
+                uploadBtn.disabled = false;
+                setTimeout(() => { compressInfo.innerText = ''; }, 4000);
+            }
         }
 
-        const galleryList = document.getElementById('darkGalleryList');
-        const loadingStatus = document.getElementById('loadingStatus');
+        // ----------------------------------------------------
+        // 3. VYKRESLENÍ POLOŽKY & STRÁNKOVÁNÍ PO DÁVKÁCH
+        // ----------------------------------------------------
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str || '';
+            return div.innerHTML;
+        }
 
-        // Stáhneme pouze seznam klíčů (IDs), což je extrémně rychlé a stáhne se to hned
-        db.ref('darkEvidence').orderByKey().once('value', (snapshot) => {
-            const data = snapshot.val();
-            if (!data) {
-                galleryList.innerHTML = '<p class="tady italic">Zatím nebyly nahrány žádné důkazy.</p>';
-                loadingStatus.style.display = 'none';
-                return;
+        function createGalleryElement(key, item) {
+            const el = document.createElement('div');
+            el.className = 'gallery-item';
+            el.dataset.key = key;
+
+            const safeCaption = escapeHTML(item.caption || 'Bez popisku');
+            const safeTime = escapeHTML(item.time || '');
+
+            el.innerHTML = `
+                <div class="meta-bar">
+                    <strong>${safeCaption}</strong>
+                    <span>${safeTime}</span>
+                </div>
+                <img src="${item.image}" alt="${safeCaption}" loading="lazy" decoding="async">
+            `;
+            return el;
+        }
+
+        function renderPost(key, item, prepend = false) {
+            if (!item || !item.image || renderedKeys.has(key)) return;
+            renderedKeys.add(key);
+
+            const initialLoader = document.getElementById('initialLoader');
+            if (initialLoader) initialLoader.remove();
+
+            const el = createGalleryElement(key, item);
+            if (prepend && galleryList.firstChild) {
+                galleryList.insertBefore(el, galleryList.firstChild);
+            } else {
+                galleryList.appendChild(el);
             }
+        }
 
-            // Převedeme klíče na pole a otočíme od nejnovějšího po nejstarší
-            const keys = Object.keys(data).reverse();
-            galleryList.innerHTML = ''; // Vyčištění nápisu "Načítám..."
+        async function loadOlderBatch() {
+            if (isFetchingBatch || noMoreData) return;
+            isFetchingBatch = true;
+            loadingStatus.style.display = 'block';
+            if (loadMoreBtn) loadMoreBtn.disabled = true;
 
-            let index = 0;
+            try {
+                let query = db.ref('darkEvidence').orderByKey();
+                if (oldestLoadedKey) {
+                    query = query.endBefore(oldestLoadedKey).limitToLast(PAGE_SIZE);
+                } else {
+                    query = query.limitToLast(PAGE_SIZE);
+                }
 
-            function loadItem() {
-                if (index >= keys.length) {
+                const snap = await query.once('value');
+                const val = snap.val();
+
+                if (!val) {
+                    noMoreData = true;
                     loadingStatus.style.display = 'none';
+                    loadMoreWrap.style.display = 'none';
+                    if (renderedKeys.size === 0) {
+                        galleryList.innerHTML = '<p class="tady italic">Zatím nebyly nahrány žádné důkazy.</p>';
+                    }
                     return;
                 }
 
-                if (index > 0) {
-                    loadingStatus.style.display = 'block';
+                // Seřadíme od nejnovějšího po nejstarší v rámci stažené dávky
+                const entries = Object.entries(val).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+                oldestLoadedKey = entries[entries.length - 1][0];
+
+                for (const [key, item] of entries) {
+                    renderPost(key, item, false);
+                    savePostToCache(key, item);
                 }
 
-                const key = keys[index];
-                
-                // Stáhneme z databáze detail *pouze* pro tuto jednu konkrétní fotku
-                db.ref(`darkEvidence/${key}`).once('value', (itemSnap) => {
-                    const item = itemSnap.val();
-                    if (item) {
-                        const div = document.createElement('div');
-                        div.className = "gallery-item";
-                        div.innerHTML = `
-                            <div style="font-weight: bold; font-size: 13px; color: #1d4372; margin-bottom: 4px;">${item.caption}</div>
-                            <img src="${item.image}" alt="Důkaz" loading="lazy">
-                            <div style="font-size: 10px; color: #777; margin-top: 6px; text-align: right;">Nahráno: ${item.time}</div>
-                        `;
-                        galleryList.appendChild(div);
-                    }
+                if (entries.length < PAGE_SIZE) {
+                    noMoreData = true;
+                    loadMoreWrap.style.display = 'none';
+                } else {
+                    loadMoreWrap.style.display = 'block';
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                isFetchingBatch = false;
+                loadingStatus.style.display = 'none';
+                if (loadMoreBtn) loadMoreBtn.disabled = false;
+            }
+        }
 
-                    index++;
-                    // Hned jak se vykreslí tahle fotka, vyžádáme si další v pořadí
-                    requestAnimationFrame(loadItem);
-                });
+        // Okamžitý start: vykreslí cache (0 ms), stáhne 5 nejnovějších a poslouchá nové přírůstky
+        (async function initGallery() {
+            const cached = await getCachedPosts(PAGE_SIZE);
+            if (cached.length > 0) {
+                cached.forEach(entry => renderPost(entry.key, entry, false));
+                oldestLoadedKey = cached[cached.length - 1].key;
             }
 
-            loadItem();
-        });
+            // Stáhneme nejnovějších 5 ze serveru (pokud už jsou v cache, doplní se jen rozdíly)
+            const freshSnap = await db.ref('darkEvidence').orderByKey().limitToLast(PAGE_SIZE).once('value');
+            const freshVal = freshSnap.val();
+            if (freshVal) {
+                const entries = Object.entries(freshVal).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+                // Vložíme případné novější položky na začátek
+                for (let i = entries.length - 1; i >= 0; i--) {
+                    const [k, it] = entries[i];
+                    renderPost(k, it, true);
+                    savePostToCache(k, it);
+                }
+                const oldestFresh = entries[entries.length - 1][0];
+                if (!oldestLoadedKey || oldestFresh < oldestLoadedKey) {
+                    oldestLoadedKey = oldestFresh;
+                }
+                if (entries.length >= PAGE_SIZE) {
+                    loadMoreWrap.style.display = 'block';
+                }
+            } else if (renderedKeys.size === 0) {
+                galleryList.innerHTML = '<p class="tady italic">Zatím nebyly nahrány žádné důkazy.</p>';
+            }
+
+            // Real-time posluchač pouze na nejnovější 1 příspěvek
+            db.ref('darkEvidence').orderByKey().limitToLast(1).on('child_added', (snap) => {
+                renderPost(snap.key, snap.val(), true);
+                savePostToCache(snap.key, snap.val());
+            });
+
+            // Automatické načítání při sjetí dolů
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting && !isFetchingBatch && !noMoreData) {
+                        loadOlderBatch();
+                    }
+                }, { rootMargin: '300px' });
+                observer.observe(document.getElementById('scrollSentinel'));
+            }
+        })();
     </script>
 </body>
 </html>
