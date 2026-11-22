@@ -69,7 +69,7 @@
 
         .castka-velky-input {
             flex: 1;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: bold;
             color: #b30000;
             padding: 10px 12px;
@@ -77,6 +77,11 @@
             background: #ffffff;
             font-family: Arial, Helvetica, sans-serif;
             box-sizing: border-box;
+        }
+
+        .castka-velky-input::placeholder {
+            color: #b0b0b0;
+            font-weight: bold;
         }
 
         .castka-velky-input:focus {
@@ -95,7 +100,7 @@
         .suggestions-label {
             font-size: 11px;
             color: #666;
-            margin: 8px 0 6px 0;
+            margin: 10px 0 6px 0;
             display: block;
         }
 
@@ -103,7 +108,7 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
 
         @media (min-width: 560px) {
@@ -148,9 +153,10 @@
             margin-top: 2px;
         }
 
+        /* Sekce pro E-mail a odměnu Admin v chatu */
         .admin-odmena-box {
-            background: #f9f9f9;
-            border: 2px dashed #888;
+            background: #eeeeee;
+            border: 2px dashed #999;
             padding: 12px;
             margin: 14px 0;
             transition: all 0.2s ease;
@@ -199,7 +205,14 @@
             box-sizing: border-box;
         }
 
-        .pole-input:focus {
+        .pole-input:disabled {
+            background: #e2e2e2;
+            border-color: #999;
+            color: #777;
+            cursor: not-allowed;
+        }
+
+        .pole-input:focus:not(:disabled) {
             outline: none;
             border-color: #b30000;
         }
@@ -278,54 +291,54 @@
 
     <div class="hlavni-box">
         <div class="papirek-info">
-            <strong>📌 Kam jdou tvoje prachy?</strong><br>
-            Na doménu <strong>gjwprostejov.com</strong>, databázi pro chat a šachy, a taky na kofein a párky v rohlíku při kódění po nocích.
+            <strong>📌 Proč je tvoje podpora klíčová?</strong><br>
+            Veškeré příspěvky jdou <strong>výhradně na nezbytné technické náklady</strong> – provoz serverů, databáze pro chat a hry a roční poplatky za doménu <strong>gjwprostejov.com</strong>. Bez těchto příspěvků není možné portál dlouhodobě udržet v chodu.
         </div>
 
         <div class="castka-hlavni-obal">
             <label for="vlastniCastka" style="font-weight: bold; font-size: 14px; color: #111; display: block;">
-                Kolik chceš přispět? (min. 15 Kč)
+                Zadej částku, kterou chceš přispět (min. 15 Kč):
             </label>
             <div class="castka-input-radek">
-                <input type="number" id="vlastniCastka" class="castka-velky-input" min="15" max="10000" value="50" oninput="zmenaCastky()">
+                <input type="number" id="vlastniCastka" class="castka-velky-input" min="15" max="10000" placeholder="0" oninput="zmenaCastky()">
                 <span class="castka-mena">Kč</span>
             </div>
 
-            <span class="suggestions-label">💡 Rychlé návrhy pro inspiraci (klikni pro doplnění):</span>
+            <span class="suggestions-label">💡 Nebo klikni na předvolbu (můžeš napsat i jakoukoliv vlastní částku):</span>
             <div class="suggestions-grid">
                 <div class="suggestion-chip" data-amount="20" onclick="nastavCastku(20)">
-                    <span class="chip-cena">🌭 20 Kč</span>
-                    <span class="chip-text">Půlka párku v rohlíku v bufetu</span>
+                    <span class="chip-cena">🌐 20 Kč</span>
+                    <span class="chip-text">Pár dní provozu domény</span>
                 </div>
 
-                <div class="suggestion-chip aktivni" data-amount="50" onclick="nastavCastku(50)">
-                    <span class="chip-cena">☕ 50 Kč</span>
-                    <span class="chip-text">Kafe před třema písemkama</span>
+                <div class="suggestion-chip" data-amount="50" onclick="nastavCastku(50)">
+                    <span class="chip-cena">🗄️ 50 Kč</span>
+                    <span class="chip-text">Databáze pro chat a šachy</span>
                 </div>
 
                 <div class="suggestion-chip" data-amount="100" onclick="nastavCastku(100)">
                     <span class="chip-cena">👑 100 Kč</span>
-                    <span class="chip-text">Admin v chatu + příspěvek na doménu</span>
+                    <span class="chip-text">Server + odemkne Admina v chatu</span>
                 </div>
 
                 <div class="suggestion-chip" data-amount="250" onclick="nastavCastku(250)">
                     <span class="chip-cena">🚀 250 Kč</span>
-                    <span class="chip-text">Admin v chatu + sponzor ročníku</span>
+                    <span class="chip-text">Hlavní sponzor serverů + Admin</span>
                 </div>
             </div>
         </div>
 
         <div id="adminOdmenaBox" class="admin-odmena-box">
-            <span id="adminBadge" class="admin-badge">🔒 Bonus od 100 Kč</span>
-            <div id="adminInfoText" style="font-size: 12px; color: #333; margin-bottom: 8px; line-height: 1.4;">
-                <strong>Chceš Admina v chatu?</strong> Přispěj <strong>100 Kč nebo víc</strong> a zadej svůj e-mail níže – nastavíme ti práva admina v Diskuzním portálu!
+            <span id="adminBadge" class="admin-badge">🔒 Zamčeno (od 100 Kč)</span>
+            <div id="adminInfoText" style="font-size: 12px; color: #444; margin-bottom: 8px; line-height: 1.4;">
+                <strong>Chceš Admina v chatu?</strong> Zadej částku <strong>100 Kč nebo víc</strong> – pole pro e-mail se ti pak odemkne a po zaplacení ti nastavíme práva admina!
             </div>
             <label for="emailInput" style="font-weight: bold; font-size: 12px; display: block; margin-bottom: 4px;">
-                Tvůj e-mail (pro přidělení Admina v chatu):
+                Tvůj e-mail (odemkne se při příspěvku od 100 Kč):
             </label>
-            <input type="email" id="emailInput" class="pole-input" placeholder="tvuj.email@seznam.cz">
+            <input type="email" id="emailInput" class="pole-input" placeholder="Odemkne se od 100 Kč..." disabled>
             <p style="font-size: 10px; color: #666; margin: 6px 0 0 0; line-height: 1.35;">
-                * Status Admina je dobrovolný bonus. Provozovatel si vyhrazuje právo práva Admina kdykoli bez náhrady odebrat, pokud nebude přínosem pro komunitu nebo zneužije pravomoci.
+                * Status Admina je dobrovolný bonus. Provozovatel si vyhrazuje právo oprávnění Admina kdykoli bez náhrady odebrat, pokud nebude přínosný pro chat nebo zneužije pravomoci.
             </p>
         </div>
 
@@ -340,7 +353,7 @@
         </div>
 
         <button type="button" id="btnZaplatit" class="btn-zaplatit" onclick="spustitStripePlatbu()">
-            💳 Přispět 50 Kč přes Stripe (Karta / Apple Pay / Google Pay)
+            💳 Přispět přes Stripe (Karta / Apple Pay / Google Pay)
         </button>
 
         <p style="font-size: 11px; color: #666; text-align: center; margin: 10px 0 0 0;">
@@ -376,7 +389,8 @@
         }
 
         function zmenaCastky() {
-            const val = parseInt(document.getElementById('vlastniCastka').value, 10) || 0;
+            const rawVal = document.getElementById('vlastniCastka').value.trim();
+            const val = parseInt(rawVal, 10) || 0;
 
             document.querySelectorAll('.suggestion-chip').forEach(chip => {
                 if (parseInt(chip.dataset.amount, 10) === val) {
@@ -389,30 +403,40 @@
             const adminBox = document.getElementById('adminOdmenaBox');
             const adminBadge = document.getElementById('adminBadge');
             const adminText = document.getElementById('adminInfoText');
+            const emailInput = document.getElementById('emailInput');
 
             if (val >= 100) {
                 adminBox.classList.add('odemceno');
                 adminBadge.innerText = '👑 ODEMČENO: Admin v chatu!';
                 adminText.innerHTML = '<strong>Pecka! Přispíváš ' + val + ' Kč.</strong> Vyplň svůj e-mail níže a po zaplacení ti nastavíme <strong>Admina v chatu</strong>!';
+                emailInput.disabled = false;
+                emailInput.placeholder = 'tvuj.email@seznam.cz';
             } else {
                 adminBox.classList.remove('odemceno');
-                adminBadge.innerText = '🔒 Bonus od 100 Kč';
-                adminText.innerHTML = '<strong>Chceš Admina v chatu?</strong> Přispěj <strong>100 Kč nebo víc</strong> a zadej svůj e-mail níže – nastavíme ti práva admina v Diskuzním portálu!';
+                adminBadge.innerText = '🔒 Zamčeno (od 100 Kč)';
+                adminText.innerHTML = '<strong>Chceš Admina v chatu?</strong> Zadej částku <strong>100 Kč nebo víc</strong> – pole pro e-mail se ti pak odemkne a po zaplacení ti nastavíme práva admina!';
+                emailInput.disabled = true;
+                emailInput.value = '';
+                emailInput.placeholder = 'Odemkne se od 100 Kč...';
             }
 
             const btn = document.getElementById('btnZaplatit');
-            const zobrazena = val >= 15 ? val : 15;
-            btn.innerText = `💳 Přispět ${zobrazena} Kč přes Stripe (Karta / Apple Pay / Google Pay)`;
+            if (val >= 15) {
+                btn.innerText = `💳 Přispět ${val} Kč přes Stripe (Karta / Apple Pay / Google Pay)`;
+            } else {
+                btn.innerText = `💳 Přispět přes Stripe (Karta / Apple Pay / Google Pay)`;
+            }
         }
 
         async function spustitStripePlatbu() {
             const castka = parseInt(document.getElementById('vlastniCastka').value, 10);
             if (!castka || castka < 15) {
-                alert("Minimální příspěvek je 15 Kč (kvůli poplatkům platební brány).");
+                alert("Zadej prosím částku alespoň 15 Kč (minimum kvůli poplatkům platební brány).");
+                document.getElementById('vlastniCastka').focus();
                 return;
             }
 
-            const email = document.getElementById('emailInput').value.trim();
+            const email = castka >= 100 ? document.getElementById('emailInput').value.trim() : '';
             const prezdivka = document.getElementById('prezdivkaInput').value.trim() || "Anonym z GJW";
             const vzkaz = document.getElementById('vzkazInput').value.trim();
 
@@ -447,9 +471,21 @@
                     })
                 });
 
-                const session = await response.json();
-                if (!response.ok || !session.id) {
+                const textResponse = await response.text();
+                let session;
+                try {
+                    session = JSON.parse(textResponse);
+                } catch (e) {
+                    throw new Error("Server vrátil neplatnou odpověď: " + textResponse.slice(0, 120));
+                }
+
+                if (!response.ok || (!session.id && !session.url)) {
                     throw new Error(session.error || "Nepodařilo se vytvořit platbu.");
+                }
+
+                if (session.url) {
+                    window.location.href = session.url;
+                    return;
                 }
 
                 const result = await stripe.redirectToCheckout({ sessionId: session.id });

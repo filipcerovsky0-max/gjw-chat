@@ -1,16 +1,12 @@
-const Stripe = require('stripe');
-
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     const secretKey = process.env.STRIPE_SECRET_KEY;
     if (!secretKey) {
-        return res.status(500).json({ error: 'Chybí STRIPE_SECRET_KEY na serveru.' });
+        return res.status(500).json({ error: 'Chybí STRIPE_SECRET_KEY ve Vercel Environment Variables.' });
     }
-
-    const stripe = new Stripe(secretKey);
 
     try {
         const { amount, nickname, message, email } = req.body || {};
@@ -23,37 +19,43 @@ module.exports = async function handler(req, res) {
         const origin = req.headers.origin || 'https://gjwprostejov.com';
         const cleanEmail = (email || '').trim();
 
-        const sessionPayload = {
-            mode: 'payment',
-            payment_method_types: ['card'],
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'czk',
-                        product: 'prod_VfzlJrdLoRpg27',
-                        unit_amount: czkAmount * 100,
-                    },
-                    quantity: 1,
-                },
-            ],
-            metadata: {
-                nickname: (nickname || 'Anonym z GJW').slice(0, 50),
-                message: (message || '').slice(0, 150),
-                admin_email: cleanEmail.slice(0, 100),
-                admin_eligible: czkAmount >= 100 && cleanEmail ? 'ANO' : 'NE',
-            },
-            success_url: `${origin}/podpora/?status=success`,
-            cancel_url: `${origin}/podpora/?status=cancel`,
-        };
+        const params = new URLSearchParams();
+        params.append('mode', 'payment');
+        params.append('payment_method_types[0]', 'card');
+        params.append('line_items[0][price_data][currency]', 'czk');
+        params.append('line_items[0][price_data][product]', 'prod_VfzlJrdLoRpg27');
+        params.append('line_items[0][price_data][unit_amount]', String(czkAmount * 100));
+        params.append('line_items[0][quantity]', '1');
+        params.append('metadata[nickname]', (nickname || 'Anonym z GJW').slice(0, 50));
+        params.append('metadata[message]', (message || '').slice(0, 150));
+        params.append('metadata[admin_email]', cleanEmail.slice(0, 100));
+        params.append('metadata[admin_eligible]', czkAmount >= 100 && cleanEmail ? 'ANO' : 'NE');
+        params.append('success_url', `${origin}/podpora/?status=success`);
+        params.append('cancel_url', `${origin}/podpora/?status=cancel`);
 
         if (cleanEmail && cleanEmail.includes('@')) {
-            sessionPayload.customer_email = cleanEmail;
+            params.append('customer_email', cleanEmail);
         }
 
-        const session = await stripe.checkout.sessions.create(sessionPayload);
-        return res.status(200).json({ id: session.id });
+        const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${secretKey}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        });
+
+        const session = await stripeRes.json();
+
+        if (!stripeRes.ok) {
+            return res.status(stripeRes.status).json({
+                error: session?.error?.message || 'Chyba Stripe API'
+            });
+        }
+
+        return res.status(200).json({ id: session.id, url: session.url });
     } catch (err) {
-        console.error('Stripe error:', err);
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: err.message || 'Interní chyba serveru' });
     }
-};
+}
