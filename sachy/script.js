@@ -2,7 +2,7 @@
 const firebaseConfig = {
     apiKey: "AIzaSyDwkNCpRshjgM4IvGs4OqRHghdvrDpWjao",
     authDomain: "gjw-chat.firebaseapp.com",
-    databaseURL: "[https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app](https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app)",
+    databaseURL: "https://gjw-chat-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "gjw-chat",
     storageBucket: "gjw-chat.firebasestorage.app",
     messagingSenderId: "26054026514",
@@ -18,8 +18,8 @@ const auth = firebase.auth();
 
 const GOOGLE_CLIENT_ID = "26054026514-qvfltgpdsq4ivhmlf00sple6c86lmjqj.apps.googleusercontent.com";
 
-const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23cccccc'/><circle cx='50' cy='36' r='18' fill='%23e6e6e6'/><path d='M 20 82 C 20 62, 35 55, 50 55 C 65 55, 80 62, 80 82 Z' fill='%23e6e6e6'/></svg>`;
-const BOT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%232563eb'/><rect x='28' y='32' width='44' height='32' rx='6' fill='%23ffffff'/><circle cx='40' cy='45' r='5' fill='%231e3a8a'/><circle cx='60' cy='45' r='5' fill='%231e3a8a'/><rect x='42' y='54' width='16' height='4' rx='2' fill='%231e3a8a'/><rect x='46' y='16' width='8' height='16' fill='%23ffffff'/><circle cx='50' cy='14' r='6' fill='%23ef4444'/></svg>`;
+const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23cccccc'/><circle cx='50' cy='36' r='18' fill='%23e6e6e6'/><path d='M 20 82 C 20 62, 35 55, 50 55 C 65 55, 80 62, 80 82 Z' fill='%23e6e6e6'/></svg>`;
+const BOT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%232563eb'/><rect x='28' y='32' width='44' height='32' rx='6' fill='%23ffffff'/><circle cx='40' cy='45' r='5' fill='%231e3a8a'/><circle cx='60' cy='45' r='5' fill='%231e3a8a'/><rect x='42' y='54' width='16' height='4' rx='2' fill='%231e3a8a'/><rect x='46' y='16' width='8' height='16' fill='%23ffffff'/><circle cx='50' cy='14' r='6' fill='%23ef4444'/></svg>`;
 
 function getAvatarHTML(photoURL, sizeClass = "w-7 h-7") {
     const url = photoURL || DEFAULT_AVATAR;
@@ -113,18 +113,18 @@ let cropDragStartY = 0;
 // ORIGINÁLNÍ CHESS.COM ZVUKY (OPRAVENÉ URL + ODBLOKOVÁNÍ)
 // ----------------------------------------------------
 const SOUND_URLS = {
-    'game-start': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/game-start.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/game-start.mp3)',
-    'game-end': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/game-end.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/game-end.mp3)',
-    'capture': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/capture.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/capture.mp3)',
-    'castle': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/castle.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/castle.mp3)',
-    'premove': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/premove.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/premove.mp3)',
-    'move-self': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-self.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-self.mp3)',
-    'move-opponent': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-opponent.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-opponent.mp3)',
-    'move-check': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-check.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-check.mp3)',
-    'promote': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/promote.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/promote.mp3)',
-    'notify': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/notify.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/notify.mp3)',
-    'illegal': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/illegal.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/illegal.mp3)',
-    'tenseconds': '[https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/tenseconds.mp3](https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/tenseconds.mp3)'
+    'game-start': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/game-start.mp3',
+    'game-end': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/game-end.mp3',
+    'capture': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/capture.mp3',
+    'castle': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/castle.mp3',
+    'premove': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/premove.mp3',
+    'move-self': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-self.mp3',
+    'move-opponent': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-opponent.mp3',
+    'move-check': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-check.mp3',
+    'promote': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/promote.mp3',
+    'notify': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/notify.mp3',
+    'illegal': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/illegal.mp3',
+    'tenseconds': 'https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/tenseconds.mp3'
 };
 
 const CHESSCOM_SOUNDS = {};
@@ -177,18 +177,18 @@ function playCheckmateSound() {
 }
 
 const pieceSVGs = {
-    'wP': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wp.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wp.png)',
-    'wR': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wr.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wr.png)',
-    'wN': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wn.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wn.png)',
-    'wB': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wb.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wb.png)',
-    'wQ': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wq.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wq.png)',
-    'wK': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wk.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wk.png)',
-    'bP': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bp.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bp.png)',
-    'bR': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/br.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/br.png)',
-    'bN': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bn.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bn.png)',
-    'bB': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bb.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bb.png)',
-    'bQ': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bq.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bq.png)',
-    'bK': '[https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bk.png](https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bk.png)'
+    'wP': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wp.png',
+    'wR': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wr.png',
+    'wN': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wn.png',
+    'wB': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wb.png',
+    'wQ': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wq.png',
+    'wK': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wk.png',
+    'bP': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bp.png',
+    'bR': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/br.png',
+    'bN': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bn.png',
+    'bB': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bb.png',
+    'bQ': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bq.png',
+    'bK': 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bk.png'
 };
 
 const initialBoard = [
@@ -757,7 +757,6 @@ function listenLobby() {
                 btnGroup.appendChild(inviteBtn);
             }
 
-            // Pouze Google účty mohou přidávat jiné Google účty do přátel
             if (isGoogleUser && u.isGoogle) {
                 const addFriendBtn = document.createElement('button');
                 addFriendBtn.className = 'btn-outline text-xs p-1.5 rounded-lg text-blue-400 hover:border-blue-500';
@@ -878,7 +877,6 @@ function listenFriendRequests() {
     });
 }
 
-// Přímé zprávy mezi Google přáteli jako horní notifikace
 function listenFriendMessages() {
     if (!isGoogleUser) return;
     db.ref(`sachy/directMessages/${myId}`).on('child_added', (snap) => {
@@ -1085,25 +1083,25 @@ window.rejectFriendRequest = function(friendId) {
 };
 
 window.shareGameLink = function() {
+    const url = 'https://gjwprostejov.com/sachy/';
     const shareData = {
         title: 'chess.gjw',
-        text: 'Pojď si zahrát šachy na [gjwprostejov.com/sachy/](https://gjwprostejov.com/sachy/)',
-        url: '[https://gjwprostejov.com/sachy/](https://gjwprostejov.com/sachy/)'
+        text: 'Pojď si zahrát šachy na gjwprostejov.com/sachy/',
+        url: url
     };
 
     if (navigator.share) {
         navigator.share(shareData).catch(() => {});
-    } else {
-        navigator.clipboard.writeText('[https://gjwprostejov.com/sachy/](https://gjwprostejov.com/sachy/)');
-        alert('Odkaz zkopírován!');
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => alert('Odkaz zkopírován!'));
     }
 };
 
 window.openQRModal = function() {
     const matchId = 'chess_' + Math.random().toString(36).substr(2, 9);
-    const joinURL = `[https://gjwprostejov.com/sachy/?join=$](https://gjwprostejov.com/sachy/?join=$){matchId}`;
+    const joinURL = `https://gjwprostejov.com/sachy/?join=${matchId}`;
     
-    const qrImg = `<img src="[https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=$](https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=$){encodeURIComponent(joinURL)}" alt="QR" class="w-44 h-44 rounded-lg">`;
+    const qrImg = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinURL)}" alt="QR" class="w-44 h-44 rounded-lg">`;
     document.getElementById('qrImgBox').innerHTML = qrImg;
     document.getElementById('manualQrGameIdInput').value = matchId;
 
@@ -1239,7 +1237,6 @@ window.rejectInvite = function() {
     closeModalEl('inviteModal');
 };
 
-// Spouští se až PO přihlášení (kdy je známe skutečné myId) -> opravuje bug "Čekám na..." po F5
 function attachGameWatcher() {
     db.ref('sachy/games').on('child_added', (snapshot) => {
         const game = snapshot.val();
@@ -1361,7 +1358,6 @@ function listenGame() {
         castlingRights = game.castling || { wK: true, wQ: true, bK: true, bQ: true };
         enPassantTarget = game.enPassant || null;
 
-        // Zjistíme, zda je šachmat, abychom králi červeně podsvítili políčko
         if (gameStatus === 'won' && game.reason === 'checkmate') {
             checkmatedColor = game.turn;
         } else {
@@ -1443,9 +1439,6 @@ function listenGame() {
     });
 }
 
-// ----------------------------------------------------
-// GARANTOVANÝCH 5 VTEŘIN NA PROHLÉDNUTÍ MATU + ČERVENÝ KRÁL
-// ----------------------------------------------------
 function clearEndgameTimers() {
     if (gameOverDelayTimeout) {
         clearTimeout(gameOverDelayTimeout);
@@ -1787,9 +1780,6 @@ window.voteRematch = function() {
     });
 };
 
-// ----------------------------------------------------
-// SEBRANÉ FIGURY A BODOVÝ NÁSKOK
-// ----------------------------------------------------
 function updateCapturedAndDesktopLog() {
     const startCounts = { wP: 8, wN: 2, wB: 2, wR: 2, wQ: 1, bP: 8, bN: 2, bB: 2, bR: 2, bQ: 1 };
     const currentCounts = { wP: 0, wN: 0, wB: 0, wR: 0, wQ: 0, bP: 0, bN: 0, bB: 0, bR: 0, bQ: 0 };
@@ -1849,9 +1839,6 @@ function updateCapturedAndDesktopLog() {
     }
 }
 
-// ----------------------------------------------------
-// PRE-MOVE LOGIKA (ČERVENÉ ZVÝRAZNĚNÍ + ZRUŠENÍ POKUD NEJDE)
-// ----------------------------------------------------
 function setPremove(from, to, promo = 'Q') {
     queuedPremove = { from, to, promo };
     premoveSourceSelected = null;
@@ -1930,9 +1917,6 @@ function executeQueuedPremoveIfLegal() {
     }
 }
 
-// ----------------------------------------------------
-// VYKRESLENÍ ŠACHOVNICE + ANIMACE KLOUZÁNÍ + DRAG SE STÍNEM
-// ----------------------------------------------------
 function getSquareElement(row, col) {
     const boardEl = document.getElementById('chessBoard');
     if (!boardEl) return null;
@@ -2025,7 +2009,6 @@ function renderBoard(lastMove) {
                 square.classList.add('premove-sq');
             }
 
-            // Šach vs Šachmat (král červeně)
             if (matedKingPos && matedKingPos.r === row && matedKingPos.c === col) {
                 square.classList.add('checkmate-king');
             } else if ((wInCheck && wInCheck.r === row && wInCheck.c === col) || (bInCheck && bInCheck.r === row && bInCheck.c === col)) {
@@ -2092,9 +2075,6 @@ function renderBoard(lastMove) {
     }
 }
 
-// ----------------------------------------------------
-// POINTER DRAG-AND-DROP SE STÍNEM (MYŠ I PRST)
-// ----------------------------------------------------
 function handlePiecePointerDown(e, r, c, pieceCode, pieceEl) {
     if (gameStatus !== 'playing' || e.button > 0) return;
     e.preventDefault();
@@ -2268,9 +2248,6 @@ function handleSquareClick(r, c) {
     renderBoard(null);
 }
 
-// ----------------------------------------------------
-// PROMĚNA PĚŠCE + SPUŠTĚNÍ TAHU HRÁČE
-// ----------------------------------------------------
 function initiatePlayerMove(from, to, withSlideAnimation) {
     const movingPiece = gameBoard[from.r][from.c];
     if (movingPiece && movingPiece[1] === 'P' && (to.r === 0 || to.r === 7)) {
@@ -2327,9 +2304,6 @@ function openPromotionModal(color, onSelect) {
     openModalEl('promotionModal');
 }
 
-// ----------------------------------------------------
-// ŠACHOVÝ ENGINE
-// ----------------------------------------------------
 function simulateMoveOnBoard(board, from, to, epTarget, promoType = 'Q') {
     const newBoard = board.map(row => [...row]);
     const movingPiece = newBoard[from.r][from.c];
