@@ -21,7 +21,6 @@ export default async function handler(req, res) {
 
         const params = new URLSearchParams();
         params.append('mode', 'payment');
-        params.append('payment_method_types[0]', 'card');
         params.append('line_items[0][price_data][currency]', 'czk');
         params.append('line_items[0][price_data][product]', 'prod_VfzlJrdLoRpg27');
         params.append('line_items[0][price_data][unit_amount]', String(czkAmount * 100));
