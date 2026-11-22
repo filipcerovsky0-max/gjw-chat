@@ -405,7 +405,6 @@
 
     <!-- 2. LOBBY SEKCE -->
     <section id="lobbySection" class="hidden flex-1 max-w-5xl w-full mx-auto p-3 sm:p-5 space-y-4">
-        <!-- Rychlé akce -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <button onclick="openBotModal()" class="btn-chess py-3 px-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2">
                 <span>🤖 Hrát s Botem</span>
@@ -422,7 +421,6 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <!-- Online hráči v lobby -->
             <div class="lg:col-span-2 bg-[#24221f] border border-[#383632] rounded-2xl p-4 shadow-xl space-y-3">
                 <div class="flex items-center justify-between border-b border-[#383632] pb-2.5">
                     <h2 class="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
@@ -436,7 +434,6 @@
                 </div>
             </div>
 
-            <!-- Žebříček a Historie -->
             <div class="space-y-4">
                 <div class="bg-[#24221f] border border-[#383632] rounded-2xl p-4 shadow-xl space-y-2.5">
                     <h3 class="text-sm font-extrabold text-yellow-400 border-b border-[#383632] pb-2">🏆 TOP Šachisté</h3>
@@ -460,11 +457,7 @@
 
     <!-- 3. HERNÍ SEKCE -->
     <section id="gameSection" class="hidden flex-1 max-w-5xl w-full mx-auto p-2 sm:p-4 flex-col lg:flex-row items-center lg:items-start justify-center gap-4">
-        
-        <!-- Levý / Hlavní sloupec se šachovnicí -->
         <div class="flex flex-col items-center gap-2 w-full max-w-[520px]">
-            
-            <!-- Banner garantovaných 5 vteřin na prohlédnutí matu -->
             <div id="endgameBanner" class="hidden w-full bg-[#24221f] border-2 border-red-500/80 rounded-xl px-3.5 py-2.5 flex items-center justify-between shadow-xl">
                 <span id="endgameBannerText" class="text-xs sm:text-sm font-black text-white">♔ ŠACHMAT!</span>
                 <span class="text-xs font-bold text-gray-300 flex items-center gap-1.5">
@@ -472,7 +465,6 @@
                 </span>
             </div>
 
-            <!-- Karta soupeře (nahoře) -->
             <div id="topPlayerCard" class="w-full bg-[#24221f] border border-[#383632] rounded-xl px-3 py-2 flex items-center justify-between transition-all">
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div id="topAvatar"></div>
@@ -487,7 +479,6 @@
                 <div id="topTimer" class="timer-box font-mono font-black text-base sm:text-lg px-3 py-1 rounded-lg">10:00</div>
             </div>
 
-            <!-- ŠACHOVNICE -->
             <div class="relative">
                 <div id="chessBoard" class="chess-board"></div>
                 <div id="premoveIndicator" class="hidden absolute top-2 right-2 z-20 bg-red-600/90 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow">
@@ -495,7 +486,6 @@
                 </div>
             </div>
 
-            <!-- Karta hráče (dole) -->
             <div id="bottomPlayerCard" class="w-full bg-[#24221f] border border-[#383632] rounded-xl px-3 py-2 flex items-center justify-between transition-all">
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div id="bottomAvatar"></div>
@@ -510,7 +500,6 @@
                 <div id="bottomTimer" class="timer-box font-mono font-black text-base sm:text-lg px-3 py-1 rounded-lg">10:00</div>
             </div>
 
-            <!-- Spodní ovládací lišta -->
             <div class="w-full bg-[#24221f] border border-[#383632] rounded-xl p-2 flex items-center justify-between gap-1.5 relative">
                 <div class="flex items-center gap-1">
                     <button onclick="navMove('prev')" class="btn-outline px-3 py-1.5 rounded-lg text-xs font-bold" title="Předchozí tah">◀</button>
@@ -538,7 +527,6 @@
             </div>
         </div>
 
-        <!-- Pravý panel (Historie tahů) -->
         <aside class="w-full lg:w-72 bg-[#24221f] border border-[#383632] rounded-2xl p-4 shadow-xl flex flex-col gap-3">
             <div class="flex items-center justify-between border-b border-[#383632] pb-2">
                 <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-300">Záznam tahů</h3>
@@ -640,7 +628,7 @@
         </div>
     </div>
 
-    <!-- MODAL PŘÁTELÉ (POUZE PRO GOOGLE ÚČTY: ZPRÁVY + VÝZVA 3m / 5m / 10m) -->
+    <!-- MODAL PŘÁTELÉ -->
     <div id="communityModal" class="smooth-modal fixed inset-0 bg-black/75 z-50 hidden items-center justify-center p-4 backdrop-blur-sm">
         <div class="smooth-modal-card bg-[#24221f] border border-[#3d3b38] rounded-2xl p-5 w-full max-w-md shadow-2xl text-white">
             <div class="flex items-center justify-between mb-3 border-b border-[#3d3b38] pb-2.5">
