@@ -18,6 +18,25 @@ const auth = firebase.auth();
 
 const GOOGLE_CLIENT_ID = "26054026514-qvfltgpdsq4ivhmlf00sple6c86lmjqj.apps.googleusercontent.com";
 
+function safeGetStorage(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch (e) {
+        return null;
+    }
+}
+
+function safeSetStorage(key, value) {
+    try {
+        localStorage.setItem(key, value);
+    } catch (e) {}
+}
+
+function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '') ||
+        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+}
+
 const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23cccccc'/><circle cx='50' cy='36' r='18' fill='%23e6e6e6'/><path d='M 20 82 C 20 62, 35 55, 50 55 C 65 55, 80 62, 80 82 Z' fill='%23e6e6e6'/></svg>`;
 const BOT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%232563eb'/><rect x='28' y='32' width='44' height='32' rx='6' fill='%23ffffff'/><circle cx='40' cy='45' r='5' fill='%231e3a8a'/><circle cx='60' cy='45' r='5' fill='%231e3a8a'/><rect x='42' y='54' width='16' height='4' rx='2' fill='%231e3a8a'/><rect x='46' y='16' width='8' height='16' fill='%23ffffff'/><circle cx='50' cy='14' r='6' fill='%23ef4444'/></svg>`;
 
@@ -202,45 +221,81 @@ const initialBoard = [
     ['wR','wN','wB','wQ','wK','wB','wN','wR']
 ];
 
-const savedTheme = localStorage.getItem('chess_gjw_theme');
-if (savedTheme) setBoardTheme(savedTheme, false);
-
 window.setBoardTheme = function(theme, persist = true) {
     document.body.classList.remove('theme-wood', 'theme-blue');
     if (theme === 'wood') document.body.classList.add('theme-wood');
     if (theme === 'blue') document.body.classList.add('theme-blue');
-    if (persist) localStorage.setItem('chess_gjw_theme', theme);
+    if (persist) safeSetStorage('chess_gjw_theme', theme);
 };
+
+const savedTheme = safeGetStorage('chess_gjw_theme');
+if (savedTheme) setBoardTheme(savedTheme, false);
 
 // ----------------------------------------------------
 // PŘIHLÁŠENÍ A OCHRANA PROTI "ČEKÁM NA..." PO REFRESH
 // ----------------------------------------------------
+auth.getRedirectResult().catch((err) => {
+    if (err && err.code) console.warn('Redirect login info:', err.message);
+});
+
 auth.onAuthStateChanged((user) => {
     if (user) {
         myId = user.uid;
         isGoogleUser = true;
         myEmail = user.email || '';
 
+        let cachedProfile = null;
+        const cachedRaw = safeGetStorage(`chess_gjw_profile_${myId}`);
+        if (cachedRaw) {
+            try { cachedProfile = JSON.parse(cachedRaw); } catch (e) {}
+        }
+
         db.ref(`sachy/users/${myId}`).once('value', (snap) => {
             const userData = snap.val();
             if (userData) {
-                myNickname = userData.name || user.displayName || 'Šachista';
-                myClass = userData.class || '';
-                userPhotoURL = userData.photoURL || user.photoURL;
+                myNickname = userData.name || cachedProfile?.name || user.displayName || 'Šachista';
+                myClass = userData.class || cachedProfile?.class || '';
+                userPhotoURL = userData.photoURL || cachedProfile?.photoURL || user.photoURL || null;
                 myEmail = userData.email || user.email || '';
+            } else if (cachedProfile) {
+                myNickname = cachedProfile.name || user.displayName || 'Šachista';
+                myClass = cachedProfile.class || '';
+                userPhotoURL = cachedProfile.photoURL || user.photoURL || null;
             } else {
                 myNickname = user.displayName || 'Šachista';
-                userPhotoURL = user.photoURL;
+                myClass = '';
+                userPhotoURL = user.photoURL || null;
             }
+            cacheLocalProfile();
             saveUserProfileToDB();
+            enterLobby();
+        }).catch(() => {
+            if (cachedProfile) {
+                myNickname = cachedProfile.name || user.displayName || 'Šachista';
+                myClass = cachedProfile.class || '';
+                userPhotoURL = cachedProfile.photoURL || user.photoURL || null;
+            } else {
+                myNickname = user.displayName || 'Šachista';
+                userPhotoURL = user.photoURL || null;
+            }
             enterLobby();
         });
     }
 });
 
+function cacheLocalProfile() {
+    if (!myId) return;
+    safeSetStorage(`chess_gjw_profile_${myId}`, JSON.stringify({
+        name: myNickname,
+        class: myClass,
+        photoURL: userPhotoURL || null,
+        email: myEmail || ''
+    }));
+}
+
 function saveUserProfileToDB() {
-    if (!myId || !isGoogleUser) return;
-    db.ref(`sachy/users/${myId}`).update({
+    if (!myId || !isGoogleUser) return Promise.resolve();
+    return db.ref(`sachy/users/${myId}`).update({
         id: myId,
         name: myNickname,
         class: myClass,
@@ -253,6 +308,17 @@ function saveUserProfileToDB() {
 
 window.loginWithGoogle = function() {
     unlockAllSounds();
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('profile');
+    provider.addScope('email');
+
+    if (isMobileDevice()) {
+        auth.signInWithRedirect(provider).catch(() => {
+            fallbackPopupLogin();
+        });
+        return;
+    }
+
     try {
         if (window.google && window.google.accounts && window.google.accounts.oauth2) {
             const client = google.accounts.oauth2.initTokenClient({
@@ -268,9 +334,12 @@ window.loginWithGoogle = function() {
                             myEmail = user.email || '';
                             userPhotoURL = user.photoURL;
                             isGoogleUser = true;
+                            cacheLocalProfile();
                             saveUserProfileToDB();
                             enterLobby();
                         }).catch(() => fallbackPopupLogin());
+                    } else {
+                        fallbackPopupLogin();
                     }
                 }
             });
@@ -292,9 +361,14 @@ function fallbackPopupLogin() {
         myEmail = user.email || '';
         userPhotoURL = user.photoURL;
         isGoogleUser = true;
+        cacheLocalProfile();
         saveUserProfileToDB();
         enterLobby();
-    }).catch(() => {
+    }).catch((err) => {
+        if (err && (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment')) {
+            auth.signInWithRedirect(provider);
+            return;
+        }
         const fallbackName = prompt("Zadej přezdívku:");
         if (fallbackName) {
             myId = 'anon_' + Math.random().toString(36).substr(2, 9);
@@ -369,6 +443,15 @@ window.openProfileModal = function() {
     openModalEl('profileModal');
 };
 
+function buildCompressedAvatarDataURL(sourceCanvas) {
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = 96;
+    outCanvas.height = 96;
+    const outCtx = outCanvas.getContext('2d');
+    outCtx.drawImage(sourceCanvas, 0, 0, 96, 96);
+    return outCanvas.toDataURL('image/jpeg', 0.65);
+}
+
 window.updateSettingsLivePreview = function() {
     const nameVal = document.getElementById('editNicknameInput').value.trim() || myNickname || 'Šachista';
     const classVal = document.getElementById('editClassInput').value;
@@ -380,7 +463,14 @@ window.updateSettingsLivePreview = function() {
     const previewAvatarEl = document.getElementById('settingsPreviewAvatar');
 
     if (previewNameEl) previewNameEl.innerText = fullTitle;
-    if (previewAvatarEl) previewAvatarEl.innerHTML = getAvatarHTML(userPhotoURL, 'w-14 h-14');
+
+    let previewPhoto = userPhotoURL;
+    const cropBox = document.getElementById('cropBoxContainer');
+    const cropCanvas = document.getElementById('cropCanvas');
+    if (cropBox && !cropBox.classList.contains('hidden') && cropCanvas && rawCropImage) {
+        previewPhoto = buildCompressedAvatarDataURL(cropCanvas);
+    }
+    if (previewAvatarEl) previewAvatarEl.innerHTML = getAvatarHTML(previewPhoto, 'w-14 h-14');
 
     if (isGoogleUser) {
         if (previewEmailEl) previewEmailEl.innerText = myEmail || 'Google účet';
@@ -476,7 +566,7 @@ window.updateCropCanvas = function() {
 
     const previewAvatarEl = document.getElementById('settingsPreviewAvatar');
     if (previewAvatarEl) {
-        previewAvatarEl.innerHTML = getAvatarHTML(canvas.toDataURL('image/jpeg', 0.85), 'w-14 h-14');
+        previewAvatarEl.innerHTML = getAvatarHTML(buildCompressedAvatarDataURL(canvas), 'w-14 h-14');
     }
 };
 
@@ -490,14 +580,20 @@ window.saveProfileChanges = function() {
     myClass = document.getElementById('editClassInput').value;
 
     const cropBox = document.getElementById('cropBoxContainer');
-    if (!cropBox.classList.contains('hidden')) {
+    if (cropBox && !cropBox.classList.contains('hidden') && rawCropImage) {
         const canvas = document.getElementById('cropCanvas');
-        userPhotoURL = canvas.toDataURL('image/jpeg', 0.85);
+        userPhotoURL = buildCompressedAvatarDataURL(canvas);
     }
 
+    cacheLocalProfile();
     closeProfileModal();
     updateHeaderUI();
-    saveUserProfileToDB();
+
+    if (isGoogleUser && myId) {
+        saveUserProfileToDB().catch((err) => {
+            alert('Uložení do databáze selhalo: ' + (err?.message || 'zkontroluj oprávnění Firebase'));
+        });
+    }
 
     if (myId) {
         db.ref(`sachy/lobby/${myId}`).update({
@@ -505,7 +601,7 @@ window.saveProfileChanges = function() {
             class: myClass,
             photoURL: userPhotoURL || null,
             isGoogle: isGoogleUser
-        });
+        }).catch(() => {});
     }
 };
 
